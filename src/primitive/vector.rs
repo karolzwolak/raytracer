@@ -3,6 +3,7 @@ use crate::approx_eq::ApproxEq;
 use super::tuple::Tuple;
 use std::ops;
 
+#[derive(Copy, Clone, Debug)]
 pub struct Vector {
     x: f64,
     y: f64,
@@ -48,6 +49,18 @@ impl Vector {
             y: self.y / len,
             z: self.z / len,
         }
+    }
+
+    fn cross(&self, rhs: Self) -> Self {
+        Self {
+            x: self.y * rhs.z - self.z * rhs.y,
+            y: self.z * rhs.x - self.x * rhs.z,
+            z: self.x * rhs.y - self.y * rhs.x,
+        }
+    }
+
+    fn dot(&self, rhs: Self) -> f64 {
+        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 }
 impl PartialEq for Vector {
@@ -109,31 +122,80 @@ impl ops::Div<f64> for Vector {
 
     fn div(self, rhs: f64) -> Self::Output {
         Self {
-            x: rhs / self.x,
-            y: rhs / self.y,
-            z: rhs / self.z,
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
         }
     }
 }
 
-// Cross product
-impl ops::Mul for Vector {
-    type Output = Self;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    fn mul(self, rhs: Self) -> Self::Output {
-        Self {
-            x: self.y * rhs.z - self.z * rhs.y,
-            y: self.z * rhs.x - self.x * rhs.z,
-            z: self.x * rhs.y - self.y * rhs.x,
-        }
+    #[test]
+    fn add() {
+        assert_eq!(
+            Vector::new(3., -2., 5.) + Vector::new(-2., 3., 1.),
+            Vector::new(1., 1., 6.)
+        );
     }
-}
 
-// Dot product
-impl ops::BitXor for Vector {
-    type Output = f64;
+    #[test]
+    fn sub() {
+        assert_eq!(
+            Vector::new(3., 2., 1.) - Vector::new(5., 6., 7.),
+            Vector::new(-2., -4., -6.)
+        );
+    }
 
-    fn bitxor(self, rhs: Self) -> Self::Output {
-        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
+    #[test]
+    fn neg() {
+        assert_eq!(-Vector::new(1., -2., 3.), Vector::new(-1., 2., -3.));
+    }
+
+    #[test]
+    fn mul_f64() {
+        assert_eq!(Vector::new(1., -2., 3.) * 3.5, Vector::new(3.5, -7., 10.5));
+    }
+
+    #[test]
+    fn div_f64() {
+        assert_eq!(Vector::new(1., -2., 4.) / 2., Vector::new(0.5, -1., 2.));
+    }
+
+    #[test]
+    fn magnitude() {
+        assert_eq!(Vector::new(1., 0., 0.).magnitude(), 1.);
+        assert_eq!(Vector::new(0., 1., 0.).magnitude(), 1.);
+        assert_eq!(Vector::new(0., 0., 1.).magnitude(), 1.);
+        assert_eq!(Vector::new(0., 0., 0.).magnitude(), 0.);
+
+        assert_eq!(Vector::new(1., 2., 3.).magnitude(), 14_f64.sqrt());
+        assert_eq!(Vector::new(-1., -2., 3.).magnitude(), 14_f64.sqrt());
+    }
+    #[test]
+    fn normalize() {
+        assert_eq!(Vector::new(4., 0., 0.).normalize(), Vector::new(1., 0., 0.));
+        let sqrt_14 = 14_f64.sqrt();
+        assert_eq!(
+            Vector::new(1., -2., 3.).normalize(),
+            Vector::new(1. / sqrt_14, -2. / sqrt_14, 3. / sqrt_14)
+        );
+
+        assert_eq!(Vector::new(1., 2., 3.).normalize().magnitude(), 1.);
+    }
+
+    #[test]
+    fn dot_product() {
+        assert_eq!(Vector::new(1., 2., 3.).dot(Vector::new(2., 3., 4.)), 20.);
+    }
+
+    #[test]
+    fn cross_product() {
+        let v1 = Vector::new(1., 2., 3.);
+        let v2 = Vector::new(2., 3., 4.);
+        assert_eq!(v1.cross(v2), Vector::new(-1., 2., -1.));
+        assert_eq!(v2.cross(v1), Vector::new(1., -2., 1.));
     }
 }
