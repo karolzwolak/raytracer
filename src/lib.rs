@@ -5,3 +5,7 @@ pub mod primitive {
     mod tuple;
     mod vector;
 }
+
+pub mod render {
+    mod color;
+}
