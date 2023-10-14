@@ -32,13 +32,13 @@ impl Tuple for Point {
 }
 
 impl Point {
-    fn apply_vec(&mut self, vec: Vector) {
+    pub fn apply_vec(&mut self, vec: Vector) {
         self.x += vec.x();
         self.y += vec.y();
         self.z += vec.z();
     }
 
-    fn zero() -> Self {
+    pub fn zero() -> Self {
         Self {
             x: 0.,
             y: 0.,

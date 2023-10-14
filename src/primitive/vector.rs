@@ -33,13 +33,13 @@ impl Tuple for Vector {
 }
 
 impl Vector {
-    fn zero() -> Self {
+    pub fn zero() -> Self {
         Self::new(0., 0., 0.)
     }
-    fn magnitude(&self) -> f64 {
+    pub fn magnitude(&self) -> f64 {
         (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
     }
-    fn normalize(&self) -> Self {
+    pub fn normalize(&self) -> Self {
         let len = self.magnitude();
         if len == 0. {
             return Self::zero();
@@ -51,7 +51,7 @@ impl Vector {
         }
     }
 
-    fn cross(&self, rhs: Self) -> Self {
+    pub fn cross(&self, rhs: Self) -> Self {
         Self {
             x: self.y * rhs.z - self.z * rhs.y,
             y: self.z * rhs.x - self.x * rhs.z,
@@ -59,7 +59,7 @@ impl Vector {
         }
     }
 
-    fn dot(&self, rhs: Self) -> f64 {
+    pub fn dot(&self, rhs: Self) -> f64 {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
 }

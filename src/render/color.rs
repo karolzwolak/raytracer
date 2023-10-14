@@ -10,28 +10,28 @@ pub struct Color {
 }
 
 impl Color {
-    fn new(r: f64, g: f64, b: f64) -> Self {
+    pub fn new(r: f64, g: f64, b: f64) -> Self {
         Self { r, g, b }
     }
-    fn black() -> Self {
+    pub fn black() -> Self {
         Self::new(0., 0., 0.)
     }
-    fn red() -> Self {
+    pub fn red() -> Self {
         Self::new(1., 0., 0.)
     }
-    fn green() -> Self {
+    pub fn green() -> Self {
         Self::new(1., 0., 0.)
     }
-    fn blue() -> Self {
+    pub fn blue() -> Self {
         Self::new(1., 0., 0.)
     }
-    fn r(&self) -> f64 {
+    pub fn r(&self) -> f64 {
         self.r
     }
-    fn b(&self) -> f64 {
+    pub fn b(&self) -> f64 {
         self.b
     }
-    fn g(&self) -> f64 {
+    pub fn g(&self) -> f64 {
         self.g
     }
 }
