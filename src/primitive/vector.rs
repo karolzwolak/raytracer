@@ -1,6 +1,6 @@
 use crate::approx_eq::ApproxEq;
 
-use super::tuple::Tuple;
+use super::{point::Point, tuple::Tuple};
 use std::ops;
 
 #[derive(Copy, Clone, Debug)]
@@ -69,6 +69,14 @@ impl PartialEq for Vector {
     }
 }
 
+impl ops::Add<Point> for Vector {
+    type Output = Point;
+
+    fn add(self, rhs: Point) -> Self::Output {
+        Point::new(self.x + rhs.x(), self.y + rhs.y(), self.z + rhs.z())
+    }
+}
+
 impl ops::Add for Vector {
     type Output = Self;
 
@@ -132,6 +140,14 @@ impl ops::Div<f64> for Vector {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn add_point() {
+        assert_eq!(
+            Vector::new(3., -2., 5.) + Point::new(-2., 3., 1.),
+            Point::new(1., 1., 6.)
+        );
+    }
 
     #[test]
     fn add() {
