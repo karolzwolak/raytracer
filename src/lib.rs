@@ -7,5 +7,6 @@ pub mod primitive {
 }
 
 pub mod render {
+    mod canvas;
     mod color;
 }

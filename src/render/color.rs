@@ -34,6 +34,27 @@ impl Color {
     pub fn g(&self) -> f64 {
         self.g
     }
+
+    fn scale_val_to_u8(v: f64) -> u8 {
+        let v = v.max(0.).min(1.);
+        (v * 255.).round() as u8
+    }
+
+    pub fn as_scaled_values(&self) -> [u8; 3] {
+        [
+            Self::scale_val_to_u8(self.r),
+            Self::scale_val_to_u8(self.g),
+            Self::scale_val_to_u8(self.b),
+        ]
+    }
+
+    pub fn as_ppm_pixel_data(&self) -> String {
+        let r = Self::scale_val_to_u8(self.r);
+        let g = Self::scale_val_to_u8(self.g);
+        let b = Self::scale_val_to_u8(self.b);
+
+        format!("{} {} {}", r, g, b)
+    }
 }
 
 impl PartialEq for Color {
