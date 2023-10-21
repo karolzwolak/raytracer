@@ -3,7 +3,7 @@ use std::fs;
 use super::color::Color;
 
 #[derive(Debug, Clone)]
-struct Canvas {
+pub struct Canvas {
     width: usize,
     height: usize,
     pixels: Vec<Color>,

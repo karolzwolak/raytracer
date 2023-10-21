@@ -20,10 +20,13 @@ impl Color {
         Self::new(1., 0., 0.)
     }
     pub fn green() -> Self {
-        Self::new(1., 0., 0.)
+        Self::new(0., 1., 0.)
     }
     pub fn blue() -> Self {
-        Self::new(1., 0., 0.)
+        Self::new(0., 0., 1.)
+    }
+    pub fn white() -> Self {
+        Self::new(1., 1., 1.)
     }
     pub fn r(&self) -> f64 {
         self.r

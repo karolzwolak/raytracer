@@ -45,6 +45,16 @@ impl Point {
             z: 0.,
         }
     }
+    pub fn integer_pos(&self) -> Option<(usize, usize, usize)> {
+        if self.x < 0. || self.y < 0. || self.z < 0. {
+            return None;
+        }
+        Some((
+            self.x.round() as usize,
+            self.y.round() as usize,
+            self.z.round() as usize,
+        ))
+    }
 }
 
 impl PartialEq for Point {
