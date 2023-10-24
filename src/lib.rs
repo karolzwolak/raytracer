@@ -14,4 +14,6 @@ pub mod render {
     pub mod color;
 }
 
+pub mod transformation;
+
 pub mod playing_around;
