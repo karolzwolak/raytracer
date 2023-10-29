@@ -1,12 +1,30 @@
 use crate::primitive::matrix4::Matrix4;
 
 pub trait Transform {
-    fn translate(&mut self, x: f64, y: f64, z: f64) -> &mut Self;
-    fn scale(&mut self, x: f64, y: f64, z: f64) -> &mut Self;
+    fn get_transformed(self) -> Self;
+    fn transform_borrowed(&mut self, transformation: &Matrix4);
 
-    fn rotate_x(&mut self, radians: f64) -> &mut Self;
-    fn rotate_y(&mut self, radians: f64) -> &mut Self;
-    fn rotate_z(&mut self, radians: f64) -> &mut Self;
+    fn transform(&mut self, transformation: Matrix4) -> &mut Self {
+        self.transform_borrowed(&transformation);
+        self
+    }
+
+    fn translate(&mut self, x: f64, y: f64, z: f64) -> &mut Self {
+        self.transform(translation_matrix(x, y, z))
+    }
+    fn scale(&mut self, x: f64, y: f64, z: f64) -> &mut Self {
+        self.transform(scaling_matrix(x, y, z))
+    }
+
+    fn rotate_x(&mut self, radians: f64) -> &mut Self {
+        self.transform(rotation_x_matrix(radians))
+    }
+    fn rotate_y(&mut self, radians: f64) -> &mut Self {
+        self.transform(rotation_y_matrix(radians))
+    }
+    fn rotate_z(&mut self, radians: f64) -> &mut Self {
+        self.transform(rotation_z_matrix(radians))
+    }
 
     fn sheare(
         &mut self,
@@ -16,7 +34,11 @@ pub trait Transform {
         y_prop_z: f64,
         z_prop_x: f64,
         z_prop_y: f64,
-    ) -> &mut Self;
+    ) -> &mut Self {
+        self.transform(shearing_matrix(
+            x_prop_y, x_prop_z, y_prop_x, y_prop_z, z_prop_x, z_prop_y,
+        ))
+    }
 }
 pub fn translation_matrix(x: f64, y: f64, z: f64) -> Matrix4 {
     #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -225,6 +247,17 @@ mod tests {
         assert_eq!(
             shearing_matrix(0., 0., 0., 0., 0., 1.) * p,
             Point::new(2., 3., 7.)
+        );
+    }
+
+    #[test]
+    fn transform_matrix() {
+        assert_eq!(
+            Matrix4::identiy_matrix()
+                .scale(1., 0., -1.,)
+                .translate(2., 10., -0.5)
+                .get_transformed(),
+            translation_matrix(2., 10., -0.5) * scaling_matrix(1., 0., -1.)
         );
     }
 }

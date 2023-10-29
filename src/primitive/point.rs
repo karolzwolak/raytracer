@@ -96,6 +96,11 @@ impl ops::Sub<Vector> for Point {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        primitive::matrix4::Matrix4,
+        transformation::{self, scaling_matrix, Transform},
+    };
+
     use super::*;
 
     #[test]
@@ -130,5 +135,16 @@ mod tests {
             Point::new(3., 2., 1.) - Point::new(5., 6., 7.),
             Vector::new(-2., -4., -6.)
         );
+    }
+    #[test]
+    fn scaling() {
+        let mut base = Point::new(1., 2., 3.);
+        let transformation = scaling_matrix(0., -1., 2.);
+        let p1 = base.clone().scale(0., -1., 2.).get_transformed();
+        base.transform_borrowed(&transformation);
+
+        let expected = Point::new(0., -2., 6.);
+        assert_eq!(base, expected);
+        assert_eq!(p1, expected);
     }
 }

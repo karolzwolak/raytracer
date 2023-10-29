@@ -1,4 +1,4 @@
-use crate::approx_eq::ApproxEq;
+use crate::{approx_eq::ApproxEq, transformation::Transform};
 use std::ops;
 
 use super::{matrix3::Matrix3, tuple::Tuple};
@@ -6,6 +6,16 @@ use super::{matrix3::Matrix3, tuple::Tuple};
 #[derive(Debug, Clone, Copy)]
 pub struct Matrix4 {
     data: [f64; 16],
+}
+
+impl Transform for Matrix4 {
+    fn get_transformed(self) -> Self {
+        self
+    }
+
+    fn transform_borrowed(&mut self, transformation_matrix: &Matrix4) {
+        *self = (*transformation_matrix) * (*self);
+    }
 }
 
 impl Matrix4 {
