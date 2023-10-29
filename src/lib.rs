@@ -16,4 +16,7 @@ pub mod render {
 
 pub mod transformation;
 
-pub mod playing_around;
+pub mod playing_around {
+    pub mod projectiles;
+    pub mod transformations;
+}

@@ -92,7 +92,7 @@ impl Environment {
                 color = color + Color::new(0.005, 0.005, 0.005);
             }
         }
-        self.canvas.save_to_file("putting_together.ppm")
+        self.canvas.save_to_file("putting_together2.ppm")
     }
 }
 

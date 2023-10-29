@@ -4,5 +4,5 @@ fn main() {
 }
 
 fn playing_around() {
-    raytracer::playing_around::putting_together_chapter2();
+    raytracer::playing_around::transformations::run();
 }
