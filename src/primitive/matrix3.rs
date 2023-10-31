@@ -1,7 +1,7 @@
 use crate::approx_eq::ApproxEq;
 use std::ops;
 
-use super::{matrix2::Matrix2, tuple::Tuple};
+use super::matrix2::Matrix2;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Matrix3 {
@@ -15,8 +15,8 @@ impl Matrix3 {
     pub fn empty() -> Self {
         Self::new([0.; 9])
     }
+    #[rustfmt::skip]
     pub fn identiy_matrix() -> Self {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
         Self::new([
             1., 0., 0.,
             0., 1., 0.,
@@ -25,7 +25,7 @@ impl Matrix3 {
     }
 
     pub fn transpose(&self) -> Self {
-        let mut res = self.clone();
+        let mut res = *self;
 
         res.data.swap(1, 3);
         res.data.swap(2, 6);
@@ -109,13 +109,13 @@ mod tests {
 
     #[test]
     fn transpose() {
-        #[cfg_attr(rustfmt,rustfmt_skip)]
+        #[rustfmt::skip]
         let m = Matrix3::new([
             0., 1., 2.,
             3., 4., 5.,
             6., 7., 8.
         ]);
-        #[cfg_attr(rustfmt,rustfmt_skip)]
+        #[rustfmt::skip]
         let expected = Matrix3::new([
             0., 3., 6.,
             1., 4., 7.,
@@ -125,7 +125,7 @@ mod tests {
     }
     #[test]
     fn submatrix() {
-        #[cfg_attr(rustfmt,rustfmt_skip)]
+        #[rustfmt::skip]
         let m = Matrix3::new([
             1., 5., 0.,
             -3., 2., 7.,
@@ -137,7 +137,7 @@ mod tests {
     }
     #[test]
     fn minor() {
-        #[cfg_attr(rustfmt,rustfmt_skip)]
+        #[rustfmt::skip]
         let m = Matrix3::new([
             3., 5., 0.,
             2., -1., -7.,
@@ -148,7 +148,7 @@ mod tests {
     }
     #[test]
     fn cofactor() {
-        #[cfg_attr(rustfmt,rustfmt_skip)]
+        #[rustfmt::skip]
         let m = Matrix3::new([
             3., 5., 0.,
             2., -1., -7.,
@@ -165,7 +165,7 @@ mod tests {
     }
     #[test]
     fn determinant() {
-        #[cfg_attr(rustfmt,rustfmt_skip)]
+        #[rustfmt::skip]
         let m = Matrix3::new([
             1., 2., 6.,
             -5., 8., -4.,

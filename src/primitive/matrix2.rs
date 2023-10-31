@@ -1,8 +1,6 @@
 use crate::approx_eq::ApproxEq;
 use std::ops;
 
-use super::tuple::Tuple;
-
 #[derive(Debug, Clone, Copy)]
 pub struct Matrix2 {
     data: [f64; 4],
@@ -15,8 +13,9 @@ impl Matrix2 {
     pub fn empty() -> Self {
         Self::new([0.; 4])
     }
+
+    #[rustfmt::skip]
     pub fn identiy_matrix() -> Self {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
         Self::new([
             1., 0.,
             0., 1.,
@@ -24,7 +23,7 @@ impl Matrix2 {
     }
 
     pub fn transpose(&self) -> Self {
-        let mut res = self.clone();
+        let mut res = *self;
         res.data.swap(1, 2);
         res
     }

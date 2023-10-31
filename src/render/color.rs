@@ -39,7 +39,7 @@ impl Color {
     }
 
     fn scale_val_to_u8(v: f64) -> u8 {
-        let v = v.max(0.).min(1.);
+        let v = v.clamp(0., 1.);
         (v * 255.).round() as u8
     }
 

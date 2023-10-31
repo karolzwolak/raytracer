@@ -1,4 +1,4 @@
-use crate::transformation::{self, Transform};
+use crate::transformation::Transform;
 
 use super::matrix4::Matrix4;
 
