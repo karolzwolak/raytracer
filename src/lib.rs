@@ -12,6 +12,8 @@ pub mod primitive {
 pub mod render {
     pub mod canvas;
     pub mod color;
+    pub mod object;
+    pub mod shape;
 }
 
 pub mod transformation;
