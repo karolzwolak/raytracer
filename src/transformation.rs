@@ -40,17 +40,17 @@ pub trait Transform {
         ))
     }
 }
+#[rustfmt::skip]
 pub fn translation_matrix(x: f64, y: f64, z: f64) -> Matrix4 {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    Matrix4::new([
+     Matrix4::new([
         1., 0., 0., x,
         0., 1., 0., y,
         0., 0., 1., z,
         0., 0., 0., 1.,
     ])
 }
+#[rustfmt::skip]
 pub fn scaling_matrix(x: f64, y: f64, z: f64) -> Matrix4 {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
         Matrix4::new([
             x, 0., 0., 0.,
             0., y, 0., 0.,
@@ -58,10 +58,10 @@ pub fn scaling_matrix(x: f64, y: f64, z: f64) -> Matrix4 {
             0., 0., 0., 1.,
         ])
 }
+#[rustfmt::skip]
 pub fn rotation_x_matrix(radians: f64) -> Matrix4 {
     let sin_r = radians.sin();
     let cos_r = radians.cos();
-    #[cfg_attr(rustfmt, rustfmt_skip)]
     Matrix4::new([
         1., 0., 0., 0.,
         0., cos_r, -sin_r, 0.,
@@ -69,10 +69,10 @@ pub fn rotation_x_matrix(radians: f64) -> Matrix4 {
         0., 0., 0., 1.,
     ])
 }
+#[rustfmt::skip]
 pub fn rotation_y_matrix(radians: f64) -> Matrix4 {
     let sin_r = radians.sin();
     let cos_r = radians.cos();
-    #[cfg_attr(rustfmt, rustfmt_skip)]
     Matrix4::new([
         cos_r, 0., sin_r, 0.,
         0., 1., 0., 0.,
@@ -80,10 +80,10 @@ pub fn rotation_y_matrix(radians: f64) -> Matrix4 {
         0., 0., 0., 1.,
     ])
 }
+#[rustfmt::skip]
 pub fn rotation_z_matrix(radians: f64) -> Matrix4 {
     let sin_r = radians.sin();
     let cos_r = radians.cos();
-    #[cfg_attr(rustfmt, rustfmt_skip)]
     Matrix4::new([
         cos_r, -sin_r, 0., 0.,
         sin_r, cos_r, 0., 0.,
@@ -92,6 +92,7 @@ pub fn rotation_z_matrix(radians: f64) -> Matrix4 {
     ])
 }
 
+#[rustfmt::skip]
 pub fn shearing_matrix(
     x_prop_y: f64,
     x_prop_z: f64,
@@ -100,7 +101,6 @@ pub fn shearing_matrix(
     z_prop_x: f64,
     z_prop_y: f64,
 ) -> Matrix4 {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
     Matrix4::new([
         1., x_prop_y, x_prop_z, 0.,
         y_prop_x, 1., y_prop_z, 0.,
