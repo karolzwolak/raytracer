@@ -1,4 +1,7 @@
-use crate::primitive::matrix4::Matrix4;
+use crate::{
+    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple},
+    transformation::Transform,
+};
 
 use super::shape::Shape;
 
@@ -17,6 +20,15 @@ impl Object {
             transformation: matrix,
         }
     }
+    pub fn new_sphere(center: Point, radius: f64) -> Self {
+        Self::new_with_transformation(
+            Shape::Sphere(),
+            Matrix4::identity_matrix()
+                .scale(radius, radius, radius)
+                .translate(center.x(), center.y(), center.z())
+                .get_transformed(),
+        )
+    }
     pub fn shape(&self) -> &Shape {
         &self.shape
     }
@@ -25,6 +37,9 @@ impl Object {
     }
     pub fn transformation_inverse(&self) -> Option<Matrix4> {
         self.transformation.inverse()
+    }
+    pub fn apply_transformation(&mut self, matrix: Matrix4) {
+        self.transformation = self.transformation * matrix;
     }
 }
 

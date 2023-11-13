@@ -68,6 +68,10 @@ impl<'a> IntersecVec<'a> {
         }
     }
 
+    pub fn has_intersection(&self) -> bool {
+        !self.data().is_empty()
+    }
+
     pub fn new(ray: &Ray, object: &'a Object) -> Self {
         Self::with_times_and_obj(Self::intersection_times(ray, object), object)
     }
