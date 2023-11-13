@@ -67,6 +67,9 @@ impl<'a> IntersecVec<'a> {
                 .collect(),
         }
     }
+    pub fn does_intersect(ray: &Ray, object: &'a Object) -> bool {
+        !Self::intersection_times(ray, object).is_empty()
+    }
 
     pub fn has_intersection(&self) -> bool {
         !self.data().is_empty()
@@ -161,7 +164,7 @@ mod tests {
 
     #[test]
     fn intersection_hit_all_times_positive() {
-        let sphere = Shape::sphere();
+        let sphere = Shape::Sphere();
         let obj = Object::new(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![1., 2.], &obj);
@@ -172,7 +175,7 @@ mod tests {
     }
     #[test]
     fn intersection_hit_with_negative_time() {
-        let sphere = Shape::sphere();
+        let sphere = Shape::Sphere();
         let obj = Object::new(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![1., -1.], &obj);
@@ -183,7 +186,7 @@ mod tests {
     }
     #[test]
     fn intersection_hit_all_times_negative() {
-        let sphere = Shape::sphere();
+        let sphere = Shape::Sphere();
         let obj = Object::new(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![-2., -1.], &obj);
@@ -193,7 +196,7 @@ mod tests {
     }
     #[test]
     fn intersection_hit_always_smallest_nonnegative() {
-        let sphere = Shape::sphere();
+        let sphere = Shape::Sphere();
         let obj = Object::new(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![5., 7., -3., 2.], &obj);
