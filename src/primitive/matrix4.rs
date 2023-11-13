@@ -27,7 +27,7 @@ impl Matrix4 {
     }
 
     #[rustfmt::skip]
-    pub fn identiy_matrix() -> Self {
+    pub fn identity_matrix() -> Self {
         Self::new([
             1., 0., 0., 0.,
             0., 1., 0., 0.,
@@ -264,7 +264,7 @@ mod tests {
         assert_eq!(m * p, Point::new(18., 24., 33.));
     }
     #[test]
-    fn identiy_matrix() {
+    fn identity_matrix() {
         #[rustfmt::skip]
         let m = Matrix4::new([
             0., 1., 2., 4.,
@@ -273,8 +273,8 @@ mod tests {
             4., 8., 16., 32.,
         ]);
 
-        assert_eq!(m * Matrix4::identiy_matrix(), m);
-        assert_eq!(Matrix4::identiy_matrix() * m, m);
+        assert_eq!(m * Matrix4::identity_matrix(), m);
+        assert_eq!(Matrix4::identity_matrix() * m, m);
     }
     #[test]
     fn transose() {
@@ -294,8 +294,8 @@ mod tests {
         ]);
         assert_eq!(m.transpose(), expected);
         assert_eq!(
-            Matrix4::identiy_matrix().transpose(),
-            Matrix4::identiy_matrix()
+            Matrix4::identity_matrix().transpose(),
+            Matrix4::identity_matrix()
         );
     }
 
@@ -388,6 +388,6 @@ mod tests {
 
         let b_inverse = b.inverse().unwrap();
         assert_eq!(a * b * b_inverse, a);
-        assert_eq!(b * b_inverse, Matrix4::identiy_matrix());
+        assert_eq!(b * b_inverse, Matrix4::identity_matrix());
     }
 }

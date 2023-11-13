@@ -253,7 +253,7 @@ mod tests {
     #[test]
     fn transform_matrix() {
         assert_eq!(
-            Matrix4::identiy_matrix()
+            Matrix4::identity_matrix()
                 .scale(1., 0., -1.,)
                 .translate(2., 10., -0.5)
                 .get_transformed(),

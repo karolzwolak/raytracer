@@ -25,7 +25,7 @@ pub fn run() {
         .scale(0., 0., 0.)
         .translate(0., RADIUS, 0.)
         .get_transformed();
-    let transformation = Matrix4::identiy_matrix()
+    let transformation = Matrix4::identity_matrix()
         .rotate_z(consts::FRAC_PI_6)
         .get_transformed();
 

@@ -9,7 +9,7 @@ pub struct Object {
 
 impl Object {
     pub fn new(shape: Shape) -> Self {
-        Self::new_with_transformation(shape, Matrix4::identiy_matrix())
+        Self::new_with_transformation(shape, Matrix4::identity_matrix())
     }
     pub fn new_with_transformation(shape: Shape, matrix: Matrix4) -> Self {
         Self {
@@ -37,7 +37,7 @@ mod tests {
     fn identiy_matrix_is_obj_default_transformation() {
         assert_eq!(
             Object::new(Shape::Sphere()).transformation,
-            Matrix4::identiy_matrix()
+            Matrix4::identity_matrix()
         );
     }
 }
