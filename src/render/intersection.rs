@@ -37,7 +37,8 @@ pub struct IntersecVec<'a> {
 }
 
 impl<'a> IntersecVec<'a> {
-    fn intersect(ray: &Ray, object: &'a Object) -> Vec<f64> {
+    fn intersection_times(ray: &Ray, object: &'a Object) -> Vec<f64> {
+        let ray = ray.transform(object.transformation_inverse().unwrap());
         match object.shape() {
             Shape::Sphere() => {
                 let vector_sphere_to_ray = *ray.origin() - Point::new(0., 0., 0.);
@@ -68,7 +69,7 @@ impl<'a> IntersecVec<'a> {
     }
 
     pub fn new(ray: &Ray, object: &'a Object) -> Self {
-        Self::with_times_and_obj(Self::intersect(ray, object), object)
+        Self::with_times_and_obj(Self::intersection_times(ray, object), object)
     }
 
     pub fn hit(&self) -> Option<&Intersection> {
@@ -89,6 +90,7 @@ mod tests {
     use crate::primitive::tuple::Tuple;
     use crate::primitive::vector::Vector;
     use crate::render::shape::Shape;
+    use crate::transformation::{scaling_matrix, translation_matrix};
 
     use super::super::{object::Object, ray::Ray};
     use super::*;
@@ -195,5 +197,22 @@ mod tests {
 
         assert!(hit.is_some());
         assert_eq!(hit.unwrap().time(), 2.);
+    }
+
+    #[test]
+    fn intersecting_scaled_sphere() {
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let obj = Object::new_with_transformation(Shape::Sphere(), scaling_matrix(2., 2., 2.));
+
+        let int_times = IntersecVec::intersection_times(&ray, &obj);
+        assert_eq!(int_times, vec![3., 7.]);
+    }
+    #[test]
+    fn intersecting_translated_sphere() {
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let obj = Object::new_with_transformation(Shape::Sphere(), translation_matrix(5., 0., 0.));
+
+        let int_times = IntersecVec::intersection_times(&ray, &obj);
+        assert_eq!(int_times, vec![]);
     }
 }
