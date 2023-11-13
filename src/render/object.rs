@@ -44,12 +44,25 @@ impl Object {
     pub fn has_intersection_with_ray(&self, ray: &Ray) -> bool {
         IntersecVec::does_intersect(ray, self)
     }
+    pub fn normal_vector_at(&self, world_point: Point) -> Vector {
+        let inverse = self.transformation_inverse().unwrap();
+        let object_point = inverse * world_point;
+        let object_normal = object_point - Point::zero();
+
+        let world_normal = inverse.transpose() * object_normal;
+        world_normal.normalize()
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::{f64::consts::FRAC_1_SQRT_2, f64::consts::PI};
+
     use super::*;
-    use crate::primitive::{matrix4::Matrix4, vector::Vector};
+    use crate::{
+        primitive::{matrix4::Matrix4, vector::Vector},
+        transformation::{rotation_z_matrix, scaling_matrix, translation_matrix},
+    };
 
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {
@@ -75,5 +88,69 @@ mod tests {
         assert!(!obj.has_intersection_with_ray(&Ray::new(Point::new(-1., -2., -2.), direction)));
         assert!(!obj.has_intersection_with_ray(&Ray::new(Point::new(3., -8., -2.), direction)));
         assert!(!obj.has_intersection_with_ray(&Ray::new(Point::new(3., -6., -2.), direction)));
+    }
+    #[test]
+    fn normal_on_sphere_x_axis() {
+        let sphere_obj = Object::new(Shape::Sphere);
+
+        assert_eq!(
+            sphere_obj.normal_vector_at(Point::new(1., 0., 0.,)),
+            Vector::new(1., 0., 0.)
+        );
+    }
+    #[test]
+    fn normal_on_sphere_y_axis() {
+        let sphere_obj = Object::new(Shape::Sphere);
+
+        assert_eq!(
+            sphere_obj.normal_vector_at(Point::new(0., 1., 0.,)),
+            Vector::new(0., 1., 0.)
+        );
+    }
+    #[test]
+    fn normal_on_sphere_z_axis() {
+        let sphere_obj = Object::new(Shape::Sphere);
+
+        assert_eq!(
+            sphere_obj.normal_vector_at(Point::new(0., 0., 1.,)),
+            Vector::new(0., 0., 1.)
+        );
+    }
+    #[test]
+    fn normal_on_sphere_at_noaxial_point() {
+        let sphere_obj = Object::new(Shape::Sphere);
+
+        let frac_sqrt_3_3 = 3_f64.sqrt() / 3.;
+        assert_eq!(
+            sphere_obj.normal_vector_at(Point::new(frac_sqrt_3_3, frac_sqrt_3_3, frac_sqrt_3_3)),
+            Vector::new(frac_sqrt_3_3, frac_sqrt_3_3, frac_sqrt_3_3)
+        );
+    }
+    #[test]
+    fn normal_is_normalized() {
+        let sphere_obj = Object::new(Shape::Sphere);
+
+        let frac_sqrt_3_3 = 3_f64.sqrt() / 3.;
+        let normal =
+            sphere_obj.normal_vector_at(Point::new(frac_sqrt_3_3, frac_sqrt_3_3, frac_sqrt_3_3));
+        assert_eq!(normal, normal.normalize());
+    }
+    #[test]
+    fn computing_normal_on_translated_sphere() {
+        let mut sphere_obj = Object::new(Shape::Sphere);
+        sphere_obj.apply_transformation(translation_matrix(0., 1., 0.));
+        assert_eq!(
+            sphere_obj.normal_vector_at(Point::new(0., 1. + FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
+            Vector::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)
+        );
+    }
+    #[test]
+    fn computing_normal_on_transformed_sphere() {
+        let mut sphere_obj = Object::new(Shape::Sphere);
+        sphere_obj.apply_transformation(scaling_matrix(1., 0.5, 1.) * rotation_z_matrix(PI / 5.));
+        assert_eq!(
+            sphere_obj.normal_vector_at(Point::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
+            Vector::new(0., 0.97014, -0.24254)
+        );
     }
 }
