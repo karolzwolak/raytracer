@@ -40,7 +40,7 @@ impl<'a> IntersecVec<'a> {
     fn intersection_times(ray: &Ray, object: &'a Object) -> Vec<f64> {
         let ray = ray.transform(object.transformation_inverse().unwrap());
         match object.shape() {
-            Shape::Sphere() => {
+            Shape::Sphere => {
                 let vector_sphere_to_ray = *ray.origin() - Point::new(0., 0., 0.);
 
                 let a = ray.direction().dot(*ray.direction());
@@ -105,7 +105,7 @@ mod tests {
     #[test]
     fn intersect_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere());
+        let obj = Object::new(Shape::Sphere);
         let intersections = IntersecVec::new(&ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -118,7 +118,7 @@ mod tests {
     #[test]
     fn ray_intersects_sphere_at_tangent() {
         let ray = Ray::new(Point::new(0., 1., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere());
+        let obj = Object::new(Shape::Sphere);
         let intersections = IntersecVec::new(&ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -131,14 +131,14 @@ mod tests {
     #[test]
     fn ray_misses_sphere() {
         let ray = Ray::new(Point::new(0., 2., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere());
+        let obj = Object::new(Shape::Sphere);
 
         assert_eq!(IntersecVec::new(&ray, &obj).count(), 0);
     }
     #[test]
     fn intersect_ray_originates_inside_sphere() {
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere());
+        let obj = Object::new(Shape::Sphere);
         let intersections = IntersecVec::new(&ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn intersect_ray_behind_sphere() {
         let ray = Ray::new(Point::new(0., 0., 5.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere());
+        let obj = Object::new(Shape::Sphere);
         let intersections = IntersecVec::new(&ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn intersection_hit_all_times_positive() {
-        let sphere = Shape::Sphere();
+        let sphere = Shape::Sphere;
         let obj = Object::new(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![1., 2.], &obj);
@@ -175,7 +175,7 @@ mod tests {
     }
     #[test]
     fn intersection_hit_with_negative_time() {
-        let sphere = Shape::Sphere();
+        let sphere = Shape::Sphere;
         let obj = Object::new(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![1., -1.], &obj);
@@ -186,7 +186,7 @@ mod tests {
     }
     #[test]
     fn intersection_hit_all_times_negative() {
-        let sphere = Shape::Sphere();
+        let sphere = Shape::Sphere;
         let obj = Object::new(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![-2., -1.], &obj);
@@ -196,7 +196,7 @@ mod tests {
     }
     #[test]
     fn intersection_hit_always_smallest_nonnegative() {
-        let sphere = Shape::Sphere();
+        let sphere = Shape::Sphere;
         let obj = Object::new(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![5., 7., -3., 2.], &obj);
@@ -209,7 +209,7 @@ mod tests {
     #[test]
     fn intersecting_scaled_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::new_with_transformation(Shape::Sphere(), scaling_matrix(2., 2., 2.));
+        let obj = Object::new_with_transformation(Shape::Sphere, scaling_matrix(2., 2., 2.));
 
         let int_times = IntersecVec::intersection_times(&ray, &obj);
         assert_eq!(int_times, vec![3., 7.]);
@@ -217,7 +217,7 @@ mod tests {
     #[test]
     fn intersecting_translated_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::new_with_transformation(Shape::Sphere(), translation_matrix(5., 0., 0.));
+        let obj = Object::new_with_transformation(Shape::Sphere, translation_matrix(5., 0., 0.));
 
         let int_times = IntersecVec::intersection_times(&ray, &obj);
         assert_eq!(int_times, vec![]);

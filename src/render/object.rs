@@ -1,5 +1,5 @@
 use crate::{
-    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple},
+    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple, vector::Vector},
     transformation::Transform,
 };
 
@@ -22,7 +22,7 @@ impl Object {
     }
     pub fn new_sphere(center: Point, radius: f64) -> Self {
         Self::new_with_transformation(
-            Shape::Sphere(),
+            Shape::Sphere,
             Matrix4::identity_matrix()
                 .scale(radius, radius, radius)
                 .translate(center.x(), center.y(), center.z())
@@ -54,7 +54,7 @@ mod tests {
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {
         assert_eq!(
-            Object::new(Shape::Sphere()).transformation,
+            Object::new(Shape::Sphere).transformation,
             Matrix4::identity_matrix()
         );
     }

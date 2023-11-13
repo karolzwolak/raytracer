@@ -1,3 +1,3 @@
 pub enum Shape {
-    Sphere(),
+    Sphere,
 }

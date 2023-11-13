@@ -97,8 +97,7 @@ impl ops::Sub<Vector> for Point {
 #[cfg(test)]
 mod tests {
     use crate::{
-        primitive::matrix4::Matrix4,
-        transformation::{self, scaling_matrix, Transform},
+        transformation::{scaling_matrix, Transform},
     };
 
     use super::*;
