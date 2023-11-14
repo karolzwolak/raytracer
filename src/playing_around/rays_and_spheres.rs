@@ -6,7 +6,7 @@ use crate::{
     transformation::Transform,
 };
 
-const SPHERE_RADIUS: usize = 100;
+const SPHERE_RADIUS: usize = 200;
 const CANVAS_SIZE: usize = SPHERE_RADIUS * 3;
 
 pub fn run() {
@@ -33,7 +33,7 @@ pub fn run() {
             let ray = Ray::new(point, ray_direction);
 
             if IntersecVec::new(&ray, &sphere_obj).has_intersection() {
-                canvas.write_pixel(x, y, Color::red());
+                canvas.write_pixel(x, CANVAS_SIZE - y, Color::red());
             }
         }
     }

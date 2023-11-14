@@ -25,8 +25,12 @@ impl Material {
         }
     }
 
+    pub fn with_color(color: Color) -> Self {
+        Self::new_with_fields(color, 0.1, 0.9, 0.9, 200.)
+    }
+
     pub fn new() -> Self {
-        Self::new_with_fields(Color::white(), 0.1, 0.9, 0.9, 200.)
+        Self::with_color(Color::white())
     }
 
     pub fn color(&self) -> Color {
