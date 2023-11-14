@@ -105,7 +105,7 @@ mod tests {
     #[test]
     fn intersect_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere);
+        let obj = Object::new_with_shape(Shape::Sphere);
         let intersections = IntersecVec::new(&ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -118,7 +118,7 @@ mod tests {
     #[test]
     fn ray_intersects_sphere_at_tangent() {
         let ray = Ray::new(Point::new(0., 1., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere);
+        let obj = Object::new_with_shape(Shape::Sphere);
         let intersections = IntersecVec::new(&ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -131,14 +131,14 @@ mod tests {
     #[test]
     fn ray_misses_sphere() {
         let ray = Ray::new(Point::new(0., 2., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere);
+        let obj = Object::new_with_shape(Shape::Sphere);
 
         assert_eq!(IntersecVec::new(&ray, &obj).count(), 0);
     }
     #[test]
     fn intersect_ray_originates_inside_sphere() {
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere);
+        let obj = Object::new_with_shape(Shape::Sphere);
         let intersections = IntersecVec::new(&ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn intersect_ray_behind_sphere() {
         let ray = Ray::new(Point::new(0., 0., 5.), Vector::new(0., 0., 1.));
-        let obj = Object::new(Shape::Sphere);
+        let obj = Object::new_with_shape(Shape::Sphere);
         let intersections = IntersecVec::new(&ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -165,7 +165,7 @@ mod tests {
     #[test]
     fn intersection_hit_all_times_positive() {
         let sphere = Shape::Sphere;
-        let obj = Object::new(sphere);
+        let obj = Object::new_with_shape(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![1., 2.], &obj);
         let hit = intersections.hit();
@@ -176,7 +176,7 @@ mod tests {
     #[test]
     fn intersection_hit_with_negative_time() {
         let sphere = Shape::Sphere;
-        let obj = Object::new(sphere);
+        let obj = Object::new_with_shape(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![1., -1.], &obj);
         let hit = intersections.hit();
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn intersection_hit_all_times_negative() {
         let sphere = Shape::Sphere;
-        let obj = Object::new(sphere);
+        let obj = Object::new_with_shape(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![-2., -1.], &obj);
         let hit = intersections.hit();
@@ -197,7 +197,7 @@ mod tests {
     #[test]
     fn intersection_hit_always_smallest_nonnegative() {
         let sphere = Shape::Sphere;
-        let obj = Object::new(sphere);
+        let obj = Object::new_with_shape(sphere);
 
         let intersections = IntersecVec::with_times_and_obj(vec![5., 7., -3., 2.], &obj);
         let hit = intersections.hit();
