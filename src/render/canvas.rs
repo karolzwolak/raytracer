@@ -10,7 +10,7 @@ pub struct Canvas {
 }
 
 impl Canvas {
-    pub fn new_with_color(width: usize, height: usize, color: Color) -> Self {
+    pub fn with_color(width: usize, height: usize, color: Color) -> Self {
         Self {
             width,
             height,
@@ -19,7 +19,7 @@ impl Canvas {
     }
 
     pub fn new(width: usize, height: usize) -> Self {
-        Self::new_with_color(width, height, Color::black())
+        Self::with_color(width, height, Color::black())
     }
 
     fn index(&self, x: usize, y: usize) -> usize {
@@ -161,7 +161,7 @@ mod tests {
     }
     #[test]
     fn split_long_lines_ppm_data() {
-        let canvas = Canvas::new_with_color(10, 2, Color::new(1., 0.8, 0.6));
+        let canvas = Canvas::with_color(10, 2, Color::new(1., 0.8, 0.6));
 
         assert_eq!(
             canvas.ppm_data(),
@@ -174,7 +174,7 @@ mod tests {
     }
     #[test]
     fn ppm_data_write() -> std::io::Result<()> {
-        let mut canvas = Canvas::new_with_color(10, 10, Color::new(1., 0.8, 0.6));
+        let mut canvas = Canvas::with_color(10, 10, Color::new(1., 0.8, 0.6));
 
         canvas.write_pixel(0, 0, Color::new(1.5, 0., 0.));
         canvas.write_pixel(2, 1, Color::new(0., 0.5, 0.));

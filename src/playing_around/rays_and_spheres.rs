@@ -10,12 +10,12 @@ const SPHERE_RADIUS: usize = 200;
 const CANVAS_SIZE: usize = SPHERE_RADIUS * 3;
 
 pub fn run() {
-    let mut canvas = Canvas::new_with_color(CANVAS_SIZE, CANVAS_SIZE, Color::black());
+    let mut canvas = Canvas::with_color(CANVAS_SIZE, CANVAS_SIZE, Color::black());
 
     let radius = SPHERE_RADIUS as f64;
     let canvas_center = CANVAS_SIZE as f64 / 2.0;
 
-    let mut sphere_obj = Object::new_sphere(Point::new(canvas_center, canvas_center, 0.), radius);
+    let mut sphere_obj = Object::sphere(Point::new(canvas_center, canvas_center, 0.), radius);
 
     sphere_obj.apply_transformation(
         Matrix4::identity_matrix()

@@ -24,14 +24,14 @@ pub fn run() {
     let bg = Color::black();
     let light_color = Color::white();
 
-    let mut canvas = Canvas::new_with_color(CANVAS_SIZE, CANVAS_SIZE, bg);
+    let mut canvas = Canvas::with_color(CANVAS_SIZE, CANVAS_SIZE, bg);
 
     let radius = SPHERE_RADIUS as f64;
     let half_canvas: i32 = CANVAS_SIZE as i32 / 2_i32;
 
-    let material = Material::new_with_fields(color, 0.05, 0.9, 0.9, 200.);
+    let material = Material::with_fields(color, 0.05, 0.9, 0.9, 200.);
 
-    let mut sphere_obj = Object::new_sphere(Point::new(0., 0., 0.), radius);
+    let mut sphere_obj = Object::sphere(Point::new(0., 0., 0.), radius);
     sphere_obj.set_material(material);
 
     let light = PointLightSource::new(

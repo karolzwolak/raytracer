@@ -9,7 +9,7 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new_with_fields(
+    pub fn with_fields(
         color: Color,
         ambient: f64,
         diffuse: f64,
@@ -26,7 +26,7 @@ impl Material {
     }
 
     pub fn with_color(color: Color) -> Self {
-        Self::new_with_fields(color, 0.1, 0.9, 0.9, 200.)
+        Self::with_fields(color, 0.1, 0.9, 0.9, 200.)
     }
 
     pub fn new() -> Self {

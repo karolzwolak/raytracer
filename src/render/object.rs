@@ -20,14 +20,14 @@ impl Object {
         }
     }
 
-    pub fn new_with_shape(shape: Shape) -> Self {
-        Self::new_with_transformation(shape, Matrix4::identity_matrix())
+    pub fn with_shape(shape: Shape) -> Self {
+        Self::with_transformation(shape, Matrix4::identity_matrix())
     }
-    pub fn new_with_transformation(shape: Shape, matrix: Matrix4) -> Self {
+    pub fn with_transformation(shape: Shape, matrix: Matrix4) -> Self {
         Self::new(shape, Material::default(), matrix)
     }
-    pub fn new_sphere(center: Point, radius: f64) -> Self {
-        Self::new_with_transformation(
+    pub fn sphere(center: Point, radius: f64) -> Self {
+        Self::with_transformation(
             Shape::Sphere,
             Matrix4::identity_matrix()
                 .scale(radius, radius, radius)
@@ -81,14 +81,14 @@ mod tests {
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {
         assert_eq!(
-            Object::new_with_shape(Shape::Sphere).transformation,
+            Object::with_shape(Shape::Sphere).transformation,
             Matrix4::identity_matrix()
         );
     }
     #[test]
     fn transformed_sphere() {
         // < -2; 6 >
-        let obj = Object::new_sphere(Point::new(2., 2., 2.), 4.);
+        let obj = Object::sphere(Point::new(2., 2., 2.), 4.);
 
         let direction = Vector::new(0., 0., 1.);
         assert!(obj.has_intersection_with_ray(&Ray::new(Point::new(2., 2., 2.), direction)));
@@ -105,7 +105,7 @@ mod tests {
     }
     #[test]
     fn normal_on_sphere_x_axis() {
-        let sphere_obj = Object::new_with_shape(Shape::Sphere);
+        let sphere_obj = Object::with_shape(Shape::Sphere);
 
         assert_eq!(
             sphere_obj.normal_vector_at(Point::new(1., 0., 0.,)),
@@ -114,7 +114,7 @@ mod tests {
     }
     #[test]
     fn normal_on_sphere_y_axis() {
-        let sphere_obj = Object::new_with_shape(Shape::Sphere);
+        let sphere_obj = Object::with_shape(Shape::Sphere);
 
         assert_eq!(
             sphere_obj.normal_vector_at(Point::new(0., 1., 0.,)),
@@ -123,7 +123,7 @@ mod tests {
     }
     #[test]
     fn normal_on_sphere_z_axis() {
-        let sphere_obj = Object::new_with_shape(Shape::Sphere);
+        let sphere_obj = Object::with_shape(Shape::Sphere);
 
         assert_eq!(
             sphere_obj.normal_vector_at(Point::new(0., 0., 1.,)),
@@ -132,7 +132,7 @@ mod tests {
     }
     #[test]
     fn normal_on_sphere_at_noaxial_point() {
-        let sphere_obj = Object::new_with_shape(Shape::Sphere);
+        let sphere_obj = Object::with_shape(Shape::Sphere);
 
         let frac_sqrt_3_3 = 3_f64.sqrt() / 3.;
         assert_eq!(
@@ -142,7 +142,7 @@ mod tests {
     }
     #[test]
     fn normal_is_normalized() {
-        let sphere_obj = Object::new_with_shape(Shape::Sphere);
+        let sphere_obj = Object::with_shape(Shape::Sphere);
 
         let frac_sqrt_3_3 = 3_f64.sqrt() / 3.;
         let normal =
@@ -151,7 +151,7 @@ mod tests {
     }
     #[test]
     fn compute_normal_on_translated_sphere() {
-        let mut sphere_obj = Object::new_with_shape(Shape::Sphere);
+        let mut sphere_obj = Object::with_shape(Shape::Sphere);
         sphere_obj.apply_transformation(translation_matrix(0., 1., 0.));
         assert_eq!(
             sphere_obj.normal_vector_at(Point::new(0., 1. + FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
@@ -160,7 +160,7 @@ mod tests {
     }
     #[test]
     fn compute_normal_on_transformed_sphere() {
-        let mut sphere_obj = Object::new_with_shape(Shape::Sphere);
+        let mut sphere_obj = Object::with_shape(Shape::Sphere);
         sphere_obj.apply_transformation(scaling_matrix(1., 0.5, 1.) * rotation_z_matrix(PI / 5.));
         assert_eq!(
             sphere_obj.normal_vector_at(Point::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
