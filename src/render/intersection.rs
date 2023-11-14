@@ -207,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn intersecting_scaled_sphere() {
+    fn intersect_scaled_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let obj = Object::new_with_transformation(Shape::Sphere, scaling_matrix(2., 2., 2.));
 
@@ -215,7 +215,7 @@ mod tests {
         assert_eq!(int_times, vec![3., 7.]);
     }
     #[test]
-    fn intersecting_translated_sphere() {
+    fn intersect_translated_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let obj = Object::new_with_transformation(Shape::Sphere, translation_matrix(5., 0., 0.));
 

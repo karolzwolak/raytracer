@@ -136,7 +136,7 @@ mod tests {
         assert_eq!(normal, normal.normalize());
     }
     #[test]
-    fn computing_normal_on_translated_sphere() {
+    fn compute_normal_on_translated_sphere() {
         let mut sphere_obj = Object::new(Shape::Sphere);
         sphere_obj.apply_transformation(translation_matrix(0., 1., 0.));
         assert_eq!(
@@ -145,7 +145,7 @@ mod tests {
         );
     }
     #[test]
-    fn computing_normal_on_transformed_sphere() {
+    fn compute_normal_on_transformed_sphere() {
         let mut sphere_obj = Object::new(Shape::Sphere);
         sphere_obj.apply_transformation(scaling_matrix(1., 0.5, 1.) * rotation_z_matrix(PI / 5.));
         assert_eq!(
