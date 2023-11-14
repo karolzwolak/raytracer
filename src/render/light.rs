@@ -23,7 +23,9 @@ impl PointLightSource {
         self.position
     }
 }
-pub fn lighting(
+
+// compute color of illuminated point using Phong reflection model
+pub fn color_of_illuminated_point(
     material: &Material,
     light: &PointLightSource,
     point: Point,
@@ -79,7 +81,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            lighting(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
             Color::new(1.9, 1.9, 1.9)
         );
     }
@@ -93,7 +95,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            lighting(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
             Color::new(1.0, 1.0, 1.0)
         );
     }
@@ -108,7 +110,7 @@ mod tests {
 
         let intensity = 0.1 + 0.9 * FRAC_1_SQRT_2;
         assert_eq!(
-            lighting(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
             Color::new(intensity, intensity, intensity)
         );
     }
@@ -123,7 +125,7 @@ mod tests {
 
         let intensity = 1. + 0.9 * FRAC_1_SQRT_2;
         assert_eq!(
-            lighting(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
             Color::new(intensity, intensity, intensity)
         );
     }
@@ -137,7 +139,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., 10.), Color::white());
 
         assert_eq!(
-            lighting(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
             Color::new(0.1, 0.1, 0.1)
         );
     }
