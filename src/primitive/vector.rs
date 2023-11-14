@@ -62,6 +62,10 @@ impl Vector {
     pub fn dot(&self, rhs: Self) -> f64 {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
+
+    pub fn reflect(&self, normal: Self) -> Self {
+        *self - normal * 2. * self.dot(normal)
+    }
 }
 impl PartialEq for Vector {
     fn eq(&self, other: &Self) -> bool {
@@ -139,6 +143,8 @@ impl ops::Div<f64> for Vector {
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::FRAC_1_SQRT_2;
+
     use super::*;
 
     #[test]
@@ -213,5 +219,18 @@ mod tests {
         let v2 = Vector::new(2., 3., 4.);
         assert_eq!(v1.cross(v2), Vector::new(-1., 2., -1.));
         assert_eq!(v2.cross(v1), Vector::new(1., -2., 1.));
+    }
+    #[test]
+    fn reflect_vector_approaching_at_45_deg() {
+        let v = Vector::new(1., -1., 0.);
+        let normal = Vector::new(0., 1., 0.);
+        assert_eq!(v.reflect(normal), Vector::new(1., 1., 0.));
+    }
+
+    #[test]
+    fn reflect_vector_off_slanted_surface() {
+        let v = Vector::new(0., -1., 0.);
+        let normal = Vector::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2, 0.);
+        assert_eq!(v.reflect(normal), Vector::new(1., 0., 0.));
     }
 }
