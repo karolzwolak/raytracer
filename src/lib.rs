@@ -18,6 +18,7 @@ pub mod render {
     pub mod object;
     pub mod ray;
     pub mod shape;
+    pub mod world;
 }
 
 pub mod transformation;
