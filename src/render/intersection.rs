@@ -1,10 +1,17 @@
 use crate::{
-    primitive::{point::Point, tuple::Tuple},
+    primitive::{point::Point, tuple::Tuple, vector::Vector},
     render::shape::Shape,
 };
 
-use super::{object::Object, ray::Ray};
+use super::{
+    color::Color,
+    light::{color_of_illuminated_point, PointLightSource},
+    material::Material,
+    object::Object,
+    ray::Ray,
+};
 
+#[derive(Clone, Copy)]
 pub struct Intersection<'a> {
     time: f64,
     intersected_object: &'a Object,
@@ -23,6 +30,59 @@ impl<'a> Intersection<'a> {
     }
     pub fn object(&self) -> &'a Object {
         self.intersected_object
+    }
+
+    pub fn computations(&self, ray: &Ray) -> IntersecComputations {
+        IntersecComputations::new(*self, ray)
+    }
+}
+
+pub struct IntersecComputations<'a> {
+    intersection: Intersection<'a>,
+    world_point: Point,
+    eye_v: Vector,
+    normal_v: Vector,
+    inside_obj: bool,
+}
+
+impl<'a> IntersecComputations<'a> {
+    pub fn new(intersection: Intersection<'a>, ray: &Ray) -> Self {
+        let world_point = ray.position(intersection.time());
+        let eye_v = -*ray.direction();
+        let mut normal_v = intersection.object().normal_vector_at(world_point);
+
+        let inside_obj = normal_v.dot(eye_v) < 0.;
+        if inside_obj {
+            normal_v = -normal_v
+        }
+
+        Self {
+            intersection,
+            world_point,
+            eye_v,
+            normal_v,
+            inside_obj,
+        }
+    }
+
+    fn object(&self) -> &Object {
+        self.intersection.object()
+    }
+
+    fn material(&self) -> &Material {
+        self.object().material()
+    }
+
+    pub fn shade_hit(&self, light_sources: &[PointLightSource]) -> Color {
+        light_sources.iter().fold(Color::black(), |acc, light| {
+            acc + color_of_illuminated_point(
+                self.material(),
+                light,
+                self.world_point,
+                self.eye_v,
+                self.normal_v,
+            )
+        })
     }
 }
 
@@ -96,15 +156,16 @@ impl<'a> IntersecVec<'a> {
         !self.data().is_empty()
     }
 
-    pub fn intersection_point(&self, intersection: &Intersection) -> Point {
-        self.ray.position(intersection.time())
-    }
     pub fn hit(&self) -> Option<&Intersection> {
         self.vec.iter().find(|&ints| ints.time() > 0.)
     }
 
+    pub fn hit_computations(&self) -> Option<IntersecComputations> {
+        self.hit().map(|inter| inter.computations(&self.ray))
+    }
+
     pub fn hit_pos(&self) -> Option<Point> {
-        self.hit().map(|inter| self.intersection_point(inter))
+        self.hit_computations().map(|comps| comps.world_point)
     }
 
     pub fn ray(&self) -> &Ray {
@@ -116,6 +177,9 @@ impl<'a> IntersecVec<'a> {
     }
     pub fn data(&self) -> &Vec<Intersection<'a>> {
         &self.vec
+    }
+    pub fn times_vec(&self) -> Vec<f64> {
+        self.vec.iter().map(|inter| inter.time()).collect()
     }
 }
 
