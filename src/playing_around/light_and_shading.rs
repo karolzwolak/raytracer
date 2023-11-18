@@ -47,12 +47,13 @@ pub fn run() {
             let direction = (point_on_canvas - origin).normalize();
             let ray = Ray::new(origin, direction);
 
-            let intersections = IntersecVec::new(&ray, &sphere_obj);
-            let hit = match intersections.hit() {
+            let intersections = IntersecVec::from_ray_and_obj(ray, &sphere_obj);
+
+            let hit_point = match intersections.hit_pos() {
                 None => continue,
-                Some(intr) => intr,
+                Some(hit_point) => hit_point,
             };
-            let hit_point = ray.position(hit.time());
+
             let normal_v = sphere_obj.normal_vector_at(hit_point);
             let eye_v = -direction;
 

@@ -32,7 +32,7 @@ pub fn run() {
             let point = Point::new(x as f64, y as f64, -radius - 1.);
             let ray = Ray::new(point, ray_direction);
 
-            if IntersecVec::new(&ray, &sphere_obj).has_intersection() {
+            if IntersecVec::from_ray_and_obj(ray, &sphere_obj).has_intersection() {
                 canvas.write_pixel(x, CANVAS_SIZE - y, Color::red());
             }
         }

@@ -23,6 +23,9 @@ impl Object {
     pub fn with_shape(shape: Shape) -> Self {
         Self::with_transformation(shape, Matrix4::identity_matrix())
     }
+    pub fn with_shape_material(shape: Shape, material: Material) -> Self {
+        Self::new(shape, material, Matrix4::identity_matrix())
+    }
     pub fn with_transformation(shape: Shape, matrix: Matrix4) -> Self {
         Self::new(shape, Material::default(), matrix)
     }
