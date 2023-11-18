@@ -29,7 +29,7 @@ pub fn run() {
     let radius = SPHERE_RADIUS as f64;
     let half_canvas: i32 = CANVAS_SIZE as i32 / 2_i32;
 
-    let material = Material::with_fields(color, 0.05, 0.9, 0.9, 200.);
+    let material = Material::new(color, 0.05, 0.9, 0.9, 200.);
 
     let mut sphere_obj = Object::sphere(Point::new(0., 0., 0.), radius);
     sphere_obj.set_material(material);
