@@ -26,6 +26,7 @@ pub mod transformation;
 
 pub mod playing_around {
     pub mod light_and_shading;
+    pub mod making_scene;
     pub mod projectiles;
     pub mod rays_and_spheres;
     pub mod transformations;

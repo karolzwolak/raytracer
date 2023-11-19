@@ -1,5 +1,6 @@
 use super::color::Color;
 
+#[derive(Clone)]
 pub struct Material {
     color: Color,
     ambient: f64,   // <0;1>
@@ -41,6 +42,26 @@ impl Material {
 
     pub fn shininess(&self) -> f64 {
         self.shininess
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        self.color = color;
+    }
+
+    pub fn set_ambient(&mut self, ambient: f64) {
+        self.ambient = ambient;
+    }
+
+    pub fn set_diffuse(&mut self, diffuse: f64) {
+        self.diffuse = diffuse;
+    }
+
+    pub fn set_specular(&mut self, specular: f64) {
+        self.specular = specular;
+    }
+
+    pub fn set_shininess(&mut self, shininess: f64) {
+        self.shininess = shininess;
     }
 }
 

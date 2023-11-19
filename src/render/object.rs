@@ -69,6 +69,10 @@ impl Object {
     pub fn set_material(&mut self, material: Material) {
         self.material = material;
     }
+
+    pub fn material_mut(&mut self) -> &mut Material {
+        &mut self.material
+    }
 }
 
 #[cfg(test)]

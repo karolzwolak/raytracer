@@ -3,5 +3,5 @@ fn main() {
 }
 
 fn playing_around() {
-    raytracer::playing_around::light_and_shading::run();
+    raytracer::playing_around::making_scene::run();
 }
