@@ -81,7 +81,7 @@ impl PartialEq for Matrix3 {
         self.data
             .iter()
             .enumerate()
-            .all(|(id, x)| x.approq_eq(other.data[id]))
+            .all(|(id, x)| x.approx_eq(other.data[id]))
     }
 }
 

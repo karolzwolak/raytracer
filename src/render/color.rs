@@ -62,7 +62,7 @@ impl Color {
 
 impl PartialEq for Color {
     fn eq(&self, other: &Self) -> bool {
-        self.r.approq_eq(other.r) && self.g.approq_eq(other.g) && self.b.approq_eq(other.b)
+        self.r.approx_eq(other.r) && self.g.approx_eq(other.g) && self.b.approx_eq(other.b)
     }
 }
 

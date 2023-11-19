@@ -4,15 +4,8 @@ use crate::{
 };
 
 use super::{
-    camera::Camera,
-    canvas::{self, Canvas},
-    color::Color,
-    intersection::IntersecVec,
-    light::PointLightSource,
-    material::Material,
-    object::Object,
-    ray::Ray,
-    shape::Shape,
+    camera::Camera, canvas::Canvas, color::Color, intersection::IntersecVec,
+    light::PointLightSource, material::Material, object::Object, ray::Ray, shape::Shape,
 };
 
 pub struct World {

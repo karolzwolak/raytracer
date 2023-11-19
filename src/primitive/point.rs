@@ -59,7 +59,7 @@ impl Point {
 
 impl PartialEq for Point {
     fn eq(&self, other: &Self) -> bool {
-        self.x.approq_eq(other.x) && self.y.approq_eq(other.y) && self.z.approq_eq(other.z)
+        self.x.approx_eq(other.x) && self.y.approx_eq(other.y) && self.z.approx_eq(other.z)
     }
 }
 impl ops::Add<Vector> for Point {
@@ -96,9 +96,7 @@ impl ops::Sub<Vector> for Point {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        transformation::{scaling_matrix, Transform},
-    };
+    use crate::transformation::{scaling_matrix, Transform};
 
     use super::*;
 

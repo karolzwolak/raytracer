@@ -99,14 +99,14 @@ mod tests {
     fn pixel_size_for_horizontal_canvas() {
         let camera = Camera::new(200, 125, FRAC_PI_2);
 
-        assert!(camera.pixel_size.approq_eq(0.01));
+        assert!(camera.pixel_size.approx_eq(0.01));
     }
 
     #[test]
     fn pixel_size_for_vertical_canvas() {
         let camera = Camera::new(125, 200, FRAC_PI_2);
 
-        assert!(camera.pixel_size.approq_eq(0.01));
+        assert!(camera.pixel_size.approx_eq(0.01));
     }
 
     #[test]
