@@ -346,4 +346,30 @@ mod tests {
         let int_times = IntersecVec::intersection_times(&ray, &obj);
         assert_eq!(int_times, vec![]);
     }
+
+    #[test]
+    fn intersec_comps_outside_obj() {
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let obj = Object::with_shape(Shape::Sphere);
+
+        let comps = IntersecComputations::try_from_ray_and_obj(ray, &obj);
+        assert!(comps.is_some());
+        assert!(!comps.unwrap().inside_obj());
+    }
+    #[test]
+    fn intersec_comps_inside_obj() {
+        let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
+        let obj = Object::with_shape(Shape::Sphere);
+
+        let comps = IntersecComputations::try_from_ray_and_obj(ray, &obj);
+        assert!(comps.is_some());
+        let comps = comps.unwrap();
+
+        assert!(comps.inside_obj());
+        assert_eq!(comps.world_point(), Point::new(0., 0., 1.));
+        assert_eq!(comps.eye_v(), Vector::new(0., 0., -1.));
+
+        // normal is inverted
+        assert_eq!(comps.normal_v(), Vector::new(0., 0., -1.));
+    }
 }
