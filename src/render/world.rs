@@ -4,8 +4,15 @@ use crate::{
 };
 
 use super::{
-    color::Color, intersection::IntersecVec, light::PointLightSource, material::Material,
-    object::Object, ray::Ray, shape::Shape,
+    camera::Camera,
+    canvas::{self, Canvas},
+    color::Color,
+    intersection::IntersecVec,
+    light::PointLightSource,
+    material::Material,
+    object::Object,
+    ray::Ray,
+    shape::Shape,
 };
 
 pub struct World {
@@ -45,6 +52,13 @@ impl World {
 
     pub fn set_light_sources(&mut self, light_sources: Vec<PointLightSource>) {
         self.light_sources = light_sources;
+    }
+
+    pub fn render(&self, camera: &Camera) -> Canvas {
+        let mut image = camera.canvas();
+
+        image.set_each_pixel(|x: usize, y: usize| self.color_at(camera.ray_for_pixel(x, y)));
+        image
     }
 }
 

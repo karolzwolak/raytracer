@@ -39,6 +39,26 @@ impl Canvas {
         let id = self.index(x, y);
         self.pixels[id] = new_color;
     }
+
+    pub fn pixels_mut(&mut self) -> &mut Vec<Color> {
+        &mut self.pixels
+    }
+
+    pub fn set_each_pixel<F>(&mut self, fun: F)
+    where
+        F: Fn(usize, usize) -> Color,
+    {
+        let width = self.width;
+        let height = self.height;
+        self.pixels
+            .iter_mut()
+            .enumerate()
+            .for_each(|(id, pixel_color)| {
+                let x = id % width;
+                let y = id / height;
+                *pixel_color = fun(x, y);
+            })
+    }
 }
 
 // saving to file logic
