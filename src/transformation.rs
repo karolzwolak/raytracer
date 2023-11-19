@@ -12,6 +12,7 @@ pub trait Transform {
     fn translate(&mut self, x: f64, y: f64, z: f64) -> &mut Self {
         self.transform(translation_matrix(x, y, z))
     }
+
     fn scale(&mut self, x: f64, y: f64, z: f64) -> &mut Self {
         self.transform(scaling_matrix(x, y, z))
     }
@@ -19,9 +20,11 @@ pub trait Transform {
     fn rotate_x(&mut self, radians: f64) -> &mut Self {
         self.transform(rotation_x_matrix(radians))
     }
+
     fn rotate_y(&mut self, radians: f64) -> &mut Self {
         self.transform(rotation_y_matrix(radians))
     }
+
     fn rotate_z(&mut self, radians: f64) -> &mut Self {
         self.transform(rotation_z_matrix(radians))
     }
@@ -40,6 +43,7 @@ pub trait Transform {
         ))
     }
 }
+
 #[rustfmt::skip]
 pub fn translation_matrix(x: f64, y: f64, z: f64) -> Matrix4 {
      Matrix4::new([
@@ -49,6 +53,7 @@ pub fn translation_matrix(x: f64, y: f64, z: f64) -> Matrix4 {
         0., 0., 0., 1.,
     ])
 }
+
 #[rustfmt::skip]
 pub fn scaling_matrix(x: f64, y: f64, z: f64) -> Matrix4 {
         Matrix4::new([
@@ -58,6 +63,7 @@ pub fn scaling_matrix(x: f64, y: f64, z: f64) -> Matrix4 {
             0., 0., 0., 1.,
         ])
 }
+
 #[rustfmt::skip]
 pub fn rotation_x_matrix(radians: f64) -> Matrix4 {
     let sin_r = radians.sin();
@@ -69,6 +75,7 @@ pub fn rotation_x_matrix(radians: f64) -> Matrix4 {
         0., 0., 0., 1.,
     ])
 }
+
 #[rustfmt::skip]
 pub fn rotation_y_matrix(radians: f64) -> Matrix4 {
     let sin_r = radians.sin();
@@ -80,6 +87,7 @@ pub fn rotation_y_matrix(radians: f64) -> Matrix4 {
         0., 0., 0., 1.,
     ])
 }
+
 #[rustfmt::skip]
 pub fn rotation_z_matrix(radians: f64) -> Matrix4 {
     let sin_r = radians.sin();
