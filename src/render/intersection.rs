@@ -33,12 +33,13 @@ impl<'a> Intersection<'a> {
     }
 
     pub fn computations(&self, ray: &Ray) -> IntersecComputations {
-        IntersecComputations::new(*self, ray)
+        IntersecComputations::from_intersection(*self, ray)
     }
 }
 
 pub struct IntersecComputations<'a> {
-    intersection: Intersection<'a>,
+    time: f64,
+    intersected_object: &'a Object,
     world_point: Point,
     eye_v: Vector,
     normal_v: Vector,
@@ -46,10 +47,10 @@ pub struct IntersecComputations<'a> {
 }
 
 impl<'a> IntersecComputations<'a> {
-    pub fn new(intersection: Intersection<'a>, ray: &Ray) -> Self {
-        let world_point = ray.position(intersection.time());
+    pub fn new(time: f64, object: &'a Object, ray: &Ray) -> Self {
+        let world_point = ray.position(time);
         let eye_v = -*ray.direction();
-        let mut normal_v = intersection.object().normal_vector_at(world_point);
+        let mut normal_v = object.normal_vector_at(world_point);
 
         let inside_obj = normal_v.dot(eye_v) < 0.;
         if inside_obj {
@@ -57,20 +58,23 @@ impl<'a> IntersecComputations<'a> {
         }
 
         Self {
-            intersection,
+            time,
+            intersected_object: object,
             world_point,
             eye_v,
             normal_v,
             inside_obj,
         }
     }
-
-    fn object(&self) -> &Object {
-        self.intersection.object()
+    pub fn from_intersection(intersection: Intersection<'a>, ray: &Ray) -> Self {
+        Self::new(intersection.time(), intersection.object(), ray)
     }
 
-    fn material(&self) -> &Material {
-        self.object().material()
+    pub fn try_from_ray_and_obj(ray: Ray, obj: &'a Object) -> Option<Self> {
+        let intersections = IntersecVec::from_ray_and_obj(ray, obj);
+        intersections
+            .hit()
+            .map(|inter| Self::new(inter.time(), obj, intersections.ray()))
     }
 
     pub fn shade_hit(&self, light_sources: &[PointLightSource]) -> Color {
@@ -83,6 +87,30 @@ impl<'a> IntersecComputations<'a> {
                 self.normal_v,
             )
         })
+    }
+
+    pub fn object(&self) -> &Object {
+        self.intersected_object
+    }
+
+    pub fn material(&self) -> &Material {
+        self.object().material()
+    }
+
+    pub fn world_point(&self) -> Point {
+        self.world_point
+    }
+
+    pub fn eye_v(&self) -> Vector {
+        self.eye_v
+    }
+
+    pub fn normal_v(&self) -> Vector {
+        self.normal_v
+    }
+
+    pub fn inside_obj(&self) -> bool {
+        self.inside_obj
     }
 }
 
