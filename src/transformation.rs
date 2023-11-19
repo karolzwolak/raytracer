@@ -1,4 +1,4 @@
-use crate::primitive::matrix4::Matrix4;
+use crate::primitive::{matrix4::Matrix4, point::Point, tuple::Tuple, vector::Vector};
 
 pub trait Transform {
     fn get_transformed(self) -> Self;
@@ -115,6 +115,24 @@ pub fn shearing_matrix(
         z_prop_x, z_prop_y, 1., 0.,
         0., 0., 0., 1.,
     ])
+}
+
+pub fn view_tranformation_matrix(from: Point, to: Point, up_v: Vector) -> Matrix4 {
+    let up_v = up_v.normalize();
+
+    let forward_v = (to - from).normalize();
+    let left_v = forward_v.cross(up_v);
+    let true_up_v = left_v.cross(forward_v);
+
+    #[rustfmt::skip]
+    let orientation = Matrix4::new([
+        left_v.x(), left_v.y(), left_v.z(), 0.,
+        true_up_v.x(), true_up_v.y(), true_up_v.z(), 0.,
+        -forward_v.x(), -forward_v.y(), -forward_v.z(), 0.,
+        0., 0., 0., 1.,
+    ]);
+
+    orientation * translation_matrix(-from.x(), -from.y(), -from.z())
 }
 
 #[cfg(test)]
@@ -267,5 +285,55 @@ mod tests {
                 .get_transformed(),
             translation_matrix(2., 10., -0.5) * scaling_matrix(1., 0., -1.)
         );
+    }
+
+    #[test]
+    fn view_default_transformation() {
+        let from = Point::zero();
+        let to = Point::new(0., 0., -1.);
+        let up_v = Vector::new(0., 1., 0.);
+
+        assert_eq!(
+            view_tranformation_matrix(from, to, up_v),
+            Matrix4::identity_matrix()
+        )
+    }
+    #[test]
+    fn view_transformation_looking_in_positive_z_dir() {
+        let from = Point::zero();
+        let to = Point::new(0., 0., 1.);
+        let up_v = Vector::new(0., 1., 0.);
+
+        assert_eq!(
+            view_tranformation_matrix(from, to, up_v),
+            scaling_matrix(-1., 1., -1.)
+        )
+    }
+    #[test]
+    fn view_transormation_moves_the_world() {
+        let from = Point::new(0., 0., 8.);
+        let to = Point::zero();
+        let up_v = Vector::new(0., 1., 0.);
+
+        assert_eq!(
+            view_tranformation_matrix(from, to, up_v),
+            translation_matrix(0., 0., -8.)
+        )
+    }
+    #[test]
+    fn arbitrary_view_transformation() {
+        let from = Point::new(1., 3., 2.);
+        let to = Point::new(4., -2., 8.);
+        let up_v = Vector::new(1., 1., 0.);
+
+        #[rustfmt::skip]
+        let expected = Matrix4::new([
+            -0.50709, 0.50709, 0.67612, -2.36643,
+            0.76772, 0.60609, 0.12122, -2.82843,
+            -0.35857,0.59761, -0.71714, 0.00000,
+            0.00000, 0.00000, 0.00000, 1.00000,
+        ]);
+
+        assert_eq!(view_tranformation_matrix(from, to, up_v), expected);
     }
 }
