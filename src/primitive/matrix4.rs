@@ -89,20 +89,55 @@ impl Matrix4 {
             .sum()
     }
     pub fn inverse(&self) -> Option<Matrix4> {
-        let determinant = self.determinant();
-        if determinant == 0. {
-            return None;
-        }
-        let mut res = Matrix4::empty();
+        let mut res = Matrix4::identity_matrix();
 
-        for row in 0..4 {
+        let mut copy = *self;
+        let mut row_of_one_for_col = [0, 1, 2, 3];
+        for i in 0..4 {
+            for row in i..4 {
+                if copy[(row, i)] != 0. {
+                    row_of_one_for_col[i] = row;
+                    break;
+                }
+            }
+
+            let actual_row = row_of_one_for_col[i];
+            if i != actual_row {
+                for col in 0..4 {
+                    let old = copy[(actual_row, col)];
+                    copy[(actual_row, col)] = copy[(i, col)];
+                    copy[(i, col)] = old;
+
+                    let old = res[(actual_row, col)];
+                    res[(actual_row, col)] = res[(i, col)];
+                    res[(i, col)] = old;
+                }
+            }
+            let row = i;
+
+            let factor_to_1 = copy[(row, i)];
+            if factor_to_1 == 0. {
+                return None;
+            }
+
             for col in 0..4 {
-                let cofactor = self.cofactor(row, col);
+                copy[(row, col)] /= factor_to_1;
+                res[(row, col)] /= factor_to_1;
+            }
 
-                // transpose the matrix here
-                res[(col, row)] = cofactor / determinant;
+            for inner_row in 0..4 {
+                let row_factor = copy[(inner_row, i)];
+
+                for inner_col in 0..4 {
+                    if row == inner_row {
+                        continue;
+                    }
+                    copy[(inner_row, inner_col)] -= copy[(i, inner_col)] * row_factor;
+                    res[(inner_row, inner_col)] -= res[(i, inner_col)] * row_factor;
+                }
             }
         }
+
         Some(res)
     }
 }
@@ -368,6 +403,27 @@ mod tests {
 
         assert_eq!(m1.inverse(), Some(i1));
         assert_eq!(m2.inverse(), Some(i2));
+    }
+
+    #[test]
+    fn inverse_zero_on_diagonal() {
+        #[rustfmt::skip]
+        let m = Matrix4::new([
+            1., 1., 0., 1.,
+            1., 1., 0., 0.,
+            1., 0., 0., 1.,
+            0., 1., 1., 0.,
+        ]);
+
+        #[rustfmt::skip]
+        let i = Matrix4::new([
+            -1., 1., 1., 0.,
+            1., 0., -1., 0.,
+            -1., 0., 1., 1.,
+            1., -1., 0., 0.,
+        ]);
+
+        assert_eq!(m.inverse(), Some(i));
     }
     #[test]
     fn inverse_mul() {
