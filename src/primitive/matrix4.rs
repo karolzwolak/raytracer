@@ -95,7 +95,7 @@ impl Matrix4 {
         let mut row_of_one_for_col = [0, 1, 2, 3];
         for i in 0..4 {
             for row in i..4 {
-                if copy[(row, i)] != 0. {
+                if !copy[(row, i)].approx_eq(0.) {
                     row_of_one_for_col[i] = row;
                     break;
                 }
@@ -116,7 +116,7 @@ impl Matrix4 {
             let row = i;
 
             let factor_to_1 = copy[(row, i)];
-            if factor_to_1 == 0. {
+            if factor_to_1.approx_eq(0.) {
                 return None;
             }
 
@@ -425,6 +425,7 @@ mod tests {
 
         assert_eq!(m.inverse(), Some(i));
     }
+
     #[test]
     fn inverse_mul() {
         #[rustfmt::skip]
