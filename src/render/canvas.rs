@@ -1,6 +1,7 @@
 use std::fs;
 
 use super::color::Color;
+use rayon::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Canvas {
@@ -46,12 +47,12 @@ impl Canvas {
 
     pub fn set_each_pixel<F>(&mut self, fun: F)
     where
-        F: Fn(usize, usize) -> Color,
+        F: Fn(usize, usize) -> Color + std::marker::Sync,
     {
         let width = self.width;
         let height = self.height;
         self.pixels
-            .iter_mut()
+            .par_iter_mut()
             .enumerate()
             .for_each(|(id, pixel_color)| {
                 let x = id % width;

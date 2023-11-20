@@ -89,8 +89,8 @@ pub fn run() {
     let up_v = Vector::new(0., 1., 0.);
 
     let camera = Camera::with_transformation(
-        1600,
-        1600,
+        2600,
+        2600,
         FRAC_PI_3,
         view_tranformation_matrix(from, to, up_v),
     );
