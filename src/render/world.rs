@@ -4,8 +4,15 @@ use crate::{
 };
 
 use super::{
-    camera::Camera, canvas::Canvas, color::Color, intersection::IntersecVec,
-    light::PointLightSource, material::Material, object::Object, ray::Ray, shape::Shape,
+    camera::Camera,
+    canvas::Canvas,
+    color::Color,
+    intersection::{IntersecComputations, IntersecVec},
+    light::{color_of_illuminated_point, PointLightSource},
+    material::Material,
+    object::Object,
+    ray::Ray,
+    shape::Shape,
 };
 
 pub struct World {
@@ -28,7 +35,7 @@ impl World {
     pub fn color_at(&self, ray: Ray) -> Color {
         self.intersect(ray)
             .hit_computations()
-            .map_or(Color::black(), |comps| comps.shade_hit(&self.light_sources))
+            .map_or(Color::black(), |hit_comps| self.shade_hit(hit_comps))
     }
 
     pub fn add_obj(&mut self, obj: Object) {
@@ -52,6 +59,40 @@ impl World {
 
         image.set_each_pixel(|x: usize, y: usize| self.color_at(camera.ray_for_pixel(x, y)));
         image
+    }
+
+    pub fn light_sources(&self) -> &[PointLightSource] {
+        self.light_sources.as_ref()
+    }
+
+    pub fn is_point_shadowed(&self, light_source: &PointLightSource, point: Point) -> bool {
+        let v = light_source.position() - point;
+
+        let distance = v.magnitude();
+        let direction = v.normalize();
+
+        let ray = Ray::new(point, direction);
+        let intersections = self.intersect(ray);
+
+        match intersections.hit() {
+            None => false,
+            Some(inter) => inter.time() < distance,
+        }
+    }
+
+    pub fn shade_hit(&self, hit_comps: IntersecComputations) -> Color {
+        self.light_sources()
+            .iter()
+            .fold(Color::black(), |acc, light_source| {
+                acc + color_of_illuminated_point(
+                    hit_comps.material(),
+                    light_source,
+                    hit_comps.world_point(),
+                    hit_comps.eye_v(),
+                    hit_comps.normal_v(),
+                    self.is_point_shadowed(light_source, hit_comps.world_point()),
+                )
+            })
     }
 }
 
@@ -121,5 +162,29 @@ mod tests {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 1., 0.));
 
         assert_eq!(world.color_at(ray), Color::black());
+    }
+
+    #[test]
+    fn no_shadow_when_nothing_blocks_light() {
+        let world = World::default();
+        let point = Point::new(0., 10., 0.);
+
+        assert!(!world.is_point_shadowed(&world.light_sources()[0], point))
+    }
+
+    #[test]
+    fn shadow_when_object_is_between_point_and_light() {
+        let world = World::default();
+        let point = Point::new(10., -10., 10.);
+
+        assert!(world.is_point_shadowed(&world.light_sources()[0], point))
+    }
+
+    #[test]
+    fn no_shadow_when_object_is_behind_light() {
+        let world = World::default();
+        let point = Point::new(-20., 20., -20.);
+
+        assert!(world.is_point_shadowed(&world.light_sources()[0], point))
     }
 }

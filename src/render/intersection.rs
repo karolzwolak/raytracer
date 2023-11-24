@@ -9,6 +9,7 @@ use super::{
     material::Material,
     object::Object,
     ray::Ray,
+    world::World,
 };
 
 #[derive(Clone, Copy)]
@@ -77,17 +78,8 @@ impl<'a> IntersecComputations<'a> {
             .map(|inter| Self::new(inter.time(), obj, intersections.ray()))
     }
 
-    pub fn shade_hit(&self, light_sources: &[PointLightSource]) -> Color {
-        light_sources.iter().fold(Color::black(), |acc, light| {
-            acc + color_of_illuminated_point(
-                self.material(),
-                light,
-                self.world_point,
-                self.eye_v,
-                self.normal_v,
-                false,
-            )
-        })
+    pub fn time(&self) -> f64 {
+        self.time
     }
 
     pub fn object(&self) -> &Object {
