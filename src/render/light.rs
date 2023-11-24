@@ -27,23 +27,24 @@ impl PointLightSource {
 // compute color of illuminated point using Phong reflection model
 pub fn color_of_illuminated_point(
     material: &Material,
-    light: &PointLightSource,
+    light_source: &PointLightSource,
     point: Point,
     eye_v: Vector,
     normal_v: Vector,
+    in_shadow: bool,
 ) -> Color {
     // combine surface color with lights's intensity (color)
-    let effetive_color = material.color() * light.intensity;
+    let effetive_color = material.color() * light_source.intensity;
 
     // direction to the light source
-    let light_v = (light.position() - point).normalize();
+    let light_v = (light_source.position() - point).normalize();
 
     let ambient = effetive_color * material.ambient();
 
     let light_dot_normal = light_v.dot(normal_v);
 
     // if cosine between light and normal vectors is negative, light is on the other side of surface
-    if light_dot_normal < 0. {
+    if in_shadow || light_dot_normal < 0. {
         return ambient + Color::black() + Color::black();
     }
     let diffuse = effetive_color * material.diffuse() * light_dot_normal;
@@ -56,7 +57,7 @@ pub fn color_of_illuminated_point(
         false => Color::black(),
         true => {
             let factor = reflect_dot_eye.powf(material.shininess());
-            light.intensity * material.specular() * factor
+            light_source.intensity * material.specular() * factor
         }
     };
 
@@ -72,6 +73,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn lighting_with_surface_in_shadow() {
+        let point = Point::zero();
+        let material = Material::default();
+
+        let eye_v = Vector::new(0., 0., -1.);
+        let normal_v = Vector::new(0., 0., -1.);
+        let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
+
+        assert_eq!(
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, true),
+            Color::new(0.1, 0.1, 0.1)
+        );
+    }
+    #[test]
     fn lighting_with_eye_between_light_and_surface() {
         let point = Point::zero();
         let material = Material::default();
@@ -81,7 +96,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
             Color::new(1.9, 1.9, 1.9)
         );
     }
@@ -95,7 +110,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
             Color::new(1.0, 1.0, 1.0)
         );
     }
@@ -110,7 +125,7 @@ mod tests {
 
         let intensity = 0.1 + 0.9 * FRAC_1_SQRT_2;
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
             Color::new(intensity, intensity, intensity)
         );
     }
@@ -125,7 +140,7 @@ mod tests {
 
         let intensity = 1. + 0.9 * FRAC_1_SQRT_2;
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
             Color::new(intensity, intensity, intensity)
         );
     }
@@ -139,7 +154,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., 10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v),
+            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
             Color::new(0.1, 0.1, 0.1)
         );
     }

@@ -63,6 +63,7 @@ pub fn run() {
                 hit_point,
                 eye_v,
                 normal_v,
+                false,
             );
 
             canvas.write_pixel(

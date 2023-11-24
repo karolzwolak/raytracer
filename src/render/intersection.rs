@@ -85,6 +85,7 @@ impl<'a> IntersecComputations<'a> {
                 self.world_point,
                 self.eye_v,
                 self.normal_v,
+                false,
             )
         })
     }
