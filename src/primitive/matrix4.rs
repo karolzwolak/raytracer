@@ -1,7 +1,7 @@
 use crate::{approx_eq::ApproxEq, transformation::Transform};
 use std::ops;
 
-use super::{matrix3::Matrix3, tuple::Tuple};
+use super::tuple::Tuple;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Matrix4 {
@@ -49,44 +49,6 @@ impl Matrix4 {
         res.data.swap(11, 14);
 
         res
-    }
-    pub fn submatrix(&self, row_to_del: usize, col_to_del: usize) -> Matrix3 {
-        let mut new_data = [0.; 9];
-        let mut id = 0;
-
-        for row in 0..4 {
-            if row == row_to_del {
-                continue;
-            }
-            for col in 0..4 {
-                if col == col_to_del {
-                    continue;
-                }
-                new_data[id] = self.data[row * 4 + col];
-                id += 1;
-            }
-        }
-        Matrix3::new(new_data)
-    }
-    // subject to optimisation
-    pub fn minor(&self, row: usize, col: usize) -> f64 {
-        self.submatrix(row, col).determinant()
-    }
-    pub fn cofactor(&self, row: usize, col: usize) -> f64 {
-        let minor = self.minor(row, col);
-        if (row + col) % 2 == 1 {
-            -minor
-        } else {
-            minor
-        }
-    }
-    pub fn determinant(&self) -> f64 {
-        self.data
-            .iter()
-            .take(4)
-            .enumerate()
-            .map(|(i, x)| x * self.cofactor(0, i))
-            .sum()
     }
     pub fn inverse(&self) -> Option<Matrix4> {
         let mut res = Matrix4::identity_matrix();
@@ -334,41 +296,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn submatrix() {
-        #[rustfmt::skip]
-        let m = Matrix4::new([
-            -6., 1., 1., 6.,
-            -8., 5., 8., 6.,
-            -1., 0., 8., 2.,
-            -7., 1., -1., 1.,
-        ]);
-        #[rustfmt::skip]
-        let expected = Matrix3::new([
-            -6., 1., 6.,
-            -8., 8., 6.,
-            -7., -1., 1.,
-        ]);
-
-        assert_eq!(m.submatrix(2, 1), expected);
-    }
-    #[test]
-    fn determinant() {
-        #[rustfmt::skip]
-        let m = Matrix4::new([
-            -2., -8., 3., 5.,
-            -3., 1., 7., 3.,
-            1., 2., -9., 6.,
-            -6., 7., 7., -9.,
-        ]);
-
-        assert_eq!(m.cofactor(0, 0), 690.);
-        assert_eq!(m.cofactor(0, 1), 447.);
-        assert_eq!(m.cofactor(0, 2), 210.);
-        assert_eq!(m.cofactor(0, 3), 51.);
-
-        assert_eq!(m.determinant(), -4071.);
-    }
     #[test]
     fn inverse() {
         #[rustfmt::skip]
