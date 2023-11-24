@@ -1,7 +1,6 @@
 use std::fs;
 
 use super::color::Color;
-use rayon::prelude::*;
 
 #[derive(Debug, Clone)]
 pub struct Canvas {
@@ -49,6 +48,8 @@ impl Canvas {
     where
         F: Fn(usize, usize) -> Color + std::marker::Sync,
     {
+        use rayon::prelude::*;
+
         let width = self.width;
         let height = self.height;
         self.pixels
