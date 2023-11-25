@@ -1,7 +1,5 @@
-fn main() {
-    playing_around();
-}
+use raytracer::playing_around;
 
-fn playing_around() {
-    raytracer::playing_around::making_scene::run();
+fn main() {
+    playing_around::runner::run();
 }

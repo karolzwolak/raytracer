@@ -1,6 +1,6 @@
 use crate::primitive::{point::Point, vector::Vector};
 
-use super::{color::Color, material::Material, ray::Ray, world::World};
+use super::{color::Color, material::Material};
 
 pub struct PointLightSource {
     position: Point,

@@ -14,7 +14,7 @@ fn put_on_canvas(canvas: &mut Canvas, size: usize, x: f64, y: f64, color: Color)
         color,
     );
 }
-pub fn run() {
+pub fn run(filename: &str) -> std::io::Result<()> {
     const SIZE: usize = 100;
     const RADIUS: f64 = (SIZE as f64) * 0.8 / 2.;
 
@@ -38,7 +38,5 @@ pub fn run() {
         put_on_canvas(&mut canvas, SIZE, point.x(), point.y(), color);
     }
 
-    canvas
-        .save_to_file("../clock.ppm")
-        .expect("cannot save to file");
+    canvas.save_to_file(filename)
 }

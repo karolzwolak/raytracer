@@ -27,5 +27,6 @@ pub mod playing_around {
     pub mod making_scene;
     pub mod projectiles;
     pub mod rays_and_spheres;
+    pub mod runner;
     pub mod transformations;
 }

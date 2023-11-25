@@ -9,7 +9,7 @@ use crate::{
     transformation::{scaling_matrix, translation_matrix, view_tranformation_matrix, Transform},
 };
 
-pub fn run() {
+pub fn run(filename: &str) -> std::io::Result<()> {
     let mut floor = Object::with_transformation(Shape::Sphere, scaling_matrix(10., 0.01, 10.));
     floor.material_mut().set_specular(0.);
     floor.material_mut().set_color(Color::new(1., 0.9, 0.9));
@@ -95,5 +95,5 @@ pub fn run() {
         view_tranformation_matrix(from, to, up_v),
     );
 
-    world.render(&camera).save_to_file("making_scene.ppm");
+    world.render(&camera).save_to_file(filename)
 }

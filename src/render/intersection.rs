@@ -5,12 +5,9 @@ use crate::{
 };
 
 use super::{
-    color::Color,
-    light::{color_of_illuminated_point, PointLightSource},
     material::Material,
     object::Object,
     ray::Ray,
-    world::World,
 };
 
 #[derive(Clone, Copy)]
