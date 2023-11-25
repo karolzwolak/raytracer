@@ -1,4 +1,5 @@
 use crate::{
+    approx_eq,
     primitive::{point::Point, tuple::Tuple, vector::Vector},
     render::shape::Shape,
 };
@@ -42,6 +43,7 @@ pub struct IntersecComputations<'a> {
     time: f64,
     intersected_object: &'a Object,
     world_point: Point,
+    over_point: Point,
     eye_v: Vector,
     normal_v: Vector,
     inside_obj: bool,
@@ -58,10 +60,13 @@ impl<'a> IntersecComputations<'a> {
             normal_v = -normal_v
         }
 
+        let over_point = world_point + normal_v * approx_eq::EPSILON;
+
         Self {
             time,
             intersected_object: object,
             world_point,
+            over_point,
             eye_v,
             normal_v,
             inside_obj,
@@ -104,6 +109,10 @@ impl<'a> IntersecComputations<'a> {
 
     pub fn inside_obj(&self) -> bool {
         self.inside_obj
+    }
+
+    pub fn over_point(&self) -> Point {
+        self.over_point
     }
 }
 
@@ -206,6 +215,7 @@ impl<'a> IntersecVec<'a> {
 
 #[cfg(test)]
 mod tests {
+    use crate::approx_eq;
     use crate::primitive::point::Point;
     use crate::primitive::tuple::Tuple;
     use crate::primitive::vector::Vector;
@@ -364,5 +374,17 @@ mod tests {
 
         // normal is inverted
         assert_eq!(comps.normal_v(), Vector::new(0., 0., -1.));
+    }
+
+    #[test]
+    fn hit_should_offset_point() {
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let obj = Object::with_transformation(Shape::Sphere, translation_matrix(0., 0., 10.));
+
+        let inter = Intersection::new(5., &obj);
+        let comps = inter.computations(&ray);
+
+        assert!(comps.over_point().z() < -approx_eq::EPSILON / 2.);
+        assert!(comps.world_point().z() > comps.over_point().z())
     }
 }

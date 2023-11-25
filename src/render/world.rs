@@ -90,7 +90,7 @@ impl World {
                     hit_comps.world_point(),
                     hit_comps.eye_v(),
                     hit_comps.normal_v(),
-                    self.is_point_shadowed(light_source, hit_comps.world_point()),
+                    self.is_point_shadowed(light_source, hit_comps.over_point()),
                 )
             })
     }
@@ -115,7 +115,10 @@ impl Default for World {
 
 #[cfg(test)]
 mod tests {
-    use crate::primitive::vector::Vector;
+    use crate::{
+        primitive::vector::Vector, render::intersection::Intersection,
+        transformation::translation_matrix,
+    };
 
     use super::*;
 
@@ -185,6 +188,27 @@ mod tests {
         let world = World::default();
         let point = Point::new(-20., 20., -20.);
 
-        assert!(world.is_point_shadowed(&world.light_sources()[0], point))
+        assert!(!world.is_point_shadowed(&world.light_sources()[0], point))
+    }
+
+    #[test]
+    fn shade_hit_intersection_in_shadow() {
+        let mut world = World::empty();
+        world.add_light(PointLightSource::new(
+            Point::new(0., 0., -10.),
+            Color::white(),
+        ));
+
+        world.add_obj(Object::with_shape(Shape::Sphere));
+        world.add_obj(Object::with_transformation(
+            Shape::Sphere,
+            translation_matrix(0., 0., 10.),
+        ));
+
+        let ray = Ray::new(Point::new(0., 0., 5.), Vector::new(0., 0., 1.));
+        let inter = Intersection::new(4., &world.objects[1]);
+        let comps = inter.computations(&ray);
+
+        assert_eq!(world.shade_hit(comps), Color::new(0.1, 0.1, 0.1));
     }
 }
