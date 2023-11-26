@@ -2,6 +2,8 @@ use crate::primitive::{matrix4::Matrix4, point::Point, tuple::Tuple};
 
 use super::{canvas::Canvas, ray::Ray};
 
+// camera looks toward -z direction from point zero
+// this makes +x to be on the left
 pub struct Camera {
     target_width: usize,
     target_height: usize,

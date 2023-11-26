@@ -5,6 +5,7 @@ use crate::{
 
 use super::{intersection::IntersecVec, material::Material, ray::Ray, shape::Shape};
 
+#[derive(Clone)]
 pub struct Object {
     shape: Shape,
     material: Material,
