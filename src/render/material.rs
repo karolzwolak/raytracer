@@ -20,6 +20,10 @@ impl Material {
         }
     }
 
+    pub fn matte_with_color(color: Color) -> Self {
+        Self::new(color, 0.1, 0.9, 0.05, 15.)
+    }
+
     pub fn with_color(color: Color) -> Self {
         Self::new(color, 0.1, 0.9, 0.9, 200.)
     }
