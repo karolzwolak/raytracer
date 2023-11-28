@@ -9,31 +9,7 @@ use crate::{
     transformation::{scaling_matrix, translation_matrix, view_tranformation_matrix, Transform},
 };
 
-pub fn run(filename: &str) -> std::io::Result<()> {
-    let mut floor = Object::with_transformation(Shape::Sphere, scaling_matrix(10., 0.01, 10.));
-    floor.material_mut().set_specular(0.);
-    floor.material_mut().set_color(Color::new(1., 0.9, 0.9));
-
-    let left_wall = Object::new(
-        Shape::Sphere,
-        floor.material().clone(),
-        scaling_matrix(10., 0.01, 10.)
-            .rotate_x(FRAC_PI_2)
-            .rotate_y(-FRAC_PI_4)
-            .translate(0., 0., 5.)
-            .get_transformed(),
-    );
-
-    let right_wall = Object::new(
-        Shape::Sphere,
-        floor.material().clone(),
-        scaling_matrix(10., 0.01, 10.)
-            .rotate_x(FRAC_PI_2)
-            .rotate_y(FRAC_PI_4)
-            .translate(0., 0., 5.)
-            .get_transformed(),
-    );
-
+pub fn scene_objects() -> Vec<Object> {
     let mut middle_sphere =
         Object::with_transformation(Shape::Sphere, translation_matrix(-0.5, 1., 0.5));
 
@@ -67,33 +43,59 @@ pub fn run(filename: &str) -> std::io::Result<()> {
     left_sphere.material_mut().set_diffuse(0.7);
     left_sphere.material_mut().set_specular(0.3);
 
-    let light_sources = vec![PointLightSource::new(
+    vec![middle_sphere, right_sphere, left_sphere]
+}
+
+pub fn scene_lights() -> Vec<PointLightSource> {
+    vec![PointLightSource::new(
         Point::new(-10., 10., -10.),
         Color::white(),
-    )];
+    )]
+}
 
-    let world = World::new(
-        vec![
-            floor,
-            left_wall,
-            right_wall,
-            middle_sphere,
-            right_sphere,
-            left_sphere,
-        ],
-        light_sources,
-    );
-
+pub fn scene_camera() -> Camera {
     let from = Point::new(0., 1.5, -5.);
     let to = Point::new(0., 1., 0.);
     let up_v = Vector::new(0., 1., 0.);
 
-    let camera = Camera::with_transformation(
+    Camera::with_transformation(
         1600,
         1600,
         FRAC_PI_3,
         view_tranformation_matrix(from, to, up_v),
+    )
+}
+
+pub fn run(filename: &str) -> std::io::Result<()> {
+    let mut floor = Object::with_transformation(Shape::Sphere, scaling_matrix(10., 0.01, 10.));
+    floor.material_mut().set_specular(0.);
+    floor.material_mut().set_color(Color::new(1., 0.9, 0.9));
+
+    let left_wall = Object::new(
+        Shape::Sphere,
+        floor.material().clone(),
+        scaling_matrix(10., 0.01, 10.)
+            .rotate_x(FRAC_PI_2)
+            .rotate_y(-FRAC_PI_4)
+            .translate(0., 0., 5.)
+            .get_transformed(),
     );
+
+    let right_wall = Object::new(
+        Shape::Sphere,
+        floor.material().clone(),
+        scaling_matrix(10., 0.01, 10.)
+            .rotate_x(FRAC_PI_2)
+            .rotate_y(FRAC_PI_4)
+            .translate(0., 0., 5.)
+            .get_transformed(),
+    );
+
+    let mut objects = vec![floor, left_wall, right_wall];
+    objects.extend(scene_objects());
+
+    let world = World::new(objects, scene_lights());
+    let camera = scene_camera();
 
     world.render(&camera).save_to_file(filename)
 }

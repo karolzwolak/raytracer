@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::playing_around::shadows;
+use crate::playing_around::{planes, shadows};
 
 use super::{light_and_shading, making_scene, projectiles, rays_and_spheres, transformations};
 
@@ -36,7 +36,8 @@ fn run_with_args(chapter: usize, filename: &str) {
         6 => light_and_shading::run(filename),
         7 => making_scene::run(filename),
         8 => shadows::run(filename),
-        _ => shadows::run(filename),
+        9 => planes::run(filename),
+        _ => planes::run(filename),
     };
     if let Err(err) = res {
         eprintln!("failed to run playing_around: {}", err);
