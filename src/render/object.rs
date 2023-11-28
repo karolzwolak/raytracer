@@ -8,12 +8,14 @@ use super::{intersection::IntersecVec, material::Material, ray::Ray};
 #[derive(Copy, Clone)]
 pub enum Shape {
     Sphere,
+    Plane,
 }
 
 impl Shape {
     pub fn object_normal_at(&self, object_point: Point) -> Vector {
         match self {
             Shape::Sphere => object_point - Point::zero(),
+            Shape::Plane => Vector::new(0., 1., 0.),
         }
     }
 }
@@ -187,5 +189,16 @@ mod tests {
             sphere_obj.normal_vector_at(Point::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
             Vector::new(0., 0.97014, -0.24254)
         );
+    }
+
+    #[test]
+    fn normal_of_plane_is_const_everywhere() {
+        let plane = Object::with_shape(Shape::Plane);
+
+        let expected = Vector::new(0., 1., 0.);
+
+        assert_eq!(plane.normal_vector_at(Point::new(0., 0., 0.,)), expected);
+        assert_eq!(plane.normal_vector_at(Point::new(10., 0., -10.,)), expected);
+        assert_eq!(plane.normal_vector_at(Point::new(-5., 0., 150.,)), expected);
     }
 }

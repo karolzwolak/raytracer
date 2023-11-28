@@ -1,5 +1,5 @@
 use crate::{
-    approx_eq,
+    approx_eq::{self, ApproxEq},
     primitive::{point::Point, tuple::Tuple, vector::Vector},
     render::object::Shape,
 };
@@ -139,6 +139,13 @@ impl<'a> IntersecVec<'a> {
 
                 let delta_sqrt = discriminant.sqrt();
                 vec![(-b - delta_sqrt) / (2. * a), (-b + delta_sqrt) / (2. * a)]
+            }
+            Shape::Plane => {
+                let parallel = object_ray.direction().y().approx_eq(0.);
+                if parallel {
+                    return Vec::new();
+                }
+                vec![-object_ray.origin().y() / object_ray.direction().y()]
             }
         }
     }
@@ -380,5 +387,39 @@ mod tests {
 
         assert!(comps.over_point().z() < -approx_eq::EPSILON / 2.);
         assert!(comps.world_point().z() > comps.over_point().z())
+    }
+
+    #[test]
+    fn intersect_plane_with_parallel_ray() {
+        let plane = Object::with_shape(Shape::Plane);
+        let ray = Ray::new(Point::new(0., 10., 0.), Vector::new(0., 0., 1.));
+
+        let intersections = IntersecVec::from_ray_and_obj(ray, &plane);
+        assert!(!intersections.has_intersection());
+    }
+
+    #[test]
+    fn intersect_plane_with_coplanar_ray() {
+        let plane = Object::with_shape(Shape::Plane);
+        let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
+
+        let intersections = IntersecVec::from_ray_and_obj(ray, &plane);
+        assert!(!intersections.has_intersection());
+    }
+
+    #[test]
+    fn ray_intersecting_plane_from_above() {
+        let plane = Object::with_shape(Shape::Plane);
+        let ray = Ray::new(Point::new(0., 1., 0.), Vector::new(0., -1., 0.));
+
+        assert_eq!(IntersecVec::intersection_times(&ray, &plane), vec![1.]);
+    }
+
+    #[test]
+    fn ray_intersecting_plane_from_below() {
+        let plane = Object::with_shape(Shape::Plane);
+        let ray = Ray::new(Point::new(0., -1., 0.), Vector::new(0., 1., 0.));
+
+        assert_eq!(IntersecVec::intersection_times(&ray, &plane), vec![1.]);
     }
 }
