@@ -4,7 +4,7 @@ use crate::{
     primitive::{point::Point, tuple::Tuple},
     render::{
         camera::Camera, color::Color, light::PointLightSource, material::Material, object::Object,
-        shape::Shape, world::World,
+        object::Shape, world::World,
     },
     transformation::{scaling_matrix, Transform},
 };

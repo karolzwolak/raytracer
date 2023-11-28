@@ -1,14 +1,10 @@
 use crate::{
     approx_eq,
     primitive::{point::Point, tuple::Tuple, vector::Vector},
-    render::shape::Shape,
+    render::object::Shape,
 };
 
-use super::{
-    material::Material,
-    object::Object,
-    ray::Ray,
-};
+use super::{material::Material, object::Object, ray::Ray};
 
 #[derive(Clone, Copy)]
 pub struct Intersection<'a> {
@@ -126,13 +122,14 @@ pub struct IntersecVec<'a> {
 
 impl<'a> IntersecVec<'a> {
     fn intersection_times(ray: &Ray, object: &'a Object) -> Vec<f64> {
-        let ray = ray.transform(object.transformation_inverse().unwrap());
+        let object_ray = ray.transform(object.transformation_inverse().unwrap());
+
         match object.shape() {
             Shape::Sphere => {
-                let vector_sphere_to_ray = *ray.origin() - Point::new(0., 0., 0.);
+                let vector_sphere_to_ray = *object_ray.origin() - Point::new(0., 0., 0.);
 
-                let a = ray.direction().dot(*ray.direction());
-                let b = 2. * ray.direction().dot(vector_sphere_to_ray);
+                let a = object_ray.direction().dot(*object_ray.direction());
+                let b = 2. * object_ray.direction().dot(vector_sphere_to_ray);
                 let c = vector_sphere_to_ray.dot(vector_sphere_to_ray) - 1.;
 
                 let discriminant = b * b - 4. * a * c;
@@ -216,7 +213,7 @@ mod tests {
     use crate::primitive::point::Point;
     use crate::primitive::tuple::Tuple;
     use crate::primitive::vector::Vector;
-    use crate::render::shape::Shape;
+    use crate::render::object::Shape;
     use crate::transformation::{scaling_matrix, translation_matrix};
 
     use super::super::{object::Object, ray::Ray};

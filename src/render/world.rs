@@ -3,6 +3,7 @@ use crate::{
     transformation::scaling_matrix,
 };
 
+use super::object::Shape;
 use super::{
     camera::Camera,
     canvas::Canvas,
@@ -12,7 +13,6 @@ use super::{
     material::Material,
     object::Object,
     ray::Ray,
-    shape::Shape,
 };
 
 pub struct World {

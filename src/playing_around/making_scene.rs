@@ -3,7 +3,7 @@ use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4};
 use crate::{
     primitive::{point::Point, tuple::Tuple, vector::Vector},
     render::{
-        camera::Camera, color::Color, light::PointLightSource, object::Object, shape::Shape,
+        camera::Camera, color::Color, light::PointLightSource, object::Object, object::Shape,
         world::World,
     },
     transformation::{scaling_matrix, translation_matrix, view_tranformation_matrix, Transform},

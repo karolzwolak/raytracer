@@ -3,7 +3,20 @@ use crate::{
     transformation::Transform,
 };
 
-use super::{intersection::IntersecVec, material::Material, ray::Ray, shape::Shape};
+use super::{intersection::IntersecVec, material::Material, ray::Ray};
+
+#[derive(Copy, Clone)]
+pub enum Shape {
+    Sphere,
+}
+
+impl Shape {
+    pub fn object_normal_at(&self, object_point: Point) -> Vector {
+        match self {
+            Shape::Sphere => object_point - Point::zero(),
+        }
+    }
+}
 
 #[derive(Clone)]
 pub struct Object {
@@ -57,8 +70,8 @@ impl Object {
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
         let inverse = self.transformation_inverse().unwrap();
         let object_point = inverse * world_point;
-        let object_normal = object_point - Point::zero();
 
+        let object_normal = self.shape.object_normal_at(object_point);
         let world_normal = inverse.transpose() * object_normal;
         world_normal.normalize()
     }
