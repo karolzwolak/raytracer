@@ -3,8 +3,8 @@ use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4};
 use crate::{
     primitive::{point::Point, tuple::Tuple, vector::Vector},
     render::{
-        camera::Camera, color::Color, light::PointLightSource, object::Object, object::Shape,
-        world::World,
+        camera::Camera, canvas::Canvas, color::Color, light::PointLightSource, object::Object,
+        object::Shape, world::World,
     },
     transformation::{scaling_matrix, translation_matrix, view_tranformation_matrix, Transform},
 };
@@ -53,20 +53,20 @@ pub fn scene_lights() -> Vec<PointLightSource> {
     )]
 }
 
-pub fn scene_camera() -> Camera {
+pub fn scene_camera(width: usize, height: usize) -> Camera {
     let from = Point::new(0., 1.5, -5.);
     let to = Point::new(0., 1., 0.);
     let up_v = Vector::new(0., 1., 0.);
 
     Camera::with_transformation(
-        1600,
-        1600,
+        width,
+        height,
         FRAC_PI_3,
         view_tranformation_matrix(from, to, up_v),
     )
 }
 
-pub fn run(filename: &str) -> std::io::Result<()> {
+pub fn run() -> Canvas {
     let mut floor = Object::with_transformation(Shape::Sphere, scaling_matrix(10., 0.01, 10.));
     floor.material_mut().set_specular(0.);
     floor.material_mut().set_color(Color::new(1., 0.9, 0.9));
@@ -95,7 +95,7 @@ pub fn run(filename: &str) -> std::io::Result<()> {
     objects.extend(scene_objects());
 
     let world = World::new(objects, scene_lights());
-    let camera = scene_camera();
+    let camera = scene_camera(1600, 1600);
 
-    world.render(&camera).save_to_file(filename)
+    world.render(&camera)
 }

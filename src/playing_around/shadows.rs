@@ -1,15 +1,15 @@
-use std::{f64::consts, io};
+use std::f64::consts;
 
 use crate::{
     primitive::{point::Point, tuple::Tuple},
     render::{
-        camera::Camera, color::Color, light::PointLightSource, material::Material, object::Object,
-        object::Shape, world::World,
+        camera::Camera, canvas::Canvas, color::Color, light::PointLightSource, material::Material,
+        object::Object, object::Shape, world::World,
     },
     transformation::{scaling_matrix, Transform},
 };
 
-pub fn run(filename: &str) -> Result<(), io::Error> {
+pub fn run() -> Canvas {
     let wall = Object::new(
         Shape::Sphere,
         Material::matte_with_color(Color::new(0.4, 0.7, 0.9)),
@@ -76,5 +76,5 @@ pub fn run(filename: &str) -> Result<(), io::Error> {
     let size = 800;
     let camera = Camera::new(size, size, consts::FRAC_PI_4);
 
-    world.render(&camera).save_to_file(filename)
+    world.render(&camera)
 }

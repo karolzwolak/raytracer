@@ -1,19 +1,31 @@
-use std::io;
+use std::f64::consts;
 
-use crate::render::{
-    object::{Object, Shape},
-    world::World,
+use crate::{
+    render::{
+        canvas::Canvas,
+        object::{Object, Shape},
+        world::World,
+    },
+    transformation::{rotation_x_matrix, translation_matrix, Transform},
 };
 
 use super::making_scene;
 
-pub fn run(filename: &str) -> Result<(), io::Error> {
+pub fn run() -> Canvas {
     let mut objects = making_scene::scene_objects();
     let lights = making_scene::scene_lights();
-    objects.push(Object::with_shape(Shape::Plane));
+    let plane = Object::with_transformation(Shape::Plane, translation_matrix(0., 0.5, 0.));
+    let plane2 = Object::with_transformation(
+        Shape::Plane,
+        rotation_x_matrix(consts::FRAC_PI_2)
+            .translate(0., 0., 0.)
+            .get_transformed(),
+    );
+    objects.push(plane);
+    objects.push(plane2);
 
     let world = World::new(objects, lights);
-    let camera = making_scene::scene_camera();
+    let camera = making_scene::scene_camera(800, 800);
 
-    world.render(&camera).save_to_file(filename)
+    world.render(&camera)
 }

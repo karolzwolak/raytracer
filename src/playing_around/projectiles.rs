@@ -1,5 +1,3 @@
-use std::io;
-
 use crate::{
     primitive::{point::Point, tuple::Tuple, vector::Vector},
     render::{canvas::Canvas, color::Color},
@@ -83,7 +81,7 @@ impl Environment {
         self.canvas.write_pixel(pos.0, pos.1, color);
     }
 
-    pub fn run_sim(mut self, filename: &str, mut color: Color, fade_color: bool) -> io::Result<()> {
+    pub fn run_sim(mut self, mut color: Color, fade_color: bool) -> Canvas {
         while !self.projectile_hit_ground() {
             self.draw_proj_pos(color);
             self.tick();
@@ -92,11 +90,11 @@ impl Environment {
                 color = color + Color::new(0.005, 0.005, 0.005);
             }
         }
-        self.canvas.save_to_file(filename)
+        self.canvas
     }
 }
 
-pub fn run(filename: &str) -> std::io::Result<()> {
+pub fn run() -> Canvas {
     let velocity = Vector::new(0.5, 3.0, 0.).normalize() * 8.25;
     let projectile = Projectile::new(Point::new(0., 1., 0.), velocity);
     let canvas = Canvas::with_color(300, 350, Color::new(0.35, 0.35, 0.35));
@@ -106,5 +104,5 @@ pub fn run(filename: &str) -> std::io::Result<()> {
 
     let env = Environment::new(gravity, wind, projectile, canvas);
 
-    env.run_sim(filename, Color::new(0.3, 0.05, 0.1), true)
+    env.run_sim(Color::new(0.3, 0.05, 0.1), true)
 }

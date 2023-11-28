@@ -18,7 +18,7 @@ const CANVAS_SIZE: usize =
 const CANVAS_Z: f64 = SPHERE_TO_CANVAS_DISTANCE as f64;
 const ORIGIN_Z: f64 = -(ORIGIN_TO_SPHERE_DIST as f64);
 
-pub fn run(filename: &str) -> std::io::Result<()> {
+pub fn run() -> Canvas {
     // let color = Color::new(1., 0.2, 1.);
     let color = Color::new(0.1, 0.75, 0.75);
     let bg = Color::black();
@@ -74,5 +74,5 @@ pub fn run(filename: &str) -> std::io::Result<()> {
         }
     }
 
-    canvas.save_to_file(filename)
+    canvas
 }

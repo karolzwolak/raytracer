@@ -9,7 +9,7 @@ use crate::{
 const SPHERE_RADIUS: usize = 200;
 const CANVAS_SIZE: usize = SPHERE_RADIUS * 3;
 
-pub fn run(filename: &str) -> std::io::Result<()> {
+pub fn run() -> Canvas {
     let mut canvas = Canvas::with_color(CANVAS_SIZE, CANVAS_SIZE, Color::black());
 
     let radius = SPHERE_RADIUS as f64;
@@ -38,5 +38,5 @@ pub fn run(filename: &str) -> std::io::Result<()> {
         }
     }
 
-    canvas.save_to_file(filename)
+    canvas
 }
