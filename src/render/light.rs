@@ -24,7 +24,7 @@ impl PointLightSource {
     }
 }
 
-// compute color of illuminated point using Phong reflection model
+/// compute color of illuminated point using Phong reflection model
 pub fn color_of_illuminated_point(
     material: &Material,
     light_source: &PointLightSource,

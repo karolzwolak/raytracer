@@ -15,6 +15,7 @@ pub mod render {
     pub mod light;
     pub mod material;
     pub mod object;
+    pub mod pattern;
     pub mod ray;
     pub mod world;
 }

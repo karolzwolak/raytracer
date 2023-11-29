@@ -7,7 +7,9 @@ use super::{intersection::IntersecVec, material::Material, ray::Ray};
 
 #[derive(Copy, Clone)]
 pub enum Shape {
+    /// Unit sphere at point zero
     Sphere,
+    /// Plane extending in x and z directions, at y = 0
     Plane,
 }
 
