@@ -1,15 +1,26 @@
-use crate::primitive::point::Point;
+use crate::primitive::{point::Point, tuple::Tuple};
 
 use super::color::Color;
 
+#[derive(Clone, Debug, PartialEq)]
 pub enum Pattern {
     /// Stripe alternating as x changes
     Stripe(Color, Color),
+    Const(Color),
 }
 
 impl Pattern {
     pub fn color_at(&self, point: &Point) -> Color {
-        todo!()
+        match self {
+            Pattern::Stripe(c1, c2) => {
+                if point.x().floor().abs() as usize % 2 == 0 {
+                    *c1
+                } else {
+                    *c2
+                }
+            }
+            Pattern::Const(c) => *c,
+        }
     }
 }
 

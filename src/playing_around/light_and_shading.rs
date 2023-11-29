@@ -7,6 +7,7 @@ use crate::{
         light::{color_of_illuminated_point, PointLightSource},
         material::Material,
         object::Object,
+        pattern::Pattern,
         ray::Ray,
     },
 };
@@ -19,7 +20,6 @@ const CANVAS_Z: f64 = SPHERE_TO_CANVAS_DISTANCE as f64;
 const ORIGIN_Z: f64 = -(ORIGIN_TO_SPHERE_DIST as f64);
 
 pub fn run() -> Canvas {
-    // let color = Color::new(1., 0.2, 1.);
     let color = Color::new(0.1, 0.75, 0.75);
     let bg = Color::black();
     let light_color = Color::white();
@@ -29,7 +29,7 @@ pub fn run() -> Canvas {
     let radius = SPHERE_RADIUS as f64;
     let half_canvas: i32 = CANVAS_SIZE as i32 / 2_i32;
 
-    let material = Material::new(color, 0.05, 0.9, 0.9, 200.);
+    let material = Material::new(Pattern::Const(color), 0.05, 0.9, 0.9, 200.);
 
     let mut sphere_obj = Object::sphere(Point::new(0., 0., 0.), radius);
     sphere_obj.set_material(material);

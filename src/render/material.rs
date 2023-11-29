@@ -1,8 +1,10 @@
-use super::color::Color;
+use crate::primitive::point::Point;
 
-#[derive(Clone)]
+use super::{color::Color, pattern::Pattern};
+
+#[derive(Clone, Debug)]
 pub struct Material {
-    color: Color,
+    pattern: Pattern,
     ambient: f64,   // <0;1>
     diffuse: f64,   // <0;1>
     specular: f64,  // <0;1>
@@ -10,9 +12,15 @@ pub struct Material {
 }
 
 impl Material {
-    pub fn new(color: Color, ambient: f64, diffuse: f64, specular: f64, shininess: f64) -> Self {
+    pub fn new(
+        pattern: Pattern,
+        ambient: f64,
+        diffuse: f64,
+        specular: f64,
+        shininess: f64,
+    ) -> Self {
         Self {
-            color,
+            pattern,
             ambient,
             diffuse,
             specular,
@@ -20,16 +28,32 @@ impl Material {
         }
     }
 
+    pub fn with_pattern(pattern: Pattern) -> Self {
+        Self::new(pattern, 0.1, 0.9, 0.9, 200.)
+    }
+
     pub fn matte_with_color(color: Color) -> Self {
-        Self::new(color, 0.1, 0.9, 0.05, 15.)
+        Self::new(Pattern::Const(color), 0.1, 0.9, 0.05, 15.)
     }
 
     pub fn with_color(color: Color) -> Self {
-        Self::new(color, 0.1, 0.9, 0.9, 200.)
+        Self::with_pattern(Pattern::Const(color))
     }
 
-    pub fn color(&self) -> Color {
-        self.color
+    pub fn pattern(&self) -> &Pattern {
+        &self.pattern
+    }
+
+    pub fn color_at(&self, point: &Point) -> Color {
+        self.pattern.color_at(point)
+    }
+
+    pub fn set_pattern(&mut self, pattern: Pattern) {
+        self.pattern = pattern;
+    }
+
+    pub fn set_color(&mut self, color: Color) {
+        self.pattern = Pattern::Const(color);
     }
 
     pub fn ambient(&self) -> f64 {
@@ -46,10 +70,6 @@ impl Material {
 
     pub fn shininess(&self) -> f64 {
         self.shininess
-    }
-
-    pub fn set_color(&mut self, color: Color) {
-        self.color = color;
     }
 
     pub fn set_ambient(&mut self, ambient: f64) {
@@ -83,7 +103,7 @@ mod tests {
     fn default_material() {
         let m = Material::default();
 
-        assert_eq!(m.color(), Color::white());
+        assert_eq!(m.pattern(), &Pattern::Const(Color::white()));
         assert_eq!(m.ambient, 0.1);
         assert_eq!(m.diffuse, 0.9);
         assert_eq!(m.specular, 0.9);

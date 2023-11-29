@@ -34,7 +34,7 @@ pub fn color_of_illuminated_point(
     in_shadow: bool,
 ) -> Color {
     // combine surface color with lights's intensity (color)
-    let effetive_color = material.color() * light_source.intensity;
+    let effetive_color = material.color_at(&point) * light_source.intensity;
 
     // direction to the light source
     let light_v = (light_source.position() - point).normalize();
@@ -68,7 +68,7 @@ pub fn color_of_illuminated_point(
 mod tests {
     use std::f64::consts::FRAC_1_SQRT_2;
 
-    use crate::primitive::tuple::Tuple;
+    use crate::{primitive::tuple::Tuple, render::pattern::Pattern};
 
     use super::*;
 
@@ -156,6 +156,40 @@ mod tests {
         assert_eq!(
             color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
             Color::new(0.1, 0.1, 0.1)
+        );
+    }
+    #[test]
+    fn lighting_with_pattern_applied() {
+        let mut material = Material::with_pattern(Pattern::Stripe(Color::white(), Color::black()));
+        material.set_ambient(1.);
+        material.set_diffuse(0.);
+        material.set_specular(0.);
+
+        let eye_v = Vector::new(0., 0., -1.);
+        let normal_v = Vector::new(0., 0., -1.);
+        let light_source = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
+
+        assert_eq!(
+            color_of_illuminated_point(
+                &material,
+                &light_source,
+                Point::new(0.9, 0., 0.),
+                eye_v,
+                normal_v,
+                false
+            ),
+            Color::white()
+        );
+        assert_eq!(
+            color_of_illuminated_point(
+                &material,
+                &light_source,
+                Point::new(1.1, 0., 0.),
+                eye_v,
+                normal_v,
+                false
+            ),
+            Color::black()
         );
     }
 }
