@@ -1,6 +1,6 @@
 use crate::primitive::{point::Point, vector::Vector};
 
-use super::{color::Color, material::Material};
+use super::{color::Color, material::Material, object::Object};
 
 pub struct PointLightSource {
     position: Point,
@@ -26,15 +26,16 @@ impl PointLightSource {
 
 /// compute color of illuminated point using Phong reflection model
 pub fn color_of_illuminated_point(
-    material: &Material,
+    object: &Object,
     light_source: &PointLightSource,
     point: Point,
     eye_v: Vector,
     normal_v: Vector,
     in_shadow: bool,
 ) -> Color {
+    let material = object.material();
     // combine surface color with lights's intensity (color)
-    let effetive_color = material.color_at(&point) * light_source.intensity;
+    let effetive_color = material.color_at_object(object, point) * light_source.intensity;
 
     // direction to the light source
     let light_v = (light_source.position() - point).normalize();
@@ -68,56 +69,62 @@ pub fn color_of_illuminated_point(
 mod tests {
     use std::f64::consts::FRAC_1_SQRT_2;
 
-    use crate::{primitive::tuple::Tuple, render::pattern::Pattern};
+    use crate::{
+        primitive::tuple::Tuple,
+        render::{
+            object::Shape::{self},
+            pattern::Pattern,
+        },
+    };
 
     use super::*;
 
     #[test]
     fn lighting_with_surface_in_shadow() {
         let point = Point::zero();
-        let material = Material::default();
+        let obj = Object::with_shape(Shape::Sphere);
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, true),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, true),
             Color::new(0.1, 0.1, 0.1)
         );
     }
     #[test]
     fn lighting_with_eye_between_light_and_surface() {
         let point = Point::zero();
-        let material = Material::default();
+        let obj = Object::with_shape(Shape::Sphere);
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
             Color::new(1.9, 1.9, 1.9)
         );
     }
     #[test]
     fn lighting_with_eye_between_light_and_surface_eye_offset_45() {
         let point = Point::zero();
-        let material = Material::default();
+        let obj = Object::with_shape(Shape::Sphere);
 
         let eye_v = Vector::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2);
         let normal_v = Vector::new(0., 0., -1.);
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
             Color::new(1.0, 1.0, 1.0)
         );
     }
     #[test]
     fn lighting_with_eye_opposite_surface_light_offset_45() {
         let point = Point::zero();
-        let material = Material::default();
+        let obj = Object::with_shape(Shape::Sphere);
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
@@ -125,14 +132,14 @@ mod tests {
 
         let intensity = 0.1 + 0.9 * FRAC_1_SQRT_2;
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
             Color::new(intensity, intensity, intensity)
         );
     }
     #[test]
     fn lighting_with_eye_in_path_of_reflection() {
         let point = Point::zero();
-        let material = Material::default();
+        let obj = Object::with_shape(Shape::Sphere);
 
         let eye_v = Vector::new(0., -FRAC_1_SQRT_2, -FRAC_1_SQRT_2);
         let normal_v = Vector::new(0., 0., -1.);
@@ -140,30 +147,32 @@ mod tests {
 
         let intensity = 1. + 0.9 * FRAC_1_SQRT_2;
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
             Color::new(intensity, intensity, intensity)
         );
     }
     #[test]
     fn lighting_with_light_behind_surface() {
         let point = Point::zero();
-        let material = Material::default();
+        let obj = Object::with_shape(Shape::Sphere);
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
         let light = PointLightSource::new(Point::new(0., 0., 10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&material, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
             Color::new(0.1, 0.1, 0.1)
         );
     }
     #[test]
     fn lighting_with_pattern_applied() {
-        let mut material = Material::with_pattern(Pattern::Stripe(Color::white(), Color::black()));
+        let mut material =
+            Material::with_pattern(Pattern::stripe(Color::white(), Color::black(), None));
         material.set_ambient(1.);
         material.set_diffuse(0.);
         material.set_specular(0.);
+        let obj = Object::with_shape_material(Shape::Sphere, material);
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
@@ -171,7 +180,7 @@ mod tests {
 
         assert_eq!(
             color_of_illuminated_point(
-                &material,
+                &obj,
                 &light_source,
                 Point::new(0.9, 0., 0.),
                 eye_v,
@@ -182,7 +191,7 @@ mod tests {
         );
         assert_eq!(
             color_of_illuminated_point(
-                &material,
+                &obj,
                 &light_source,
                 Point::new(1.1, 0., 0.),
                 eye_v,

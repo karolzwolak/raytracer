@@ -57,14 +57,8 @@ pub fn run() -> Canvas {
             let normal_v = sphere_obj.normal_vector_at(hit_point);
             let eye_v = -direction;
 
-            let color = color_of_illuminated_point(
-                sphere_obj.material(),
-                &light,
-                hit_point,
-                eye_v,
-                normal_v,
-                false,
-            );
+            let color =
+                color_of_illuminated_point(&sphere_obj, &light, hit_point, eye_v, normal_v, false);
 
             canvas.write_pixel(
                 (x + half_canvas) as usize,

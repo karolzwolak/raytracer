@@ -1,6 +1,6 @@
 use crate::primitive::point::Point;
 
-use super::{color::Color, pattern::Pattern};
+use super::{color::Color, object::Object, pattern::Pattern};
 
 #[derive(Clone, Debug)]
 pub struct Material {
@@ -46,6 +46,10 @@ impl Material {
 
     pub fn color_at(&self, point: &Point) -> Color {
         self.pattern.color_at(point)
+    }
+
+    pub fn color_at_object(&self, object: &Object, point: Point) -> Color {
+        self.pattern.color_at_object(object, point)
     }
 
     pub fn set_pattern(&mut self, pattern: Pattern) {

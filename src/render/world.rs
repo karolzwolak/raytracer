@@ -85,7 +85,7 @@ impl World {
             .iter()
             .fold(Color::black(), |acc, light_source| {
                 acc + color_of_illuminated_point(
-                    hit_comps.material(),
+                    hit_comps.object(),
                     light_source,
                     hit_comps.world_point(),
                     hit_comps.eye_v(),

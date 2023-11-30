@@ -18,6 +18,12 @@ impl Transform for Matrix4 {
     }
 }
 
+impl Default for Matrix4 {
+    fn default() -> Self {
+        Self::identity_matrix()
+    }
+}
+
 impl Matrix4 {
     pub fn new(data: [f64; 16]) -> Self {
         Self { data }
