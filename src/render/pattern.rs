@@ -1,4 +1,7 @@
-use crate::primitive::{matrix4::Matrix4, point::Point, tuple::Tuple};
+use crate::{
+    approx_eq::{self, ApproxEq},
+    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple},
+};
 
 use super::{color::Color, object::Object};
 
@@ -67,7 +70,7 @@ impl Pattern {
     pub fn color_at(&self, point: &Point) -> Color {
         match self {
             Pattern::Stripe { c1, c2, .. } => {
-                if point.x().floor().abs() as usize % 2 == 0 {
+                if (point.x().floor() % 2.).approx_eq(0.) {
                     *c1
                 } else {
                     *c2
@@ -79,7 +82,8 @@ impl Pattern {
             } => *c_start + *c_dist * (point.x() - point.x().floor()),
 
             Pattern::Ring { c1, c2, .. } => {
-                if (point.x().powi(2) + point.z().powi(2)).sqrt().floor() as usize % 2 == 0 {
+                let val = (point.x().powi(2) + point.z().powi(2)).sqrt().floor();
+                if (val % 2.).approx_eq(0.) {
                     *c1
                 } else {
                     *c2
@@ -91,7 +95,7 @@ impl Pattern {
                 let y = point.y().floor();
                 let z = point.z().floor();
 
-                if (x + y + z).abs() as usize % 2 == 0 {
+                if ((x + y + z) % 2.).approx_eq(0.) {
                     *c1
                 } else {
                     *c2
