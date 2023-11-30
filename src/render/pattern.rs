@@ -79,7 +79,7 @@ impl Pattern {
             } => *c_start + *c_dist * (point.x() - point.x().floor()),
 
             Pattern::Ring { c1, c2, .. } => {
-                if (point.x() + point.z()).sqrt().floor() as usize % 2 == 0 {
+                if (point.x().powi(2) + point.z().powi(2)).sqrt().floor() as usize % 2 == 0 {
                     *c1
                 } else {
                     *c2
