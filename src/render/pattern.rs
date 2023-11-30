@@ -10,17 +10,60 @@ pub enum Pattern {
         c2: Color,
         inv_transform: Matrix4,
     },
+    /// Linear gradient changing in x direction
+    Gradient {
+        c_start: Color,
+        c_dist: Color,
+        inv_transform: Matrix4,
+    },
+    /// Ring pattern extending in x and z
+    Ring {
+        c1: Color,
+        c2: Color,
+        inv_transform: Matrix4,
+    },
+    /// 3D checkerboard
+    Checkers {
+        c1: Color,
+        c2: Color,
+        inv_transform: Matrix4,
+    },
     Const(Color),
 }
 
 impl Pattern {
     pub fn stripe(c1: Color, c2: Color, transform: Option<Matrix4>) -> Self {
-        Pattern::Stripe {
+        Self::Stripe {
             c1,
             c2,
             inv_transform: transform.unwrap_or_default().inverse().unwrap(),
         }
     }
+
+    pub fn gradient(c1: Color, c2: Color, transform: Option<Matrix4>) -> Self {
+        Self::Gradient {
+            c_start: c1,
+            c_dist: c2 - c1,
+            inv_transform: transform.unwrap_or_default().inverse().unwrap(),
+        }
+    }
+
+    pub fn ring(c1: Color, c2: Color, transform: Option<Matrix4>) -> Self {
+        Self::Ring {
+            c1,
+            c2,
+            inv_transform: transform.unwrap_or_default().inverse().unwrap(),
+        }
+    }
+
+    pub fn checkers(c1: Color, c2: Color, transform: Option<Matrix4>) -> Self {
+        Self::Checkers {
+            c1,
+            c2,
+            inv_transform: transform.unwrap_or_default().inverse().unwrap(),
+        }
+    }
+
     pub fn color_at(&self, point: &Point) -> Color {
         match self {
             Pattern::Stripe { c1, c2, .. } => {
@@ -30,20 +73,46 @@ impl Pattern {
                     *c2
                 }
             }
+
+            Pattern::Gradient {
+                c_start, c_dist, ..
+            } => *c_start + *c_dist * (point.x() - point.x().floor()),
+
+            Pattern::Ring { c1, c2, .. } => {
+                if (point.x() + point.z()).sqrt().floor() as usize % 2 == 0 {
+                    *c1
+                } else {
+                    *c2
+                }
+            }
+
+            Pattern::Checkers { c1, c2, .. } => {
+                let x = point.x().floor();
+                let y = point.y().floor();
+                let z = point.z().floor();
+
+                if (x + y + z).abs() as usize % 2 == 0 {
+                    *c1
+                } else {
+                    *c2
+                }
+            }
             Pattern::Const(c) => *c,
         }
     }
 
-    pub fn inv_transformation(&self) -> Matrix4 {
-        match self {
-            Self::Stripe { inv_transform, .. } => *inv_transform,
-            Self::Const { .. } => Matrix4::identity_matrix(),
-        }
-    }
-
     pub fn color_at_object(&self, object: &Object, point: Point) -> Color {
-        let object_point = object.transformation_inverse().unwrap() * point;
-        let pattern_point = self.inv_transformation() * object_point;
+        let pattern_point = match self {
+            Self::Const(_) => point,
+
+            Self::Stripe { inv_transform, .. }
+            | Self::Gradient { inv_transform, .. }
+            | Self::Ring { inv_transform, .. }
+            | Self::Checkers { inv_transform, .. } => {
+                let object_point = object.transformation_inverse().unwrap() * point;
+                *inv_transform * object_point
+            }
+        };
 
         self.color_at(&pattern_point)
     }
@@ -130,5 +199,58 @@ mod tests {
             stripe.color_at_object(&sphere, Point::new(2.5, 0., 0.)),
             Color::white()
         );
+    }
+
+    #[test]
+    fn gradient_linearly_interpolates_between_colors() {
+        let gradient = Pattern::gradient(Color::white(), Color::black(), None);
+
+        assert_eq!(gradient.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_eq!(
+            gradient.color_at(&Point::new(0.25, 0., 0.)),
+            Color::new(0.75, 0.75, 0.75)
+        );
+        assert_eq!(
+            gradient.color_at(&Point::new(0.5, 0., 0.)),
+            Color::new(0.5, 0.5, 0.5)
+        );
+        assert_eq!(
+            gradient.color_at(&Point::new(0.75, 0., 0.)),
+            Color::new(0.25, 0.25, 0.25)
+        );
+    }
+
+    #[test]
+    fn ring_should_extend_in_both_x_and_z() {
+        let ring = Pattern::ring(Color::white(), Color::black(), None);
+
+        assert_eq!(ring.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_eq!(ring.color_at(&Point::new(1., 0., 0.)), Color::black());
+        assert_eq!(ring.color_at(&Point::new(0., 0., 1.)), Color::black());
+        assert_eq!(ring.color_at(&Point::new(0.708, 0., 0.708)), Color::black());
+    }
+
+    #[test]
+    fn checkers_should_repeat_in_x() {
+        let checkers = Pattern::checkers(Color::white(), Color::black(), None);
+        assert_eq!(checkers.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_eq!(checkers.color_at(&Point::new(0.99, 0., 0.)), Color::white());
+        assert_eq!(checkers.color_at(&Point::new(1.01, 0., 0.)), Color::black());
+    }
+
+    #[test]
+    fn checkers_should_repeat_in_y() {
+        let checkers = Pattern::checkers(Color::white(), Color::black(), None);
+        assert_eq!(checkers.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_eq!(checkers.color_at(&Point::new(0., 0.99, 0.)), Color::white());
+        assert_eq!(checkers.color_at(&Point::new(0., 1.01, 0.)), Color::black());
+    }
+
+    #[test]
+    fn checkers_should_repeat_in_z() {
+        let checkers = Pattern::checkers(Color::white(), Color::black(), None);
+        assert_eq!(checkers.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_eq!(checkers.color_at(&Point::new(0., 0., 0.99)), Color::white());
+        assert_eq!(checkers.color_at(&Point::new(0., 0., 1.01)), Color::black());
     }
 }
