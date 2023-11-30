@@ -1,5 +1,5 @@
 use crate::{
-    approx_eq::{self, ApproxEq},
+    approx_eq::ApproxEq,
     primitive::{matrix4::Matrix4, point::Point, tuple::Tuple},
 };
 

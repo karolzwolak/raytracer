@@ -1,5 +1,5 @@
 use crate::{
-    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple},
+    primitive::{point::Point, tuple::Tuple},
     render::{
         canvas::Canvas,
         color::Color,

@@ -1,6 +1,6 @@
 use crate::primitive::{point::Point, vector::Vector};
 
-use super::{color::Color, material::Material, object::Object};
+use super::{color::Color, object::Object};
 
 pub struct PointLightSource {
     position: Point,
@@ -72,6 +72,7 @@ mod tests {
     use crate::{
         primitive::tuple::Tuple,
         render::{
+            material::Material,
             object::Shape::{self},
             pattern::Pattern,
         },
