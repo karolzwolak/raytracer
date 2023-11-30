@@ -1,6 +1,6 @@
 use std::env;
 
-use crate::playing_around::{planes, shadows};
+use crate::playing_around::{making_patterns, planes, shadows};
 
 use super::{light_and_shading, making_scene, projectiles, rays_and_spheres, transformations};
 
@@ -37,7 +37,8 @@ fn run_with_args(chapter: usize, filename: &str) {
         7 => making_scene::run(),
         8 => shadows::run(),
         9 => planes::run(),
-        _ => planes::run(),
+        10 => making_patterns::run(),
+        _ => making_patterns::run(),
     };
 
     if let Err(err) = canvas.save_to_file(filename) {
