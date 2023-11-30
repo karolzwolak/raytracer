@@ -87,7 +87,7 @@ impl World {
                 acc + color_of_illuminated_point(
                     hit_comps.object(),
                     light_source,
-                    hit_comps.world_point(),
+                    hit_comps.over_point(),
                     hit_comps.eye_v(),
                     hit_comps.normal_v(),
                     self.is_point_shadowed(light_source, hit_comps.over_point()),
