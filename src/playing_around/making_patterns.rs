@@ -15,13 +15,15 @@ use crate::{
 use super::making_scene;
 
 pub fn run() -> Canvas {
+    let inner_pattern = Pattern::ring(
+        Color::new(0.15, 0.6, 0.7),
+        Color::new(0.5, 0.1, 0.4),
+        Some(scaling_matrix(0.25, 0.25, 0.25)),
+    );
+
     let floor = Object::with_shape_material(
         Shape::Plane,
-        Material::with_pattern(Pattern::ring(
-            Color::new(0.15, 0.6, 0.7),
-            Color::new(0.5, 0.1, 0.4),
-            Some(scaling_matrix(0.25, 0.25, 0.25)),
-        )),
+        Material::with_pattern(Pattern::perturb_noise(Box::new(inner_pattern), None)),
     );
 
     let sphere = Object::new(

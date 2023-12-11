@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple},
+    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple, vector::Vector},
 };
 
 use super::{color::Color, object::Object};
@@ -30,6 +30,10 @@ pub enum Pattern {
         c1: Color,
         c2: Color,
         inv_transform: Matrix4,
+    },
+    PerturbNoise {
+        inner_pattern: Box<Pattern>,
+        noise: f64,
     },
     Const(Color),
 }
@@ -64,6 +68,12 @@ impl Pattern {
             c1,
             c2,
             inv_transform: transform.unwrap_or_default().inverse().unwrap(),
+        }
+    }
+    pub fn perturb_noise(inner_pattern: Box<Pattern>, noise: Option<f64>) -> Self {
+        Self::PerturbNoise {
+            inner_pattern,
+            noise: noise.unwrap_or(1.),
         }
     }
 
@@ -101,13 +111,24 @@ impl Pattern {
                     *c2
                 }
             }
+            Pattern::PerturbNoise {
+                inner_pattern,
+                noise,
+            } => {
+                let dx = 0.17 * noise * point.x();
+                let dy = 0.29 * noise * point.y();
+                let dz = -0.37 * noise * point.z();
+
+                let perturb_p = *point + Vector::new(dx, dy, dz);
+                inner_pattern.color_at(&perturb_p)
+            }
             Pattern::Const(c) => *c,
         }
     }
 
     pub fn color_at_object(&self, object: &Object, point: Point) -> Color {
         let pattern_point = match self {
-            Self::Const(_) => point,
+            Self::Const(_) | Self::PerturbNoise { .. } => point,
 
             Self::Stripe { inv_transform, .. }
             | Self::Gradient { inv_transform, .. }
