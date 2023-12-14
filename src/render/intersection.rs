@@ -39,6 +39,7 @@ pub struct IntersecComputations<'a> {
     over_point: Point,
     eye_v: Vector,
     normal_v: Vector,
+    reflect_v: Vector,
     inside_obj: bool,
 }
 
@@ -54,6 +55,7 @@ impl<'a> IntersecComputations<'a> {
         }
 
         let over_point = world_point + normal_v * approx_eq::EPSILON;
+        let reflect_v = ray.direction().reflect(normal_v);
 
         Self {
             time,
@@ -62,6 +64,7 @@ impl<'a> IntersecComputations<'a> {
             over_point,
             eye_v,
             normal_v,
+            reflect_v,
             inside_obj,
         }
     }
@@ -107,6 +110,10 @@ impl<'a> IntersecComputations<'a> {
     pub fn over_point(&self) -> Point {
         self.over_point
     }
+
+    pub fn reflect_v(&self) -> Vector {
+        self.reflect_v
+    }
 }
 
 // impl<'a> PartialEq for Intersection<'a> {
@@ -141,7 +148,7 @@ impl<'a> IntersecVec<'a> {
                 vec![(-b - delta_sqrt) / (2. * a), (-b + delta_sqrt) / (2. * a)]
             }
             Shape::Plane => {
-                let parallel = object_ray.direction().y().approx_eq(0.);
+                let parallel = object_ray.direction().y().approx_eq(&0.);
                 if parallel {
                     return Vec::new();
                 }
@@ -216,6 +223,8 @@ impl<'a> IntersecVec<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts;
+
     use crate::approx_eq;
     use crate::primitive::point::Point;
     use crate::primitive::tuple::Tuple;
@@ -421,5 +430,19 @@ mod tests {
         let ray = Ray::new(Point::new(0., -1., 0.), Vector::new(0., 1., 0.));
 
         assert_eq!(IntersecVec::intersection_times(&ray, &plane), vec![1.]);
+    }
+
+    #[test]
+    fn precomputing_refletion_vecctor() {
+        let plane = Object::with_shape(Shape::Plane);
+        let half_sqrt = consts::FRAC_1_SQRT_2;
+        let r = Ray::new(
+            Point::new(0., 1., -1.),
+            Vector::new(0., -half_sqrt, half_sqrt),
+        );
+        let i = Intersection::new(2. * half_sqrt, &plane);
+        let comps = i.computations(&r);
+
+        assert_eq!(comps.reflect_v(), Vector::new(0., half_sqrt, half_sqrt));
     }
 }
