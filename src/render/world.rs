@@ -16,13 +16,14 @@ use super::{
 };
 use super::{object::Shape, pattern::Pattern};
 
+const MAX_REFLECTION_DEPTH: usize = 5 - 1;
+
 pub struct World {
     objects: Vec<Object>,
     light_sources: Vec<PointLightSource>,
 }
 
 impl World {
-    const MAX_REFLECTION_DEPTH: usize = 5;
     pub fn new(objects: Vec<Object>, light_sources: Vec<PointLightSource>) -> Self {
         Self {
             objects,
@@ -35,10 +36,15 @@ impl World {
     pub fn intersect(&self, ray: Ray) -> IntersecVec {
         IntersecVec::from_ray_and_mult_objects(ray, &self.objects)
     }
-    pub fn color_at(&self, ray: Ray) -> Color {
+
+    fn color_at_depth(&self, ray: Ray, depth: usize) -> Color {
         self.intersect(ray)
             .hit_computations()
-            .map_or(Color::black(), |hit_comps| self.shade_hit(hit_comps))
+            .map_or(Color::black(), |hit_comps| self.shade_hit(hit_comps, depth))
+    }
+
+    pub fn color_at(&self, ray: Ray) -> Color {
+        self.color_at_depth(ray, 0)
     }
 
     pub fn add_obj(&mut self, obj: Object) {
@@ -83,21 +89,22 @@ impl World {
         }
     }
 
-    fn reflected_color(&self, hit_comps: &IntersecComputations) -> Color {
-        if hit_comps.object().material().reflective.approx_eq(&0.) {
+    fn reflected_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
+        if depth >= MAX_REFLECTION_DEPTH || hit_comps.object().material().reflective.approx_eq(&0.)
+        {
             return Color::black();
         }
         let reflected_ray = Ray::new(hit_comps.over_point(), hit_comps.reflect_v());
-        let color = self.color_at(reflected_ray);
+        let color = self.color_at_depth(reflected_ray, depth + 1);
 
         color * hit_comps.object().material().reflective
     }
 
-    pub fn shade_hit(&self, hit_comps: IntersecComputations) -> Color {
+    pub fn shade_hit(&self, hit_comps: IntersecComputations, depth: usize) -> Color {
         self.light_sources()
             .iter()
             .fold(Color::black(), |acc, light_source| {
-                acc + self.reflected_color(&hit_comps)
+                acc + self.reflected_color(&hit_comps, depth)
                     + color_of_illuminated_point(
                         hit_comps.object(),
                         light_source,
@@ -231,7 +238,7 @@ mod tests {
         let inter = Intersection::new(4., &world.objects[1]);
         let comps = inter.computations(&ray);
 
-        assert_eq!(world.shade_hit(comps), Color::new(0.1, 0.1, 0.1));
+        assert_eq!(world.shade_hit(comps, 0), Color::new(0.1, 0.1, 0.1));
     }
 
     #[test]
@@ -244,7 +251,7 @@ mod tests {
         let i = Intersection::new(1., &w.objects[1]);
         let comps = i.computations(&r);
 
-        assert_eq!(w.reflected_color(&comps), Color::black());
+        assert_eq!(w.reflected_color(&comps, 0), Color::black());
     }
 
     #[test]
@@ -268,7 +275,7 @@ mod tests {
         let comps = i.computations(&r);
 
         assert!(w
-            .shade_hit(comps)
+            .shade_hit(comps, 0)
             .approx_eq_low_prec(&Color::new(0.87677, 0.92436, 0.82918)));
     }
 
@@ -303,5 +310,31 @@ mod tests {
         let r = Ray::new(Point::zero(), Vector::new(0., 1., 0.));
 
         let _ = w.color_at(r);
+    }
+
+    #[test]
+    fn reflected_color_at_max_recursive_depth() {
+        let mut w = World::default();
+        let plane = Object::new(
+            Shape::Plane,
+            Material {
+                reflective: 0.5,
+                ..Default::default()
+            },
+            translation_matrix(0., -1., 0.),
+        );
+        w.add_obj(plane);
+
+        let r = Ray::new(
+            Point::new(0., 0., -3.),
+            Vector::new(0., -FRAC_1_SQRT_2, FRAC_1_SQRT_2),
+        );
+        let i = Intersection::new(SQRT_2, w.objects.last().unwrap());
+        let comps = i.computations(&r);
+
+        assert_eq!(
+            w.reflected_color(&comps, MAX_REFLECTION_DEPTH),
+            Color::black()
+        );
     }
 }
