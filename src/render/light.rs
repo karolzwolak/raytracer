@@ -40,7 +40,7 @@ pub fn color_of_illuminated_point(
     // direction to the light source
     let light_v = (light_source.position() - point).normalize();
 
-    let ambient = effetive_color * material.ambient();
+    let ambient = effetive_color * material.ambient;
 
     let light_dot_normal = light_v.dot(normal_v);
 
@@ -48,7 +48,7 @@ pub fn color_of_illuminated_point(
     if in_shadow || light_dot_normal < 0. {
         return ambient + Color::black() + Color::black();
     }
-    let diffuse = effetive_color * material.diffuse() * light_dot_normal;
+    let diffuse = effetive_color * material.diffuse * light_dot_normal;
 
     let reflect_v = (-light_v).reflect(normal_v);
     let reflect_dot_eye = reflect_v.dot(eye_v);
@@ -57,8 +57,8 @@ pub fn color_of_illuminated_point(
     let specular = match reflect_dot_eye.is_sign_positive() {
         false => Color::black(),
         true => {
-            let factor = reflect_dot_eye.powf(material.shininess());
-            light_source.intensity * material.specular() * factor
+            let factor = reflect_dot_eye.powf(material.shininess);
+            light_source.intensity * material.specular * factor
         }
     };
 
@@ -168,11 +168,13 @@ mod tests {
     }
     #[test]
     fn lighting_with_pattern_applied() {
-        let mut material =
-            Material::with_pattern(Pattern::stripe(Color::white(), Color::black(), None));
-        material.set_ambient(1.);
-        material.set_diffuse(0.);
-        material.set_specular(0.);
+        let material = Material {
+            pattern: Pattern::stripe(Color::white(), Color::black(), None),
+            ambient: 1.,
+            diffuse: 0.,
+            specular: 0.,
+            ..Default::default()
+        };
         let obj = Object::with_shape_material(Shape::Sphere, material);
 
         let eye_v = Vector::new(0., 0., -1.);

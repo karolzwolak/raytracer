@@ -100,13 +100,13 @@ impl Default for World {
     fn default() -> Self {
         let sphere1 = Object::with_shape_material(
             Shape::Sphere,
-            Material::new(
-                Pattern::Const(Color::new(0.8, 1.0, 0.6)),
-                0.1,
-                0.7,
-                0.2,
-                200.,
-            ),
+            Material {
+                pattern: Pattern::Const(Color::new(0.8, 1.0, 0.6)),
+                ambient: 0.1,
+                diffuse: 0.7,
+                specular: 0.2,
+                ..Default::default()
+            },
         );
         let sphere2 = Object::with_transformation(Shape::Sphere, scaling_matrix(0.5, 0.5, 0.5));
 

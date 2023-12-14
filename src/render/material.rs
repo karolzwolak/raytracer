@@ -4,40 +4,32 @@ use super::{color::Color, object::Object, pattern::Pattern};
 
 #[derive(Clone, Debug)]
 pub struct Material {
-    pattern: Pattern,
-    ambient: f64,   // <0;1>
-    diffuse: f64,   // <0;1>
-    specular: f64,  // <0;1>
-    shininess: f64, // <10;inf) (typically up to 200.0)
+    pub pattern: Pattern,
+    pub ambient: f64,    // [0;1]
+    pub diffuse: f64,    // [0;1]
+    pub specular: f64,   // [0;1]
+    pub shininess: f64,  // [10;+inf) (typically up to 200.0)
 }
 
 impl Material {
-    pub fn new(
-        pattern: Pattern,
-        ambient: f64,
-        diffuse: f64,
-        specular: f64,
-        shininess: f64,
-    ) -> Self {
+    pub fn with_pattern(pattern: Pattern) -> Self {
         Self {
             pattern,
-            ambient,
-            diffuse,
-            specular,
-            shininess,
+            ..Default::default()
         }
-    }
-
-    pub fn with_pattern(pattern: Pattern) -> Self {
-        Self::new(pattern, 0.1, 0.9, 0.9, 200.)
-    }
-
-    pub fn matte_with_color(color: Color) -> Self {
-        Self::new(Pattern::Const(color), 0.1, 0.9, 0.05, 15.)
     }
 
     pub fn with_color(color: Color) -> Self {
         Self::with_pattern(Pattern::Const(color))
+    }
+
+    pub fn matte_with_color(color: Color) -> Self {
+        Self {
+            pattern: Pattern::Const(color),
+            specular: 0.05,
+            shininess: 15.,
+            ..Default::default()
+        }
     }
 
     pub fn pattern(&self) -> &Pattern {
@@ -51,51 +43,17 @@ impl Material {
     pub fn color_at_object(&self, object: &Object, point: Point) -> Color {
         self.pattern.color_at_object(object, point)
     }
-
-    pub fn set_pattern(&mut self, pattern: Pattern) {
-        self.pattern = pattern;
-    }
-
-    pub fn set_color(&mut self, color: Color) {
-        self.pattern = Pattern::Const(color);
-    }
-
-    pub fn ambient(&self) -> f64 {
-        self.ambient
-    }
-
-    pub fn diffuse(&self) -> f64 {
-        self.diffuse
-    }
-
-    pub fn specular(&self) -> f64 {
-        self.specular
-    }
-
-    pub fn shininess(&self) -> f64 {
-        self.shininess
-    }
-
-    pub fn set_ambient(&mut self, ambient: f64) {
-        self.ambient = ambient;
-    }
-
-    pub fn set_diffuse(&mut self, diffuse: f64) {
-        self.diffuse = diffuse;
-    }
-
-    pub fn set_specular(&mut self, specular: f64) {
-        self.specular = specular;
-    }
-
-    pub fn set_shininess(&mut self, shininess: f64) {
-        self.shininess = shininess;
-    }
 }
 
 impl Default for Material {
     fn default() -> Self {
-        Self::with_color(Color::white())
+        Self {
+            pattern: Pattern::Const(Color::white()),
+            ambient: 0.1,
+            diffuse: 0.9,
+            specular: 0.9,
+            shininess: 200.,
+        }
     }
 }
 
