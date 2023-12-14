@@ -60,9 +60,17 @@ impl Color {
     }
 }
 
+impl ApproxEq for Color {
+    fn approx_eq_epsilon(&self, other: &Self, epsilon: f64) -> bool {
+        self.r.approx_eq_epsilon(&other.r, epsilon)
+            && self.g.approx_eq_epsilon(&other.g, epsilon)
+            && self.b.approx_eq_epsilon(&other.b, epsilon)
+    }
+}
+
 impl PartialEq for Color {
     fn eq(&self, other: &Self) -> bool {
-        self.r.approx_eq(other.r) && self.g.approx_eq(other.g) && self.b.approx_eq(other.b)
+        self.approx_eq(other)
     }
 }
 

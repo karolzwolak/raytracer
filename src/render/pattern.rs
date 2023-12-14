@@ -70,7 +70,7 @@ impl Pattern {
     pub fn color_at(&self, point: &Point) -> Color {
         match self {
             Pattern::Stripe { c1, c2, .. } => {
-                if (point.x().floor() % 2.).approx_eq(0.) {
+                if (point.x().floor() % 2.).approx_eq(&0.) {
                     *c1
                 } else {
                     *c2
@@ -83,7 +83,7 @@ impl Pattern {
 
             Pattern::Ring { c1, c2, .. } => {
                 let val = (point.x().powi(2) + point.z().powi(2)).sqrt().floor();
-                if (val % 2.).approx_eq(0.) {
+                if (val % 2.).approx_eq(&0.) {
                     *c1
                 } else {
                     *c2
@@ -95,7 +95,7 @@ impl Pattern {
                 let y = point.y().floor();
                 let z = point.z().floor();
 
-                if ((x + y + z) % 2.).approx_eq(0.) {
+                if ((x + y + z) % 2.).approx_eq(&0.) {
                     *c1
                 } else {
                     *c2

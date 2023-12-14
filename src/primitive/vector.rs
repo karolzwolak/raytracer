@@ -67,9 +67,10 @@ impl Vector {
         *self - normal * 2. * self.dot(normal)
     }
 }
+
 impl PartialEq for Vector {
     fn eq(&self, other: &Self) -> bool {
-        self.x.approx_eq(other.x) && self.y.approx_eq(other.y) && self.z.approx_eq(other.z)
+        self.approx_eq(other)
     }
 }
 

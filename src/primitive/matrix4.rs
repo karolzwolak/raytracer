@@ -63,7 +63,7 @@ impl Matrix4 {
         let mut row_of_one_for_col = [0, 1, 2, 3];
         for i in 0..4 {
             for row in i..4 {
-                if !copy[(row, i)].approx_eq(0.) {
+                if !copy[(row, i)].approx_eq(&0.) {
                     row_of_one_for_col[i] = row;
                     break;
                 }
@@ -84,7 +84,7 @@ impl Matrix4 {
             let row = i;
 
             let factor_to_1 = copy[(row, i)];
-            if factor_to_1.approx_eq(0.) {
+            if factor_to_1.approx_eq(&0.) {
                 return None;
             }
 
@@ -110,12 +110,18 @@ impl Matrix4 {
     }
 }
 
-impl PartialEq for Matrix4 {
-    fn eq(&self, other: &Matrix4) -> bool {
+impl ApproxEq for Matrix4 {
+    fn approx_eq_epsilon(&self, other: &Self, epsilon: f64) -> bool {
         self.data
             .iter()
             .enumerate()
-            .all(|(id, x)| x.approx_eq(other.data[id]))
+            .all(|(id, x)| x.approx_eq_epsilon(&other.data[id], epsilon))
+    }
+}
+
+impl PartialEq for Matrix4 {
+    fn eq(&self, other: &Matrix4) -> bool {
+        self.approx_eq(other)
     }
 }
 

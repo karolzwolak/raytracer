@@ -1,4 +1,4 @@
-use crate::transformation::Transform;
+use crate::{approx_eq::ApproxEq, transformation::Transform};
 
 use super::matrix4::Matrix4;
 
@@ -9,6 +9,18 @@ pub trait Tuple {
     fn y(&self) -> f64;
     fn z(&self) -> f64;
     fn w(&self) -> f64;
+}
+
+impl<T> ApproxEq for T
+where
+    T: Tuple,
+{
+    fn approx_eq_epsilon(&self, other: &Self, epsilon: f64) -> bool {
+        self.w() == other.w()
+            && self.x().approx_eq_epsilon(&other.x(), epsilon)
+            && self.y().approx_eq_epsilon(&other.y(), epsilon)
+            && self.z().approx_eq_epsilon(&other.z(), epsilon)
+    }
 }
 
 impl<T> Transform for T

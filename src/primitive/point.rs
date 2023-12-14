@@ -59,9 +59,10 @@ impl Point {
 
 impl PartialEq for Point {
     fn eq(&self, other: &Self) -> bool {
-        self.x.approx_eq(other.x) && self.y.approx_eq(other.y) && self.z.approx_eq(other.z)
+        self.approx_eq(other)
     }
 }
+
 impl ops::Add<Vector> for Point {
     type Output = Point;
 
