@@ -46,27 +46,7 @@ pub fn scene_objects() -> Vec<Object> {
     vec![middle_sphere, right_sphere, left_sphere]
 }
 
-pub fn scene_lights() -> Vec<PointLightSource> {
-    vec![PointLightSource::new(
-        Point::new(-10., 10., -10.),
-        Color::white(),
-    )]
-}
-
-pub fn scene_camera(width: usize, height: usize) -> Camera {
-    let from = Point::new(0., 1.5, -5.);
-    let to = Point::new(0., 1., 0.);
-    let up_v = Vector::new(0., 1., 0.);
-
-    Camera::with_transformation(
-        width,
-        height,
-        FRAC_PI_3,
-        view_tranformation_matrix(from, to, up_v),
-    )
-}
-
-pub fn run() -> Canvas {
+pub fn scene_walls() -> Vec<Object> {
     let mut floor = Object::with_transformation(Shape::Sphere, scaling_matrix(10., 0.01, 10.));
     floor.material_mut().specular = 0.;
     floor.material_mut().pattern = Pattern::Const(Color::new(1., 0.9, 0.9));
@@ -91,7 +71,31 @@ pub fn run() -> Canvas {
             .get_transformed(),
     );
 
-    let mut objects = vec![floor, left_wall, right_wall];
+    vec![floor, left_wall, right_wall]
+}
+
+pub fn scene_lights() -> Vec<PointLightSource> {
+    vec![PointLightSource::new(
+        Point::new(-10., 10., -10.),
+        Color::white(),
+    )]
+}
+
+pub fn scene_camera(width: usize, height: usize) -> Camera {
+    let from = Point::new(0., 1.5, -5.);
+    let to = Point::new(0., 1., 0.);
+    let up_v = Vector::new(0., 1., 0.);
+
+    Camera::with_transformation(
+        width,
+        height,
+        FRAC_PI_3,
+        view_tranformation_matrix(from, to, up_v),
+    )
+}
+
+pub fn run() -> Canvas {
+    let mut objects = scene_walls();
     objects.extend(scene_objects());
 
     let world = World::new(objects, scene_lights());
