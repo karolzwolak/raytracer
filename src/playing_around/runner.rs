@@ -5,51 +5,60 @@ use crate::playing_around::{making_patterns, planes, reflections_refractions, sh
 use super::{light_and_shading, making_scene, projectiles, rays_and_spheres, transformations};
 
 const SIZE: usize = 800;
+const DEFAULT_CHAPTER: &str = "reflections";
+const DEFAULT_FILENAME: &str = "playing_around.ppm";
 
-pub fn run() {
+pub fn run() -> Result<(), String> {
     match parse_args() {
-        Ok((chapter, filename)) => run_with_args(chapter, &filename),
-        Err(_) => eprintln!("error: wrong args"),
+        Some((chapter, filename)) => run_with_args(chapter, &filename),
+        None => Err("usage: cargo run -r -- <chapter>? <output file>?".to_string()),
     }
 }
 
-fn parse_args() -> Result<(usize, String), String> {
+fn parse_args() -> Option<(String, String)> {
     let mut args = env::args();
 
+    // skip executable file
     args.next();
-    let chapter = match args.next() {
-        Some(arg) => arg.parse::<usize>().map_err(|err| err.to_string())?,
-        None => 0,
-    };
+
+    let chapter: String = args.next().unwrap_or_else(|| DEFAULT_CHAPTER.to_string());
+
+    if chapter.contains("help") || chapter.contains("-h") {
+        return None;
+    }
 
     let filename = match args.next() {
         Some(arg) => arg,
-        None => "playing_around.ppm".to_string(),
+        None => DEFAULT_FILENAME.to_string(),
     };
 
-    Ok((chapter, filename))
+    Some((chapter, filename))
 }
 
-fn run_with_args(chapter: usize, filename: &str) {
+fn run_with_args(chapter: String, filename: &str) -> Result<(), String> {
     let width = SIZE;
     let height = SIZE;
 
+    let chapter = chapter.trim();
+
     let canvas = match chapter {
-        2 => projectiles::run(width, height),
-        4 => transformations::run(),
-        5 => rays_and_spheres::run(),
-        6 => light_and_shading::run(),
-        7 => making_scene::run(width, height),
-        8 => shadows::run(width, height),
-        9 => planes::run(width, height),
-        10 => making_patterns::run(width, height),
-        11 => reflections_refractions::run(width, height),
-        _ => reflections_refractions::run(width, height),
+        "projectiles" => projectiles::run(width, height),
+        "transformations" => transformations::run(),
+        "rays and spheres" => rays_and_spheres::run(),
+        "shading" => light_and_shading::run(),
+        "scene" => making_scene::run(width, height),
+        "shadows" => shadows::run(width, height),
+        "planes" => planes::run(width, height),
+        "patterns" => making_patterns::run(width, height),
+        "reflections" => reflections_refractions::run(width, height),
+        _ => return Err(format!("no such chapter '{chapter}'")),
     };
 
-    if let Err(err) = canvas.save_to_file(filename) {
-        eprintln!("failed to run playing_around: {}", err);
-        return;
+    match canvas.save_to_file(filename) {
+        Err(err) => Err(format!("failed to run '{chapter}' because '{err}'")),
+        Ok(_) => {
+            println!("created file: {}", filename);
+            Ok(())
+        }
     }
-    println!("created file: {}", filename);
 }
