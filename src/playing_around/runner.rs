@@ -4,7 +4,7 @@ use crate::playing_around::{making_patterns, planes, reflections_refractions, sh
 
 use super::{light_and_shading, making_scene, projectiles, rays_and_spheres, transformations};
 
-const SIZE: usize = 800;
+const SIZE: usize = 1200;
 const DEFAULT_CHAPTER: &str = "reflections";
 const DEFAULT_FILENAME: &str = "playing_around.ppm";
 
