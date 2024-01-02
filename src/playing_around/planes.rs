@@ -11,7 +11,7 @@ use crate::{
 
 use super::making_scene;
 
-pub fn run() -> Canvas {
+pub fn run(width: usize, height: usize) -> Canvas {
     let mut objects = making_scene::scene_objects();
     let lights = making_scene::scene_lights();
     let plane = Object::with_transformation(Shape::Plane, translation_matrix(0., 0.5, 0.));
@@ -25,7 +25,7 @@ pub fn run() -> Canvas {
     objects.push(plane2);
 
     let world = World::new(objects, lights);
-    let camera = making_scene::scene_camera(800, 800);
+    let camera = making_scene::scene_camera(width, height);
 
     world.render(&camera)
 }

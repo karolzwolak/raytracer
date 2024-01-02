@@ -14,7 +14,7 @@ use crate::{
 
 use super::making_scene;
 
-pub fn run() -> Canvas {
+pub fn run(width: usize, height: usize) -> Canvas {
     let floor = Object::with_shape_material(
         Shape::Plane,
         Material::with_pattern(Pattern::ring(
@@ -38,7 +38,7 @@ pub fn run() -> Canvas {
     let light = PointLightSource::new(Point::new(-10.0, 10.0, -10.0), Color::white());
 
     let world = World::new(vec![floor, sphere], vec![light]);
-    let camera = making_scene::scene_camera(800, 800);
+    let camera = making_scene::scene_camera(width, height);
 
     world.render(&camera)
 }

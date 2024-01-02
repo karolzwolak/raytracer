@@ -4,6 +4,8 @@ use crate::playing_around::{making_patterns, planes, reflections_refractions, sh
 
 use super::{light_and_shading, making_scene, projectiles, rays_and_spheres, transformations};
 
+const SIZE: usize = 800;
+
 pub fn run() {
     match parse_args() {
         Ok((chapter, filename)) => run_with_args(chapter, &filename),
@@ -29,17 +31,20 @@ fn parse_args() -> Result<(usize, String), String> {
 }
 
 fn run_with_args(chapter: usize, filename: &str) {
+    let width = SIZE;
+    let height = SIZE;
+
     let canvas = match chapter {
-        2 => projectiles::run(),
+        2 => projectiles::run(width, height),
         4 => transformations::run(),
         5 => rays_and_spheres::run(),
         6 => light_and_shading::run(),
-        7 => making_scene::run(),
-        8 => shadows::run(),
-        9 => planes::run(),
-        10 => making_patterns::run(),
-        11 => reflections_refractions::run(),
-        _ => reflections_refractions::run(),
+        7 => making_scene::run(width, height),
+        8 => shadows::run(width, height),
+        9 => planes::run(width, height),
+        10 => making_patterns::run(width, height),
+        11 => reflections_refractions::run(width, height),
+        _ => reflections_refractions::run(width, height),
     };
 
     if let Err(err) = canvas.save_to_file(filename) {

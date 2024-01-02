@@ -9,7 +9,7 @@ use crate::{
     transformation::{scaling_matrix, Transform},
 };
 
-pub fn run() -> Canvas {
+pub fn run(width: usize, height: usize) -> Canvas {
     let wall = Object::new(
         Shape::Sphere,
         Material::matte_with_color(Color::new(0.4, 0.7, 0.9)),
@@ -73,8 +73,7 @@ pub fn run() -> Canvas {
         vec![light_source],
     );
 
-    let size = 800;
-    let camera = Camera::new(size, size, consts::FRAC_PI_4);
+    let camera = Camera::new(width, height, consts::FRAC_PI_4);
 
     world.render(&camera)
 }

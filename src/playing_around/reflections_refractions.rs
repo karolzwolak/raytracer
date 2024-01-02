@@ -54,7 +54,7 @@ pub fn get_walls() -> Vec<Object> {
     vec![floor, left_wall, right_wall, l_wall_mirror, r_wall_mirror]
 }
 
-pub fn run() -> Canvas {
+pub fn run(width: usize, height: usize) -> Canvas {
     let mut objects = making_scene::scene_objects();
 
     let mirror = Material {
@@ -94,7 +94,7 @@ pub fn run() -> Canvas {
     objects.push(mirror_wall2);
 
     let world = World::new(objects, lights);
-    let camera = making_scene::scene_camera(800, 800);
+    let camera = making_scene::scene_camera(width, height);
 
     world.render(&camera)
 }

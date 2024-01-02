@@ -94,10 +94,10 @@ impl Environment {
     }
 }
 
-pub fn run() -> Canvas {
+pub fn run(width: usize, height: usize) -> Canvas {
     let velocity = Vector::new(0.5, 3.0, 0.).normalize() * 8.25;
     let projectile = Projectile::new(Point::new(0., 1., 0.), velocity);
-    let canvas = Canvas::with_color(300, 350, Color::new(0.35, 0.35, 0.35));
+    let canvas = Canvas::with_color(width, height, Color::new(0.35, 0.35, 0.35));
 
     let gravity = Vector::new(0., -0.12, 0.);
     let wind = Vector::new(-0.01, 0., 0.);
