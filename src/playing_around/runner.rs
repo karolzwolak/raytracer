@@ -6,45 +6,60 @@ use super::{light_and_shading, making_scene, projectiles, rays_and_spheres, tran
 
 const SIZE: usize = 1200;
 const DEFAULT_CHAPTER: &str = "reflections";
-const DEFAULT_FILENAME: &str = "playing_around.ppm";
 
 pub fn run() -> Result<(), String> {
     match parse_args() {
-        Some((chapter, filename)) => run_with_args(chapter, &filename),
-        None => Err("usage: cargo run -r -- <chapter>? <output file>?".to_string()),
+        Some((chapter, size, filename)) => run_with_args(chapter, size, size, &filename),
+        None => Err("usage: cargo run -r -- <chapter>? <size>? <output file>?".to_string()),
     }
 }
 
-fn parse_args() -> Option<(String, String)> {
+fn parse_args() -> Option<(String, usize, String)> {
     let mut args = env::args();
 
     // skip executable file
     args.next();
 
-    let chapter: String = args.next().unwrap_or_else(|| DEFAULT_CHAPTER.to_string());
+    let chapter: String = args
+        .next()
+        .unwrap_or_else(|| DEFAULT_CHAPTER.to_string())
+        .trim()
+        .to_owned();
 
     if chapter.contains("help") || chapter.contains("-h") {
         return None;
     }
 
-    let filename = match args.next() {
-        Some(arg) => arg,
-        None => DEFAULT_FILENAME.to_string(),
+    let size = match args
+        .next()
+        .unwrap_or_else(|| "0".to_string())
+        .parse::<usize>()
+    {
+        Ok(n) if n > 0 => n,
+        Ok(_) => SIZE,
+        _ => return None,
     };
 
-    Some((chapter, filename))
+    let filename = match args.next() {
+        None => format!("{chapter}.ppm"),
+        Some(s) => s.trim().to_owned(),
+    };
+
+    Some((chapter, size, filename))
 }
 
-fn run_with_args(chapter: String, filename: &str) -> Result<(), String> {
-    let width = SIZE;
-    let height = SIZE;
-
+fn run_with_args(
+    chapter: String,
+    width: usize,
+    height: usize,
+    filename: &str,
+) -> Result<(), String> {
     let chapter = chapter.trim();
 
     let canvas = match chapter {
         "projectiles" => projectiles::run(width, height),
         "transformations" => transformations::run(),
-        "rays and spheres" => rays_and_spheres::run(),
+        "spheres" => rays_and_spheres::run(),
         "shading" => light_and_shading::run(),
         "scene" => making_scene::run(width, height),
         "shadows" => shadows::run(width, height),
@@ -57,7 +72,7 @@ fn run_with_args(chapter: String, filename: &str) -> Result<(), String> {
     match canvas.save_to_file(filename) {
         Err(err) => Err(format!("failed to run '{chapter}' because '{err}'")),
         Ok(_) => {
-            println!("created file: {}", filename);
+            println!("created file: {filename} with size {width}x{height} pixels");
             Ok(())
         }
     }
