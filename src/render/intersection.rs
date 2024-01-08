@@ -4,12 +4,26 @@ use crate::{
     render::object::Shape,
 };
 
-use super::{material::Material, object::Object, ray::Ray};
+use super::{
+    material::{Material, AIR_REFRACTIVE_INDEX},
+    object::Object,
+    ray::Ray,
+};
 
 #[derive(Clone, Copy)]
 pub struct Intersection<'a> {
     time: f64,
     intersected_object: &'a Object,
+}
+
+fn same_obj_ref(a: &Object, b: &Object) -> bool {
+    std::ptr::eq(a, b)
+}
+
+impl<'a> PartialEq for Intersection<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.time == other.time && same_obj_ref(self.object(), other.object())
+    }
 }
 
 impl<'a> Intersection<'a> {
@@ -41,10 +55,19 @@ pub struct IntersecComputations<'a> {
     normal_v: Vector,
     reflect_v: Vector,
     inside_obj: bool,
+
+    refractive_from: f64,
+    refractive_to: f64,
 }
 
 impl<'a> IntersecComputations<'a> {
-    pub fn new(time: f64, object: &'a Object, ray: &Ray) -> Self {
+    pub fn new(
+        time: f64,
+        object: &'a Object,
+        ray: &Ray,
+        refractive_from: f64,
+        refractive_to: f64,
+    ) -> Self {
         let world_point = ray.position(time);
         let eye_v = -*ray.direction();
         let mut normal_v = object.normal_vector_at(world_point);
@@ -66,17 +89,62 @@ impl<'a> IntersecComputations<'a> {
             normal_v,
             reflect_v,
             inside_obj,
+
+            refractive_from,
+            refractive_to,
         }
     }
-    pub fn from_intersection(intersection: Intersection<'a>, ray: &Ray) -> Self {
-        Self::new(intersection.time(), intersection.object(), ray)
+
+    pub fn from_intersections(
+        hit: &Intersection<'a>,
+        // intersections: Vec<&Intersection<'a>>,
+        intersection_vec: &IntersecVec,
+    ) -> IntersecComputations<'a> {
+        let mut refractive_from = AIR_REFRACTIVE_INDEX;
+        let mut refractive_to = AIR_REFRACTIVE_INDEX;
+
+        let intersections = intersection_vec.data();
+
+        let mut containers: Vec<&Object> = Vec::with_capacity(intersections.len());
+
+        for inter in intersections {
+            if inter == hit && !containers.is_empty() {
+                refractive_from = containers.last().unwrap().material().refractive_index;
+            }
+
+            if let Some(idx) = containers
+                .iter()
+                .position(|&obj| same_obj_ref(inter.object(), obj))
+            {
+                containers.remove(idx);
+            } else {
+                containers.push(inter.object());
+            }
+
+            if inter == hit {
+                if !containers.is_empty() {
+                    refractive_to = containers.last().unwrap().material().refractive_index;
+                }
+                break;
+            }
+        }
+        Self::new(
+            hit.time(),
+            hit.object(),
+            intersection_vec.ray(),
+            refractive_from,
+            refractive_to,
+        )
     }
 
-    pub fn try_from_ray_and_obj(ray: Ray, obj: &'a Object) -> Option<Self> {
-        let intersections = IntersecVec::from_ray_and_obj(ray, obj);
-        intersections
-            .hit()
-            .map(|inter| Self::new(inter.time(), obj, intersections.ray()))
+    pub fn from_intersection(intersection: Intersection<'a>, ray: &Ray) -> Self {
+        Self::new(
+            intersection.time,
+            intersection.object(),
+            ray,
+            AIR_REFRACTIVE_INDEX,
+            intersection.object().material().refractive_index,
+        )
     }
 
     pub fn time(&self) -> f64 {
@@ -365,18 +433,17 @@ mod tests {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let obj = Object::with_shape(Shape::Sphere);
 
-        let comps = IntersecComputations::try_from_ray_and_obj(ray, &obj);
-        assert!(comps.is_some());
-        assert!(!comps.unwrap().inside_obj());
+        let inter_vec = IntersecVec::from_ray_and_obj(ray.clone(), &obj);
+        let comps = inter_vec.hit().unwrap().computations(&ray);
+        assert!(!comps.inside_obj());
     }
     #[test]
     fn intersec_comps_inside_obj() {
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
         let obj = Object::with_shape(Shape::Sphere);
 
-        let comps = IntersecComputations::try_from_ray_and_obj(ray, &obj);
-        assert!(comps.is_some());
-        let comps = comps.unwrap();
+        let inter_vec = IntersecVec::from_ray_and_obj(ray.clone(), &obj);
+        let comps = inter_vec.hit().unwrap().computations(&ray);
 
         assert!(comps.inside_obj());
         assert_eq!(comps.world_point(), Point::new(0., 0., 1.));
@@ -444,5 +511,55 @@ mod tests {
         let comps = i.computations(&r);
 
         assert_eq!(comps.reflect_v(), Vector::new(0., half_sqrt, half_sqrt));
+    }
+
+    #[test]
+    fn finding_reflective_exiting_entering_various_intersections() {
+        let sphere_a = Object::new(Shape::Sphere, Material::glass(), scaling_matrix(2., 2., 2.));
+        let sphere_b = Object::new(
+            Shape::Sphere,
+            Material {
+                refractive_index: 2.,
+                ..Material::glass()
+            },
+            translation_matrix(0., 0., -0.25),
+        );
+        let sphere_c = Object::new(
+            Shape::Sphere,
+            Material {
+                refractive_index: 2.5,
+                ..Material::glass()
+            },
+            translation_matrix(0., 0., 0.25),
+        );
+
+        let expected_reflective = [
+            (1., 1.5),
+            (1.5, 2.),
+            (2., 2.5),
+            (2.5, 2.5),
+            (2.5, 1.5),
+            (1.5, 1.),
+        ];
+
+        let ray = Ray::new(Point::zero(), Vector::new(0., 0., 1.));
+        let intersections = [
+            Intersection::new(2., &sphere_a),
+            Intersection::new(2.75, &sphere_b),
+            Intersection::new(3.25, &sphere_c),
+            Intersection::new(4.75, &sphere_b),
+            Intersection::new(5.25, &sphere_c),
+            Intersection::new(6., &sphere_a),
+        ];
+
+        let intersections = IntersecVec::new(ray, intersections.to_vec());
+
+        for (i, (from, to)) in expected_reflective.iter().enumerate() {
+            let comps =
+                IntersecComputations::from_intersections(&intersections.data()[i], &intersections);
+
+            assert_eq!(comps.refractive_from, *from);
+            assert_eq!(comps.refractive_to, *to);
+        }
     }
 }
