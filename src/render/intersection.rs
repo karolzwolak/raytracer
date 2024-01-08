@@ -50,6 +50,7 @@ pub struct IntersecComputations<'a> {
     time: f64,
     intersected_object: &'a Object,
     world_point: Point,
+    under_point: Point,
     over_point: Point,
     eye_v: Vector,
     normal_v: Vector,
@@ -77,13 +78,17 @@ impl<'a> IntersecComputations<'a> {
             normal_v = -normal_v
         }
 
-        let over_point = world_point + normal_v * approx_eq::EPSILON;
+        let over_offset = normal_v * approx_eq::EPSILON;
+        let over_point = world_point + over_offset;
+        let under_point = world_point - over_offset;
+
         let reflect_v = ray.direction().reflect(normal_v);
 
         Self {
             time,
             intersected_object: object,
             world_point,
+            under_point,
             over_point,
             eye_v,
             normal_v,
@@ -181,6 +186,18 @@ impl<'a> IntersecComputations<'a> {
 
     pub fn reflect_v(&self) -> Vector {
         self.reflect_v
+    }
+
+    pub fn under_point(&self) -> Point {
+        self.under_point
+    }
+
+    pub fn refractive_from(&self) -> f64 {
+        self.refractive_from
+    }
+
+    pub fn refractive_to(&self) -> f64 {
+        self.refractive_to
     }
 }
 
@@ -561,5 +578,21 @@ mod tests {
             assert_eq!(comps.refractive_from, *from);
             assert_eq!(comps.refractive_to, *to);
         }
+    }
+
+    #[test]
+    fn under_point_if_offset_below_surface() {
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let sphere = Object::new(
+            Shape::Sphere,
+            Material::glass(),
+            translation_matrix(0., 0., 1.),
+        );
+
+        let inter = Intersection::new(5., &sphere);
+        let comps = inter.computations(&ray);
+
+        assert!(comps.under_point().z() > approx_eq::EPSILON / 2.);
+        assert!(comps.world_point().z() < comps.under_point().z());
     }
 }
