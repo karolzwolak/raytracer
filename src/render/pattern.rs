@@ -31,6 +31,10 @@ pub enum Pattern {
         c2: Color,
         inv_transform: Matrix4,
     },
+    /// Pattern that returns points coordinates as color
+    TestPattern {
+        inv_transform: Matrix4,
+    },
     Const(Color),
 }
 
@@ -63,6 +67,12 @@ impl Pattern {
         Self::Checkers {
             c1,
             c2,
+            inv_transform: transform.unwrap_or_default().inverse().unwrap(),
+        }
+    }
+
+    pub fn test_pattern(transform: Option<Matrix4>) -> Self {
+        Self::TestPattern {
             inv_transform: transform.unwrap_or_default().inverse().unwrap(),
         }
     }
@@ -102,6 +112,7 @@ impl Pattern {
                 }
             }
             Pattern::Const(c) => *c,
+            Pattern::TestPattern { .. } => Color::new(point.x(), point.y(), point.z()),
         }
     }
 
@@ -112,7 +123,8 @@ impl Pattern {
             Self::Stripe { inv_transform, .. }
             | Self::Gradient { inv_transform, .. }
             | Self::Ring { inv_transform, .. }
-            | Self::Checkers { inv_transform, .. } => {
+            | Self::Checkers { inv_transform, .. }
+            | Self::TestPattern { inv_transform } => {
                 let object_point = object.transformation_inverse().unwrap() * point;
                 *inv_transform * object_point
             }

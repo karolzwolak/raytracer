@@ -283,8 +283,17 @@ impl<'a> IntersecVec<'a> {
         self.vec.iter().find(|&ints| ints.time() > 0.)
     }
 
+    fn computations(&self, intersection: &'a Intersection) -> IntersecComputations {
+        IntersecComputations::from_intersections(intersection, self)
+    }
+
     pub fn hit_computations(&self) -> Option<IntersecComputations> {
-        self.hit().map(|inter| inter.computations(&self.ray))
+        // self.hit().map(|inter| inter.computations(&self.ray))
+        self.hit().map(|inter| self.computations(inter))
+    }
+
+    pub fn computations_at_id(&self, id: usize) -> Option<IntersecComputations> {
+        self.vec.get(id).map(|inter| self.computations(inter))
     }
 
     pub fn hit_pos(&self) -> Option<Point> {

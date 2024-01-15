@@ -1,6 +1,6 @@
 use crate::primitive::{point::Point, vector::Vector};
 
-use super::{color::Color, object::Object};
+use super::{color::Color, intersection::IntersecComputations, object::Object};
 
 pub struct PointLightSource {
     position: Point,
@@ -64,6 +64,9 @@ pub fn color_of_illuminated_point(
 
     ambient + diffuse + specular
 }
+
+// pub fn refraction_sin(comps: &IntersecComputations) -> f64 {
+// }
 
 #[cfg(test)]
 mod tests {
