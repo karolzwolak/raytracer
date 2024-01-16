@@ -1,4 +1,7 @@
-use crate::primitive::{point::Point, vector::Vector};
+use crate::{
+    approx_eq::ApproxEq,
+    primitive::{point::Point, vector::Vector},
+};
 
 use super::{color::Color, intersection::IntersecComputations, object::Object};
 
@@ -63,6 +66,47 @@ pub fn color_of_illuminated_point(
     };
 
     ambient + diffuse + specular
+}
+
+/// compute color of illuminated point using Phong reflection model
+pub fn color_of_illiminated_point_with_shadow_intensity(
+    object: &Object,
+    light_source: &PointLightSource,
+    point: Point,
+    eye_v: Vector,
+    normal_v: Vector,
+    shadow_intensity: f64,
+) -> Color {
+    let material = object.material();
+    // combine surface color with lights's intensity (color)
+    let effetive_color = material.color_at_object(object, point) * light_source.intensity;
+
+    // direction to the light source
+    let light_v = (light_source.position() - point).normalize();
+
+    let ambient = effetive_color * material.ambient;
+
+    let light_dot_normal = light_v.dot(normal_v);
+
+    // if cosine between light and normal vectors is negative, light is on the other side of surface
+    if shadow_intensity.approx_eq(&1.) || light_dot_normal < 0. {
+        return ambient + Color::black() + Color::black();
+    }
+    let diffuse = effetive_color * material.diffuse * light_dot_normal;
+
+    let reflect_v = (-light_v).reflect(normal_v);
+    let reflect_dot_eye = reflect_v.dot(eye_v);
+
+    // if cosine between reflect and eye vectors is negative, light reflects away from the eye
+    let specular = match reflect_dot_eye.is_sign_positive() {
+        false => Color::black(),
+        true => {
+            let factor = reflect_dot_eye.powf(material.shininess);
+            light_source.intensity * material.specular * factor
+        }
+    };
+
+    ambient + (diffuse + specular) * (1. - shadow_intensity)
 }
 
 pub fn schlick_reflectance(comps: &IntersecComputations) -> f64 {

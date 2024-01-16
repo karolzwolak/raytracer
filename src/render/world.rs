@@ -9,7 +9,10 @@ use super::{
     canvas::Canvas,
     color::Color,
     intersection::{IntersecComputations, IntersecVec},
-    light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
+    light::{
+        color_of_illiminated_point_with_shadow_intensity, color_of_illuminated_point,
+        schlick_reflectance, PointLightSource,
+    },
     material::Material,
     object::Object,
     ray::Ray,
@@ -74,6 +77,23 @@ impl World {
         self.light_sources.as_ref()
     }
 
+    // 0. means no shadow, 1. means full shadow
+    pub fn point_shadow_intensity(&self, light_source: &PointLightSource, point: Point) -> f64 {
+        let v = light_source.position() - point;
+
+        let distance = v.magnitude();
+        let direction = v.normalize();
+
+        let ray = Ray::new(point, direction);
+        let intersections = self.intersect(ray);
+
+        match intersections.hit() {
+            None => 0.,
+            Some(inter) if inter.time() > distance || inter.time().approx_eq(&distance) => 0.,
+            Some(inter) => 1. - inter.object().material().transparency,
+        }
+    }
+
     pub fn is_point_shadowed(&self, light_source: &PointLightSource, point: Point) -> bool {
         let v = light_source.position() - point;
 
@@ -128,13 +148,13 @@ impl World {
         self.light_sources()
             .iter()
             .fold(Color::black(), |acc, light_source| {
-                let surface = color_of_illuminated_point(
+                let surface = color_of_illiminated_point_with_shadow_intensity(
                     hit_comps.object(),
                     light_source,
                     hit_comps.over_point(),
                     hit_comps.eye_v(),
                     hit_comps.normal_v(),
-                    self.is_point_shadowed(light_source, hit_comps.over_point()),
+                    self.point_shadow_intensity(light_source, hit_comps.over_point()),
                 );
                 let reflected = self.reflected_color(&hit_comps, depth);
                 let refracted = self.refracted_color(&hit_comps, depth);
