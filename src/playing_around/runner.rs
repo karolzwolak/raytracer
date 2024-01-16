@@ -1,8 +1,10 @@
 use std::env;
 
-use crate::playing_around::{making_patterns, planes, reflections_refractions, shadows};
+use crate::playing_around::{making_patterns, planes, reflections, shadows};
 
-use super::{light_and_shading, making_scene, projectiles, rays_and_spheres, transformations};
+use super::{
+    light_and_shading, making_scene, projectiles, rays_and_spheres, refractions, transformations,
+};
 
 const SIZE: usize = 1200;
 const DEFAULT_CHAPTER: &str = "reflections";
@@ -65,7 +67,8 @@ fn run_with_args(
         "shadows" => shadows::run(width, height),
         "planes" => planes::run(width, height),
         "patterns" => making_patterns::run(width, height),
-        "reflections" => reflections_refractions::run(width, height),
+        "reflections" => reflections::run(width, height),
+        "refractions" => refractions::run(width, height),
         _ => return Err(format!("no such chapter '{chapter}'")),
     };
 

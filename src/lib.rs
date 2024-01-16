@@ -29,7 +29,8 @@ pub mod playing_around {
     pub mod planes;
     pub mod projectiles;
     pub mod rays_and_spheres;
-    pub mod reflections_refractions;
+    pub mod reflections;
+    pub mod refractions;
     pub mod runner;
     pub mod shadows;
     pub mod transformations;
