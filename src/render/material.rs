@@ -70,12 +70,12 @@ impl Material {
     pub fn glass() -> Self {
         Self {
             pattern: Pattern::Const(Color::black()),
-            ambient: 0.1,
-            diffuse: 0.9,
-            specular: 0.9,
-            shininess: 200.,
-            reflectivity: 0.,
-            transparency: 1.,
+            ambient: 0.025,
+            diffuse: 0.1,
+            specular: 1.,
+            shininess: 300.,
+            reflectivity: 0.9,
+            transparency: 0.9,
             refractive_index: 1.5,
         }
     }
