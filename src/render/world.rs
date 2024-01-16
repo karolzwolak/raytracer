@@ -9,10 +9,7 @@ use super::{
     canvas::Canvas,
     color::Color,
     intersection::{IntersecComputations, IntersecVec},
-    light::{
-        color_of_illiminated_point_with_shadow_intensity, color_of_illuminated_point,
-        schlick_reflectance, PointLightSource,
-    },
+    light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
     material::Material,
     object::Object,
     ray::Ray,
@@ -94,21 +91,6 @@ impl World {
         }
     }
 
-    pub fn is_point_shadowed(&self, light_source: &PointLightSource, point: Point) -> bool {
-        let v = light_source.position() - point;
-
-        let distance = v.magnitude();
-        let direction = v.normalize();
-
-        let ray = Ray::new(point, direction);
-        let intersections = self.intersect(ray);
-
-        match intersections.hit() {
-            None => false,
-            Some(inter) => inter.time() < distance,
-        }
-    }
-
     fn reflected_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
         if depth >= MAX_RECURSIVE_DEPTH || hit_comps.object().material().reflectivity.approx_eq(&0.)
         {
@@ -148,7 +130,7 @@ impl World {
         self.light_sources()
             .iter()
             .fold(Color::black(), |acc, light_source| {
-                let surface = color_of_illiminated_point_with_shadow_intensity(
+                let surface = color_of_illuminated_point(
                     hit_comps.object(),
                     light_source,
                     hit_comps.over_point(),
@@ -156,6 +138,49 @@ impl World {
                     hit_comps.normal_v(),
                     self.point_shadow_intensity(light_source, hit_comps.over_point()),
                 );
+                let reflected = self.reflected_color(&hit_comps, depth);
+                let refracted = self.refracted_color(&hit_comps, depth);
+
+                let material = hit_comps.object().material();
+
+                let use_schlick = material.reflectivity > 0.
+                    && material.transparency > 0.
+                    && !material.reflectivity.approx_eq(&0.)
+                    && !material.transparency.approx_eq(&0.);
+
+                let reflected_refracted = if use_schlick {
+                    let reflectance = schlick_reflectance(&hit_comps);
+                    reflected * reflectance + refracted * (1. - reflectance)
+                } else {
+                    reflected + refracted
+                };
+                acc + surface + reflected_refracted
+            })
+    }
+
+    pub fn shade_hit_bool_shadows(&self, hit_comps: IntersecComputations, depth: usize) -> Color {
+        self.light_sources()
+            .iter()
+            .fold(Color::black(), |acc, light_source| {
+                let shadow_intensity =
+                    self.point_shadow_intensity(light_source, hit_comps.over_point());
+                let in_shadow = if shadow_intensity.approx_eq(&0.) {
+                    1.
+                } else {
+                    0.
+                };
+                println!("shadow_intensity: {}", shadow_intensity);
+                println!("in_shadow: {}", in_shadow);
+
+                let surface = color_of_illuminated_point(
+                    hit_comps.object(),
+                    light_source,
+                    hit_comps.over_point(),
+                    hit_comps.eye_v(),
+                    hit_comps.normal_v(),
+                    in_shadow,
+                );
+
                 let reflected = self.reflected_color(&hit_comps, depth);
                 let refracted = self.refracted_color(&hit_comps, depth);
 
@@ -261,7 +286,10 @@ mod tests {
         let world = World::default();
         let point = Point::new(0., 10., 0.);
 
-        assert!(!world.is_point_shadowed(&world.light_sources()[0], point))
+        assert_eq!(
+            world.point_shadow_intensity(&world.light_sources()[0], point),
+            0.
+        )
     }
 
     #[test]
@@ -269,7 +297,10 @@ mod tests {
         let world = World::default();
         let point = Point::new(10., -10., 10.);
 
-        assert!(world.is_point_shadowed(&world.light_sources()[0], point))
+        assert_eq!(
+            world.point_shadow_intensity(&world.light_sources()[0], point),
+            1.
+        )
     }
 
     #[test]
@@ -277,7 +308,10 @@ mod tests {
         let world = World::default();
         let point = Point::new(-20., 20., -20.);
 
-        assert!(!world.is_point_shadowed(&world.light_sources()[0], point))
+        assert_eq!(
+            world.point_shadow_intensity(&world.light_sources()[0], point),
+            0.
+        )
     }
 
     #[test]
@@ -502,7 +536,7 @@ mod tests {
         let cmps = intersections.hit_computations().unwrap();
 
         assert_eq!(
-            world.shade_hit(cmps, 0),
+            world.shade_hit_bool_shadows(cmps, 0),
             Color::new(0.93642, 0.68642, 0.68642)
         );
     }
@@ -540,7 +574,7 @@ mod tests {
         let cmps = intersections.hit_computations().unwrap();
 
         assert_eq!(
-            world.shade_hit(cmps, 0),
+            world.shade_hit_bool_shadows(cmps, 0),
             Color::new(0.93391, 0.69643, 0.69243)
         );
     }

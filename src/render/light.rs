@@ -34,47 +34,6 @@ pub fn color_of_illuminated_point(
     point: Point,
     eye_v: Vector,
     normal_v: Vector,
-    in_shadow: bool,
-) -> Color {
-    let material = object.material();
-    // combine surface color with lights's intensity (color)
-    let effetive_color = material.color_at_object(object, point) * light_source.intensity;
-
-    // direction to the light source
-    let light_v = (light_source.position() - point).normalize();
-
-    let ambient = effetive_color * material.ambient;
-
-    let light_dot_normal = light_v.dot(normal_v);
-
-    // if cosine between light and normal vectors is negative, light is on the other side of surface
-    if in_shadow || light_dot_normal < 0. {
-        return ambient + Color::black() + Color::black();
-    }
-    let diffuse = effetive_color * material.diffuse * light_dot_normal;
-
-    let reflect_v = (-light_v).reflect(normal_v);
-    let reflect_dot_eye = reflect_v.dot(eye_v);
-
-    // if cosine between reflect and eye vectors is negative, light reflects away from the eye
-    let specular = match reflect_dot_eye.is_sign_positive() {
-        false => Color::black(),
-        true => {
-            let factor = reflect_dot_eye.powf(material.shininess);
-            light_source.intensity * material.specular * factor
-        }
-    };
-
-    ambient + diffuse + specular
-}
-
-/// compute color of illuminated point using Phong reflection model
-pub fn color_of_illiminated_point_with_shadow_intensity(
-    object: &Object,
-    light_source: &PointLightSource,
-    point: Point,
-    eye_v: Vector,
-    normal_v: Vector,
     shadow_intensity: f64,
 ) -> Color {
     let material = object.material();
@@ -161,7 +120,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, true),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 1.),
             Color::new(0.1, 0.1, 0.1)
         );
     }
@@ -175,7 +134,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(1.9, 1.9, 1.9)
         );
     }
@@ -189,7 +148,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(1.0, 1.0, 1.0)
         );
     }
@@ -204,7 +163,7 @@ mod tests {
 
         let intensity = 0.1 + 0.9 * FRAC_1_SQRT_2;
         assert_eq!(
-            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(intensity, intensity, intensity)
         );
     }
@@ -219,7 +178,7 @@ mod tests {
 
         let intensity = 1. + 0.9 * FRAC_1_SQRT_2;
         assert_eq!(
-            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(intensity, intensity, intensity)
         );
     }
@@ -233,7 +192,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 0., 10.), Color::white());
 
         assert_eq!(
-            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, false),
+            color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(0.1, 0.1, 0.1)
         );
     }
@@ -259,7 +218,7 @@ mod tests {
                 Point::new(0.9, 0., 0.),
                 eye_v,
                 normal_v,
-                false
+                0.
             ),
             Color::white()
         );
@@ -270,7 +229,7 @@ mod tests {
                 Point::new(1.1, 0., 0.),
                 eye_v,
                 normal_v,
-                false
+                0.
             ),
             Color::black()
         );

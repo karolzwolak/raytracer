@@ -62,7 +62,7 @@ pub fn run() -> Canvas {
             let eye_v = -direction;
 
             let color =
-                color_of_illuminated_point(&sphere_obj, &light, hit_point, eye_v, normal_v, false);
+                color_of_illuminated_point(&sphere_obj, &light, hit_point, eye_v, normal_v, 0.);
 
             canvas.write_pixel(
                 (x + half_canvas) as usize,
