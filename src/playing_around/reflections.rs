@@ -25,7 +25,7 @@ pub fn get_walls() -> Vec<Object> {
     let dist = 12.;
 
     let mut floor = Object::new(Shape::Plane, material.clone(), Matrix4::identity_matrix());
-    floor.material_mut().reflective = 0.4;
+    floor.material_mut().reflectivity = 0.4;
 
     let left_wall = Object::new(
         Shape::Plane,
@@ -59,7 +59,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let mirror = Material {
         pattern: Pattern::Const(Color::black()),
-        reflective: 1.,
+        reflectivity: 1.,
         ..Default::default()
     };
 

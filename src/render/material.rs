@@ -7,11 +7,11 @@ pub const AIR_REFRACTIVE_INDEX: f64 = 1.0;
 #[derive(Clone, Debug)]
 pub struct Material {
     pub pattern: Pattern,
-    pub ambient: f64,    // [0;1]
-    pub diffuse: f64,    // [0;1]
-    pub specular: f64,   // [0;1]
-    pub shininess: f64,  // [10;+inf) (typically up to 200.0)
-    pub reflective: f64, // [0;1]
+    pub ambient: f64,      // [0;1]
+    pub diffuse: f64,      // [0;1]
+    pub specular: f64,     // [0;1]
+    pub shininess: f64,    // [10;+inf) (typically up to 200.0)
+    pub reflectivity: f64, // [0;1]
 
     pub transparency: f64,     // [0;1]
     pub refractive_index: f64, // [0;1]
@@ -59,7 +59,7 @@ impl Default for Material {
             diffuse: 0.9,
             specular: 0.9,
             shininess: 200.,
-            reflective: 0.,
+            reflectivity: 0.,
             transparency: 0.,
             refractive_index: AIR_REFRACTIVE_INDEX,
         }
@@ -74,7 +74,7 @@ impl Material {
             diffuse: 0.9,
             specular: 0.9,
             shininess: 200.,
-            reflective: 0.,
+            reflectivity: 0.,
             transparency: 1.,
             refractive_index: 1.5,
         }
@@ -94,6 +94,6 @@ mod tests {
         assert_eq!(m.diffuse, 0.9);
         assert_eq!(m.specular, 0.9);
         assert_eq!(m.shininess, 200.0);
-        assert_eq!(m.reflective, 0.0);
+        assert_eq!(m.reflectivity, 0.0);
     }
 }

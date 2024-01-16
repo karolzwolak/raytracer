@@ -90,13 +90,14 @@ impl World {
     }
 
     fn reflected_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
-        if depth >= MAX_RECURSIVE_DEPTH || hit_comps.object().material().reflective.approx_eq(&0.) {
+        if depth >= MAX_RECURSIVE_DEPTH || hit_comps.object().material().reflectivity.approx_eq(&0.)
+        {
             return Color::black();
         }
         let reflected_ray = Ray::new(hit_comps.over_point(), hit_comps.reflect_v());
         let color = self.color_at_depth(reflected_ray, depth + 1);
 
-        color * hit_comps.object().material().reflective
+        color * hit_comps.object().material().reflectivity
     }
 
     fn refracted_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
@@ -140,9 +141,9 @@ impl World {
 
                 let material = hit_comps.object().material();
 
-                let use_schlick = material.reflective > 0.
+                let use_schlick = material.reflectivity > 0.
                     && material.transparency > 0.
-                    && !material.reflective.approx_eq(&0.)
+                    && !material.reflectivity.approx_eq(&0.)
                     && !material.transparency.approx_eq(&0.);
 
                 let reflected_refracted = if use_schlick {
@@ -299,7 +300,7 @@ mod tests {
         let plane = Object::new(
             Shape::Plane,
             Material {
-                reflective: 0.5,
+                reflectivity: 0.5,
                 ..Default::default()
             },
             translation_matrix(0., -1., 0.),
@@ -330,7 +331,7 @@ mod tests {
         let lower = Object::new(
             Shape::Plane,
             Material {
-                reflective: 1.,
+                reflectivity: 1.,
                 ..Default::default()
             },
             translation_matrix(0., -1., 0.),
@@ -338,7 +339,7 @@ mod tests {
         let upper = Object::new(
             Shape::Plane,
             Material {
-                reflective: 1.,
+                reflectivity: 1.,
                 ..Default::default()
             },
             translation_matrix(0., 1., 0.),
@@ -357,7 +358,7 @@ mod tests {
         let plane = Object::new(
             Shape::Plane,
             Material {
-                reflective: 0.5,
+                reflectivity: 0.5,
                 ..Default::default()
             },
             translation_matrix(0., -1., 0.),
@@ -493,7 +494,7 @@ mod tests {
             Shape::Plane,
             Material {
                 transparency: 0.5,
-                reflective: 0.5,
+                reflectivity: 0.5,
                 refractive_index: 1.5,
                 ..Default::default()
             },

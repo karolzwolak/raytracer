@@ -97,7 +97,7 @@ mod tests {
         approx_eq::ApproxEq,
         primitive::{matrix4::Matrix4, tuple::Tuple},
         render::{
-            intersection::{IntersecVec, Intersection},
+            intersection::IntersecVec,
             material::Material,
             object::Shape::{self},
             pattern::Pattern,
