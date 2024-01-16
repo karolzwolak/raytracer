@@ -185,7 +185,7 @@ mod tests {
     use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 
     use crate::{
-        approx_eq, primitive::vector::Vector, render::intersection::Intersection,
+        primitive::vector::Vector, render::intersection::Intersection,
         transformation::translation_matrix,
     };
 
