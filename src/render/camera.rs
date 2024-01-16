@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn render_world_with_camera() {
-        let world = World::default();
+        let world = World::default_testing();
 
         let from = Point::new(0., 0., -5.);
         let to = Point::new(0., 0., 0.);
