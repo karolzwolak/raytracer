@@ -9,7 +9,7 @@ use super::{
     canvas::Canvas,
     color::Color,
     intersection::{IntersecComputations, IntersecVec},
-    light::{color_of_illuminated_point, PointLightSource},
+    light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
     material::Material,
     object::Object,
     ray::Ray,
@@ -127,7 +127,7 @@ impl World {
         self.light_sources()
             .iter()
             .fold(Color::black(), |acc, light_source| {
-                let illumination = color_of_illuminated_point(
+                let surface = color_of_illuminated_point(
                     hit_comps.object(),
                     light_source,
                     hit_comps.over_point(),
@@ -137,7 +137,21 @@ impl World {
                 );
                 let reflected = self.reflected_color(&hit_comps, depth);
                 let refracted = self.refracted_color(&hit_comps, depth);
-                acc + illumination + reflected + refracted
+
+                let material = hit_comps.object().material();
+
+                let use_schlick = material.reflective > 0.
+                    && material.transparency > 0.
+                    && !material.reflective.approx_eq(&0.)
+                    && !material.transparency.approx_eq(&0.);
+
+                let reflected_refracted = if use_schlick {
+                    let reflectance = schlick_reflectance(&hit_comps);
+                    reflected * reflectance + refracted * (1. - reflectance)
+                } else {
+                    reflected + refracted
+                };
+                acc + surface + reflected_refracted
             })
     }
 }
@@ -469,6 +483,44 @@ mod tests {
         assert_eq!(
             world.shade_hit(cmps, 0),
             Color::new(0.93642, 0.68642, 0.68642)
+        );
+    }
+
+    #[test]
+    fn shading_reflective_transparent_material() {
+        let mut world = World::default();
+        let floor = Object::new(
+            Shape::Plane,
+            Material {
+                transparency: 0.5,
+                reflective: 0.5,
+                refractive_index: 1.5,
+                ..Default::default()
+            },
+            translation_matrix(0., -1., 0.),
+        );
+        let ball = Object::new(
+            Shape::Sphere,
+            Material {
+                pattern: Pattern::Const(Color::red()),
+                ambient: 0.5,
+                ..Default::default()
+            },
+            translation_matrix(0., -3.5, -0.5),
+        );
+        world.add_obj(floor);
+        world.add_obj(ball);
+
+        let ray = Ray::new(
+            Point::new(0., 0., -3.),
+            Vector::new(0., -FRAC_1_SQRT_2, FRAC_1_SQRT_2),
+        );
+        let intersections = world.intersect(ray);
+        let cmps = intersections.hit_computations().unwrap();
+
+        assert_eq!(
+            world.shade_hit(cmps, 0),
+            Color::new(0.93391, 0.69643, 0.69243)
         );
     }
 }
