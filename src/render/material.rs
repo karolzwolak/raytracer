@@ -79,6 +79,18 @@ impl Material {
             refractive_index: 1.5,
         }
     }
+    pub fn air() -> Self {
+        Self {
+            pattern: Pattern::Const(Color::black()),
+            ambient: 0.,
+            diffuse: 0.,
+            specular: 0.,
+            shininess: 0.,
+            reflectivity: 1.,
+            transparency: 1.,
+            refractive_index: AIR_REFRACTIVE_INDEX,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -95,5 +107,7 @@ mod tests {
         assert_eq!(m.specular, 0.9);
         assert_eq!(m.shininess, 200.0);
         assert_eq!(m.reflectivity, 0.0);
+        assert_eq!(m.transparency, 0.0);
+        assert_eq!(m.refractive_index, AIR_REFRACTIVE_INDEX);
     }
 }
