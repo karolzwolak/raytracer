@@ -69,7 +69,7 @@ impl Default for Material {
 impl Material {
     pub fn glass() -> Self {
         Self {
-            pattern: Pattern::Const(Color::white()),
+            pattern: Pattern::Const(Color::black()),
             ambient: 0.1,
             diffuse: 0.9,
             specular: 0.9,
