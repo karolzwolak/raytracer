@@ -1,4 +1,5 @@
-use std::fs;
+use rayon::prelude::*;
+use std::fs::{self, File};
 
 use super::color::Color;
 
@@ -48,8 +49,6 @@ impl Canvas {
     where
         F: Fn(usize, usize) -> Color + std::marker::Sync,
     {
-        use rayon::prelude::*;
-
         let width = self.width;
         let height = self.height;
         self.pixels
@@ -63,7 +62,7 @@ impl Canvas {
     }
 }
 
-// saving to file logic
+/// saving image in ppm format
 impl Canvas {
     const MAX_LINE_LEN: usize = 70;
     fn ppm_header(&self) -> String {
@@ -113,8 +112,38 @@ impl Canvas {
             .collect::<String>()
     }
 
-    pub fn save_to_file(&self, file: &str) -> std::io::Result<()> {
+    pub fn save_to_ppm(&self, file: &mut String) -> std::io::Result<()> {
+        if !file.ends_with(".ppm") {
+            file.push_str(".ppm");
+        }
         fs::write(file, self.ppm_header() + &self.ppm_data())
+    }
+}
+
+/// savng image in png format
+impl Canvas {
+    fn colors_to_bytes(&self) -> Vec<u8> {
+        self.pixels
+            .iter()
+            .flat_map(|color| color.as_scaled_values())
+            .collect()
+    }
+
+    pub fn save_to_png(&self, file: &mut String) -> std::io::Result<()> {
+        if !file.ends_with(".png") {
+            file.push_str(".png");
+        }
+
+        let w = File::create(file)?;
+        let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32);
+        encoder.set_color(png::ColorType::Rgb);
+        encoder.set_depth(png::BitDepth::Eight);
+
+        let mut writer = encoder.write_header()?;
+
+        writer
+            .write_image_data(&self.colors_to_bytes())
+            .map_err(|e| e.into())
     }
 }
 
@@ -202,7 +231,7 @@ mod tests {
         canvas.write_pixel(2, 1, Color::new(0., 0.5, 0.));
         canvas.write_pixel(4, 8, Color::new(-1.5, 0., 1.));
 
-        canvas.save_to_file("test.ppm")
+        canvas.save_to_ppm(&mut "test.ppm".to_string())
     }
     #[test]
     fn ppm_data_ends_with_newline() {

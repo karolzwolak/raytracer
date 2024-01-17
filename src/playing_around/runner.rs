@@ -44,7 +44,7 @@ fn parse_args() -> Option<(String, usize, String)> {
     };
 
     let filename = match args.next() {
-        None => format!("{chapter}.ppm"),
+        None => chapter.to_string(),
         Some(s) => s.trim().to_owned(),
     };
 
@@ -82,8 +82,8 @@ fn run_with_args(
         _ => return Err(format!("no such chapter '{chapter}'")),
     };
 
-    let filename = format!("{IMAGES_DIR}/{filename}");
-    match canvas.save_to_file(&filename) {
+    let mut filename = format!("{IMAGES_DIR}/{filename}");
+    match canvas.save_to_png(&mut filename) {
         Err(err) => Err(format!("failed to save '{filename}' because '{err}'")),
         Ok(_) => {
             println!("created file: {filename} with size {width}x{height} pixels");
