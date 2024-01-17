@@ -15,7 +15,7 @@ pub trait ApproxEq<Rhs = Self> {
 
 impl ApproxEq for f64 {
     fn approx_eq_epsilon(&self, rhs: &Self, epsilon: f64) -> bool {
-        (*self - *rhs).abs() <= epsilon
+        (*self - *rhs).abs() < epsilon
     }
 }
 
@@ -26,9 +26,9 @@ mod tests {
     #[test]
     fn approx_eq_f64() {
         assert!(0f64.approx_eq(&0f64));
-        assert!(0f64.approx_eq(&EPSILON));
-        assert!(0f64.approx_eq(&-EPSILON));
+        assert!(!0f64.approx_eq(&EPSILON));
+        assert!(!0f64.approx_eq(&-EPSILON));
 
-        assert!(!0f64.approx_eq(&(EPSILON + 0.01)));
+        assert!(!0f64.approx_eq(&(EPSILON - LOW_PREC_EPSILON)));
     }
 }

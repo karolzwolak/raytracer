@@ -604,4 +604,20 @@ mod tests {
         assert!(comps.under_point().z() > approx_eq::EPSILON / 2.);
         assert!(comps.world_point().z() < comps.under_point().z());
     }
+
+    #[test]
+    fn over_under_points_dont_approx_eq_actual_points() {
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let sphere = Object::new(
+            Shape::Sphere,
+            Material::glass(),
+            translation_matrix(0., 0., 1.),
+        );
+
+        let inter = Intersection::new(5., &sphere);
+        let comps = inter.computations(&ray);
+
+        assert!(!comps.over_point().approx_eq(&comps.world_point()));
+        assert!(!comps.under_point().approx_eq(&comps.world_point()));
+    }
 }
