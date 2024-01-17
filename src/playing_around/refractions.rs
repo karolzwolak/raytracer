@@ -16,8 +16,21 @@ use crate::{
 use super::making_scene;
 
 pub fn run(width: usize, height: usize) -> Canvas {
-    let c1 = Color::new(0.6, 0.6, 0.6);
-    let material = Material::with_pattern(Pattern::checkers(c1, Color::black(), None));
+    let c1 = Color::new(0.21, 0.42, 0.35);
+    let c2 = Color::new(0.82, 0.72, 0.61);
+
+    let glass_color = Color::new(0.08, 0.2, 0.5);
+
+    let material = Material::with_pattern(Pattern::checkers(
+        c1,
+        c2,
+        Some(
+            translation_matrix(0.5, 0.5, 0.5)
+                .rotate_y(FRAC_PI_2 / 2.)
+                .scale(0.5, 0.5, 0.5)
+                .get_transformed(),
+        ),
+    ));
 
     let floor = Object::new(Shape::Plane, material.clone(), Matrix4::identity_matrix());
 
@@ -31,8 +44,11 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let small_sphere = Object::new(
         Shape::Sphere,
-        Material::glass(),
-        translation_matrix(-1.5, 1., -5.)
+        Material {
+            pattern: Pattern::Const(glass_color),
+            ..Material::glass()
+        },
+        translation_matrix(-1., 1., -5.5)
             .scale(0.5, 0.5, 0.5)
             .get_transformed(),
     );
@@ -46,7 +62,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let mid_sphere_air_pocket = Object::new(
         Shape::Sphere,
         Material::air(),
-        scaling_matrix(0.5, 0.5, 0.5)
+        scaling_matrix(0.6, 0.6, 0.6)
             .translate(0., 1., -1.5)
             .get_transformed(),
     );
