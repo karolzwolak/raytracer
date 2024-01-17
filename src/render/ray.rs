@@ -1,4 +1,4 @@
-use crate::primitive::{matrix4::Matrix4, point::Point, vector::Vector};
+use crate::primitive::{matrix::Matrix, point::Point, vector::Vector};
 
 #[derive(Clone)]
 pub struct Ray {
@@ -21,7 +21,7 @@ impl Ray {
         &self.direction
     }
 
-    pub fn transform(&self, matrix: Matrix4) -> Self {
+    pub fn transform(&self, matrix: Matrix) -> Self {
         Self::new(matrix * self.origin, matrix * self.direction)
     }
 }

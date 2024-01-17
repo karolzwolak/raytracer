@@ -1,7 +1,7 @@
-use std::f64::consts::FRAC_PI_2;
+use core::f64::consts::FRAC_PI_2;
 
 use crate::{
-    primitive::matrix4::Matrix4,
+    primitive::matrix::{Matrix, Transform},
     render::{
         canvas::Canvas,
         color::Color,
@@ -10,7 +10,6 @@ use crate::{
         pattern::Pattern,
         world::World,
     },
-    transformation::{rotation_x_matrix, scaling_matrix, translation_matrix, Transform},
 };
 
 use super::making_scene;
@@ -25,21 +24,21 @@ pub fn run(width: usize, height: usize) -> Canvas {
         c1,
         c2,
         Some(
-            translation_matrix(0.5, 0.5, 0.5)
+            Matrix::translation(0.5, 0.5, 0.5)
                 .rotate_y(FRAC_PI_2 / 2.)
                 .scale(0.5, 0.5, 0.5)
-                .get_transformed(),
+                .transformed(),
         ),
     ));
 
-    let floor = Object::new(Shape::Plane, material.clone(), Matrix4::identity_matrix());
+    let floor = Object::new(Shape::Plane, material.clone(), Matrix::identity());
 
     let wall = Object::new(
         Shape::Plane,
         material,
-        rotation_x_matrix(FRAC_PI_2)
+        Matrix::rotation_x(FRAC_PI_2)
             .translate(0., 0., 5.)
-            .get_transformed(),
+            .transformed(),
     );
 
     let small_sphere = Object::new(
@@ -48,23 +47,23 @@ pub fn run(width: usize, height: usize) -> Canvas {
             pattern: Pattern::Const(glass_color),
             ..Material::glass()
         },
-        translation_matrix(-1., 1., -5.5)
+        Matrix::translation(-1., 1., -5.5)
             .scale(0.5, 0.5, 0.5)
-            .get_transformed(),
+            .transformed(),
     );
 
     let mid_sphere = Object::new(
         Shape::Sphere,
         Material::glass(),
-        translation_matrix(0., 1., -1.5).get_transformed(),
+        Matrix::translation(0., 1., -1.5).transformed(),
     );
 
     let mid_sphere_air_pocket = Object::new(
         Shape::Sphere,
         Material::air(),
-        scaling_matrix(0.6, 0.6, 0.6)
+        Matrix::scaling_uniform(0.6)
             .translate(0., 1., -1.5)
-            .get_transformed(),
+            .transformed(),
     );
 
     let lights = making_scene::scene_lights();

@@ -1,7 +1,7 @@
 pub mod approx_eq;
 
 pub mod primitive {
-    pub mod matrix4;
+    pub mod matrix;
     pub mod point;
     pub mod tuple;
     pub mod vector;
@@ -19,8 +19,6 @@ pub mod render {
     pub mod ray;
     pub mod world;
 }
-
-pub mod transformation;
 
 pub mod playing_around {
     pub mod light_and_shading;

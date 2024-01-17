@@ -1,6 +1,8 @@
-use crate::{
-    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple, vector::Vector},
-    transformation::Transform,
+use crate::primitive::{
+    matrix::{Matrix, Transform},
+    point::Point,
+    tuple::Tuple,
+    vector::Vector,
 };
 
 use super::{intersection::IntersecVec, material::Material, ray::Ray};
@@ -26,11 +28,11 @@ impl Shape {
 pub struct Object {
     shape: Shape,
     material: Material,
-    transformation: Matrix4,
+    transformation: Matrix,
 }
 
 impl Object {
-    pub fn new(shape: Shape, material: Material, transformation: Matrix4) -> Self {
+    pub fn new(shape: Shape, material: Material, transformation: Matrix) -> Self {
         Self {
             shape,
             material,
@@ -39,33 +41,33 @@ impl Object {
     }
 
     pub fn with_shape(shape: Shape) -> Self {
-        Self::with_transformation(shape, Matrix4::identity_matrix())
+        Self::with_transformation(shape, Matrix::identity())
     }
     pub fn with_shape_material(shape: Shape, material: Material) -> Self {
-        Self::new(shape, material, Matrix4::identity_matrix())
+        Self::new(shape, material, Matrix::identity())
     }
-    pub fn with_transformation(shape: Shape, matrix: Matrix4) -> Self {
+    pub fn with_transformation(shape: Shape, matrix: Matrix) -> Self {
         Self::new(shape, Material::default(), matrix)
     }
     pub fn sphere(center: Point, radius: f64) -> Self {
         Self::with_transformation(
             Shape::Sphere,
-            Matrix4::identity_matrix()
+            Matrix::identity()
                 .scale(radius, radius, radius)
                 .translate(center.x(), center.y(), center.z())
-                .get_transformed(),
+                .transformed(),
         )
     }
     pub fn shape(&self) -> &Shape {
         &self.shape
     }
-    pub fn transformation(&self) -> &Matrix4 {
+    pub fn transformation(&self) -> &Matrix {
         &self.transformation
     }
-    pub fn transformation_inverse(&self) -> Option<Matrix4> {
+    pub fn transformation_inverse(&self) -> Option<Matrix> {
         self.transformation.inverse()
     }
-    pub fn apply_transformation(&mut self, matrix: Matrix4) {
+    pub fn apply_transformation(&mut self, matrix: Matrix) {
         self.transformation = self.transformation * matrix;
     }
     pub fn has_intersection_with_ray(&self, ray: &Ray) -> bool {
@@ -98,16 +100,13 @@ mod tests {
     use std::{f64::consts::FRAC_1_SQRT_2, f64::consts::PI};
 
     use super::*;
-    use crate::{
-        primitive::{matrix4::Matrix4, vector::Vector},
-        transformation::{rotation_z_matrix, scaling_matrix, translation_matrix},
-    };
+    use crate::primitive::{matrix::Matrix, vector::Vector};
 
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {
         assert_eq!(
             Object::with_shape(Shape::Sphere).transformation,
-            Matrix4::identity_matrix()
+            Matrix::identity()
         );
     }
     #[test]
@@ -177,7 +176,7 @@ mod tests {
     #[test]
     fn compute_normal_on_translated_sphere() {
         let mut sphere_obj = Object::with_shape(Shape::Sphere);
-        sphere_obj.apply_transformation(translation_matrix(0., 1., 0.));
+        sphere_obj.apply_transformation(Matrix::translation(0., 1., 0.));
         assert_eq!(
             sphere_obj.normal_vector_at(Point::new(0., 1. + FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
             Vector::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)
@@ -186,7 +185,7 @@ mod tests {
     #[test]
     fn compute_normal_on_transformed_sphere() {
         let mut sphere_obj = Object::with_shape(Shape::Sphere);
-        sphere_obj.apply_transformation(scaling_matrix(1., 0.5, 1.) * rotation_z_matrix(PI / 5.));
+        sphere_obj.apply_transformation(Matrix::scaling(1., 0.5, 1.) * Matrix::rotation_z(PI / 5.));
         assert_eq!(
             sphere_obj.normal_vector_at(Point::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
             Vector::new(0., 0.97014, -0.24254)

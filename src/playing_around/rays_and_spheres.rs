@@ -1,9 +1,13 @@
 use std::f64::consts::FRAC_PI_3;
 
 use crate::{
-    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple, vector::Vector},
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+        tuple::Tuple,
+        vector::Vector,
+    },
     render::{canvas::Canvas, color::Color, intersection::IntersecVec, object::Object, ray::Ray},
-    transformation::Transform,
 };
 
 const SPHERE_RADIUS: usize = 200;
@@ -18,11 +22,11 @@ pub fn run() -> Canvas {
     let mut sphere_obj = Object::sphere(Point::new(canvas_center, canvas_center, 0.), radius);
 
     sphere_obj.apply_transformation(
-        Matrix4::identity_matrix()
+        Matrix::identity()
             .scale(0.5, 0.75, 1.)
             .rotate_z(FRAC_PI_3)
             .sheare(1., 0., 0., 0., 0., 0.)
-            .get_transformed(),
+            .transformed(),
     );
     let ray_direction = Vector::new(0., 0., 1.);
 

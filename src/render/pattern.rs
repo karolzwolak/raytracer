@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple},
+    primitive::{matrix::Matrix, point::Point, tuple::Tuple},
 };
 
 use super::{color::Color, object::Object};
@@ -11,35 +11,35 @@ pub enum Pattern {
     Stripe {
         c1: Color,
         c2: Color,
-        inv_transform: Matrix4,
+        inv_transform: Matrix,
     },
     /// Linear gradient changing in x direction
     Gradient {
         c_start: Color,
         c_dist: Color,
-        inv_transform: Matrix4,
+        inv_transform: Matrix,
     },
     /// Ring pattern extending in x and z
     Ring {
         c1: Color,
         c2: Color,
-        inv_transform: Matrix4,
+        inv_transform: Matrix,
     },
     /// 3D checkerboard
     Checkers {
         c1: Color,
         c2: Color,
-        inv_transform: Matrix4,
+        inv_transform: Matrix,
     },
     /// Pattern that returns points coordinates as color
     TestPattern {
-        inv_transform: Matrix4,
+        inv_transform: Matrix,
     },
     Const(Color),
 }
 
 impl Pattern {
-    pub fn stripe(c1: Color, c2: Color, transform: Option<Matrix4>) -> Self {
+    pub fn stripe(c1: Color, c2: Color, transform: Option<Matrix>) -> Self {
         Self::Stripe {
             c1,
             c2,
@@ -47,7 +47,7 @@ impl Pattern {
         }
     }
 
-    pub fn gradient(c1: Color, c2: Color, transform: Option<Matrix4>) -> Self {
+    pub fn gradient(c1: Color, c2: Color, transform: Option<Matrix>) -> Self {
         Self::Gradient {
             c_start: c1,
             c_dist: c2 - c1,
@@ -55,7 +55,7 @@ impl Pattern {
         }
     }
 
-    pub fn ring(c1: Color, c2: Color, transform: Option<Matrix4>) -> Self {
+    pub fn ring(c1: Color, c2: Color, transform: Option<Matrix>) -> Self {
         Self::Ring {
             c1,
             c2,
@@ -63,7 +63,7 @@ impl Pattern {
         }
     }
 
-    pub fn checkers(c1: Color, c2: Color, transform: Option<Matrix4>) -> Self {
+    pub fn checkers(c1: Color, c2: Color, transform: Option<Matrix>) -> Self {
         Self::Checkers {
             c1,
             c2,
@@ -71,7 +71,7 @@ impl Pattern {
         }
     }
 
-    pub fn test_pattern(transform: Option<Matrix4>) -> Self {
+    pub fn test_pattern(transform: Option<Matrix>) -> Self {
         Self::TestPattern {
             inv_transform: transform.unwrap_or_default().inverse().unwrap(),
         }
@@ -136,11 +136,7 @@ impl Pattern {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        primitive::tuple::Tuple,
-        render::object::Shape,
-        transformation::{scaling_matrix, translation_matrix},
-    };
+    use crate::{primitive::tuple::Tuple, render::object::Shape};
 
     use super::*;
 
@@ -178,7 +174,7 @@ mod tests {
 
     #[test]
     fn stripes_with_object_transformation() {
-        let sphere = Object::with_transformation(Shape::Sphere, scaling_matrix(2., 2., 2.));
+        let sphere = Object::with_transformation(Shape::Sphere, Matrix::scaling(2., 2., 2.));
         let stripe = Pattern::stripe(Color::white(), Color::black(), None);
 
         assert_eq!(
@@ -193,7 +189,7 @@ mod tests {
         let stripe = Pattern::stripe(
             Color::white(),
             Color::black(),
-            Some(scaling_matrix(2., 2., 2.)),
+            Some(Matrix::scaling_uniform(2.)),
         );
 
         assert_eq!(
@@ -204,11 +200,11 @@ mod tests {
 
     #[test]
     fn stripes_with_object_and_pattern_transformation() {
-        let sphere = Object::with_transformation(Shape::Sphere, scaling_matrix(2., 2., 2.));
+        let sphere = Object::with_transformation(Shape::Sphere, Matrix::scaling_uniform(2.));
         let stripe = Pattern::stripe(
             Color::white(),
             Color::black(),
-            Some(translation_matrix(0.5, 0., 0.)),
+            Some(Matrix::translation(0.5, 0., 0.)),
         );
 
         assert_eq!(

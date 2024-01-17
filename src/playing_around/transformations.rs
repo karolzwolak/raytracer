@@ -1,9 +1,12 @@
 use std::f64::consts;
 
 use crate::{
-    primitive::{matrix4::Matrix4, point::Point, tuple::Tuple},
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+        tuple::Tuple,
+    },
     render::{canvas::Canvas, color::Color},
-    transformation::Transform,
 };
 
 fn put_on_canvas(canvas: &mut Canvas, size: usize, x: f64, y: f64, color: Color) {
@@ -22,12 +25,10 @@ pub fn run() -> Canvas {
     let mut canvas = Canvas::new(SIZE, SIZE);
 
     let first_point = Point::new(0., 0., 0.)
-        .scale(0., 0., 0.)
+        .scale_uniform(0.)
         .translate(0., RADIUS, 0.)
-        .get_transformed();
-    let transformation = Matrix4::identity_matrix()
-        .rotate_z(consts::FRAC_PI_6)
-        .get_transformed();
+        .transformed();
+    let transformation = Matrix::identity().rotate_z(consts::FRAC_PI_6).transformed();
 
     let mut point = first_point;
 

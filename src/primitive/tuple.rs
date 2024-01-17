@@ -1,6 +1,5 @@
-use crate::{approx_eq::ApproxEq, transformation::Transform};
-
-use super::matrix4::Matrix4;
+use super::matrix::{Matrix, Transform};
+use crate::approx_eq::ApproxEq;
 
 pub trait Tuple {
     fn new(x: f64, y: f64, z: f64) -> Self;
@@ -27,11 +26,11 @@ impl<T> Transform for T
 where
     T: Tuple + Copy,
 {
-    fn transform_borrowed(&mut self, transformation_matrix: &Matrix4) {
+    fn transform_borrowed(&mut self, transformation_matrix: &Matrix) {
         *self = (*transformation_matrix) * (*self);
     }
 
-    fn get_transformed(self) -> Self {
+    fn transformed(self) -> Self {
         self
     }
 }

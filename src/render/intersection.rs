@@ -311,12 +311,12 @@ impl<'a> IntersecVec<'a> {
 mod tests {
     use std::f64::consts;
 
-    use crate::approx_eq;
+    use crate::approx_eq::{self, ApproxEq};
+    use crate::primitive::matrix::Matrix;
     use crate::primitive::point::Point;
     use crate::primitive::tuple::Tuple;
     use crate::primitive::vector::Vector;
     use crate::render::object::Shape;
-    use crate::transformation::{scaling_matrix, translation_matrix};
 
     use super::super::{object::Object, ray::Ray};
     use super::*;
@@ -432,7 +432,7 @@ mod tests {
     #[test]
     fn intersect_scaled_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::with_transformation(Shape::Sphere, scaling_matrix(2., 2., 2.));
+        let obj = Object::with_transformation(Shape::Sphere, Matrix::scaling_uniform(2.));
 
         let int_times = IntersecVec::intersection_times(&ray, &obj);
         assert_eq!(int_times, vec![3., 7.]);
@@ -440,7 +440,7 @@ mod tests {
     #[test]
     fn intersect_translated_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::with_transformation(Shape::Sphere, translation_matrix(5., 0., 0.));
+        let obj = Object::with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
 
         let int_times = IntersecVec::intersection_times(&ray, &obj);
         assert_eq!(int_times, vec![]);
@@ -474,7 +474,7 @@ mod tests {
     #[test]
     fn hit_should_offset_point() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::with_transformation(Shape::Sphere, translation_matrix(0., 0., 10.));
+        let obj = Object::with_transformation(Shape::Sphere, Matrix::translation(0., 0., 10.));
 
         let inter = Intersection::new(5., &obj);
         let comps = inter.computations(&ray);
@@ -533,14 +533,18 @@ mod tests {
 
     #[test]
     fn finding_reflective_exiting_entering_various_intersections() {
-        let sphere_a = Object::new(Shape::Sphere, Material::glass(), scaling_matrix(2., 2., 2.));
+        let sphere_a = Object::new(
+            Shape::Sphere,
+            Material::glass(),
+            Matrix::scaling(2., 2., 2.),
+        );
         let sphere_b = Object::new(
             Shape::Sphere,
             Material {
                 refractive_index: 2.,
                 ..Material::glass()
             },
-            translation_matrix(0., 0., -0.25),
+            Matrix::translation(0., 0., -0.25),
         );
         let sphere_c = Object::new(
             Shape::Sphere,
@@ -548,7 +552,7 @@ mod tests {
                 refractive_index: 2.5,
                 ..Material::glass()
             },
-            translation_matrix(0., 0., 0.25),
+            Matrix::translation(0., 0., 0.25),
         );
 
         let expected_reflective = [
@@ -587,7 +591,7 @@ mod tests {
         let sphere = Object::new(
             Shape::Sphere,
             Material::glass(),
-            translation_matrix(0., 0., 1.),
+            Matrix::translation(0., 0., 1.),
         );
 
         let inter = Intersection::new(5., &sphere);
@@ -603,7 +607,7 @@ mod tests {
         let sphere = Object::new(
             Shape::Sphere,
             Material::glass(),
-            translation_matrix(0., 0., 1.),
+            Matrix::translation(0., 0., 1.),
         );
 
         let inter = Intersection::new(5., &sphere);

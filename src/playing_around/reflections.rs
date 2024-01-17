@@ -1,7 +1,7 @@
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_4};
 
 use crate::{
-    primitive::matrix4::Matrix4,
+    primitive::matrix::{Matrix, Transform},
     render::{
         canvas::Canvas,
         color::Color,
@@ -10,7 +10,6 @@ use crate::{
         pattern::Pattern,
         world::World,
     },
-    transformation::{rotation_x_matrix, translation_matrix, Transform},
 };
 
 use super::making_scene;
@@ -24,32 +23,32 @@ pub fn get_walls() -> Vec<Object> {
 
     let dist = 12.;
 
-    let mut floor = Object::new(Shape::Plane, material.clone(), Matrix4::identity_matrix());
+    let mut floor = Object::new(Shape::Plane, material.clone(), Matrix::identity());
     floor.material_mut().reflectivity = 0.4;
 
     let left_wall = Object::new(
         Shape::Plane,
         material.clone(),
-        rotation_x_matrix(FRAC_PI_2)
+        Matrix::rotation_x(FRAC_PI_2)
             .rotate_y(-FRAC_PI_4)
             .translate(0., 0., dist)
-            .get_transformed(),
+            .transformed(),
     );
 
     let right_wall = Object::new(
         Shape::Plane,
         material,
-        rotation_x_matrix(FRAC_PI_2)
+        Matrix::rotation_x(FRAC_PI_2)
             .rotate_y(FRAC_PI_4)
             .translate(0., 0., dist)
-            .get_transformed(),
+            .transformed(),
     );
 
     let mut l_wall_mirror = left_wall.clone();
-    l_wall_mirror.apply_transformation(translation_matrix(0., -2. * dist, 0.));
+    l_wall_mirror.apply_transformation(Matrix::translation(0., -2. * dist, 0.));
 
     let mut r_wall_mirror = right_wall.clone();
-    r_wall_mirror.apply_transformation(translation_matrix(0., -2. * dist, 0.));
+    r_wall_mirror.apply_transformation(Matrix::translation(0., -2. * dist, 0.));
 
     vec![floor, left_wall, right_wall, l_wall_mirror, r_wall_mirror]
 }
@@ -74,19 +73,19 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let mirror_wall = Object::new(
         Shape::Plane,
         mirror.clone(),
-        rotation_x_matrix(FRAC_PI_2)
+        Matrix::rotation_x(FRAC_PI_2)
             .rotate_y(FRAC_PI_4)
             .translate(0., 0., mirror_dist)
-            .get_transformed(),
+            .transformed(),
     );
 
     let mirror_wall2 = Object::new(
         Shape::Plane,
         mirror,
-        rotation_x_matrix(FRAC_PI_2)
+        Matrix::rotation_x(FRAC_PI_2)
             .rotate_y(-FRAC_PI_4)
             .translate(0., 0., mirror_dist)
-            .get_transformed(),
+            .transformed(),
     );
 
     objects.extend(get_walls());

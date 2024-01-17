@@ -1,4 +1,4 @@
-use crate::primitive::{matrix4::Matrix4, point::Point, tuple::Tuple};
+use crate::primitive::{matrix::Matrix, point::Point, tuple::Tuple};
 
 use super::{canvas::Canvas, ray::Ray};
 
@@ -7,7 +7,7 @@ use super::{canvas::Canvas, ray::Ray};
 pub struct Camera {
     target_width: usize,
     target_height: usize,
-    inverse_transformation: Matrix4,
+    inverse_transformation: Matrix,
 
     pixel_size: f64,
     half_width: f64,
@@ -20,14 +20,14 @@ impl Camera {
             target_width,
             target_height,
             field_of_view,
-            Matrix4::identity_matrix(),
+            Matrix::identity(),
         )
     }
     pub fn with_transformation(
         target_width: usize,
         target_height: usize,
         field_of_view: f64,
-        transformation: Matrix4,
+        transformation: Matrix,
     ) -> Self {
         let inverse_transformation = transformation
             .inverse()
@@ -80,9 +80,12 @@ mod tests {
 
     use crate::{
         approx_eq::ApproxEq,
-        primitive::{tuple::Tuple, vector::Vector},
+        primitive::{
+            matrix::{view_tranformation_matrix, Transform},
+            tuple::Tuple,
+            vector::Vector,
+        },
         render::{color::Color, world::World},
-        transformation::{translation_matrix, view_tranformation_matrix, Transform},
     };
 
     use super::*;
@@ -91,7 +94,7 @@ mod tests {
     fn identity_matrix_is_default_transformation() {
         let camera = Camera::new(160, 120, FRAC_PI_2);
 
-        assert_eq!(camera.inverse_transformation, Matrix4::identity_matrix());
+        assert_eq!(camera.inverse_transformation, Matrix::identity());
     }
     #[test]
     fn pixel_size_for_horizontal_canvas() {
@@ -130,9 +133,9 @@ mod tests {
             201,
             101,
             FRAC_PI_2,
-            translation_matrix(0., -2., 5.)
+            Matrix::translation(0., -2., 5.)
                 .rotate_y(FRAC_PI_4)
-                .get_transformed(),
+                .transformed(),
         );
 
         let ray = camera.ray_for_pixel(100, 50);

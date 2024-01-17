@@ -1,21 +1,24 @@
 use std::f64::consts;
 
 use crate::{
-    primitive::{point::Point, tuple::Tuple},
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+        tuple::Tuple,
+    },
     render::{
         camera::Camera, canvas::Canvas, color::Color, light::PointLightSource, material::Material,
         object::Object, object::Shape, world::World,
     },
-    transformation::{scaling_matrix, Transform},
 };
 
 pub fn run(width: usize, height: usize) -> Canvas {
     let wall = Object::new(
         Shape::Sphere,
         Material::matte_with_color(Color::new(0.4, 0.7, 0.9)),
-        scaling_matrix(50., 50., 0.1)
+        Matrix::scaling(50., 50., 0.1)
             .translate(0., 0., -80.)
-            .get_transformed(),
+            .transformed(),
     );
 
     let gray = Material::matte_with_color(Color::new(0.8, 0.8, 0.8));
@@ -37,33 +40,33 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let carrot = Object::new(
         Shape::Sphere,
         orange,
-        scaling_matrix(0.4, 0.1, 0.1)
+        Matrix::scaling(0.4, 0.1, 0.1)
             .translate(x - 0.25, 1.8, z)
-            .get_transformed(),
+            .transformed(),
     );
 
     let flat = Object::new(
         Shape::Sphere,
         black.clone(),
-        scaling_matrix(0.4, 0.05, 0.4)
+        Matrix::scaling(0.4, 0.05, 0.4)
             .translate(x, 2.1, z)
-            .get_transformed(),
+            .transformed(),
     );
 
     let cylinder = Object::new(
         Shape::Sphere,
         black.clone(),
-        scaling_matrix(0.25, 0.55, 0.25)
+        Matrix::scaling(0.25, 0.55, 0.25)
             .translate(x, 2.1, z)
-            .get_transformed(),
+            .transformed(),
     );
 
     let top = Object::new(
         Shape::Sphere,
         black,
-        scaling_matrix(0.15, 0.085, 0.15)
+        Matrix::scaling(0.15, 0.085, 0.15)
             .translate(x, 2.00 + 0.55, z)
-            .get_transformed(),
+            .transformed(),
     );
 
     let light_source = PointLightSource::new(Point::new(2. * x, 1., 4.), Color::white());

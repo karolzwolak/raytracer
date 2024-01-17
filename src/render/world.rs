@@ -1,7 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{point::Point, tuple::Tuple},
-    transformation::scaling_matrix,
+    primitive::{matrix::Matrix, point::Point, tuple::Tuple},
 };
 
 use super::{
@@ -222,7 +221,7 @@ impl World {
                 ..Default::default()
             },
         );
-        let sphere2 = Object::with_transformation(Shape::Sphere, scaling_matrix(0.5, 0.5, 0.5));
+        let sphere2 = Object::with_transformation(Shape::Sphere, Matrix::scaling(0.5, 0.5, 0.5));
 
         let objects = vec![sphere1, sphere2];
         let lights = vec![PointLightSource::new(
@@ -237,10 +236,7 @@ impl World {
 mod tests {
     use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 
-    use crate::{
-        primitive::vector::Vector, render::intersection::Intersection,
-        transformation::translation_matrix,
-    };
+    use crate::{primitive::vector::Vector, render::intersection::Intersection};
 
     use super::*;
 
@@ -333,7 +329,7 @@ mod tests {
         world.add_obj(Object::with_shape(Shape::Sphere));
         world.add_obj(Object::with_transformation(
             Shape::Sphere,
-            translation_matrix(0., 0., 10.),
+            Matrix::translation(0., 0., 10.),
         ));
 
         let ray = Ray::new(Point::new(0., 0., 5.), Vector::new(0., 0., 1.));
@@ -365,7 +361,7 @@ mod tests {
                 reflectivity: 0.5,
                 ..Default::default()
             },
-            translation_matrix(0., -1., 0.),
+            Matrix::translation(0., -1., 0.),
         );
         w.add_obj(plane);
 
@@ -396,7 +392,7 @@ mod tests {
                 reflectivity: 1.,
                 ..Default::default()
             },
-            translation_matrix(0., -1., 0.),
+            Matrix::translation(0., -1., 0.),
         );
         let upper = Object::new(
             Shape::Plane,
@@ -404,7 +400,7 @@ mod tests {
                 reflectivity: 1.,
                 ..Default::default()
             },
-            translation_matrix(0., 1., 0.),
+            Matrix::translation(0., 1., 0.),
         );
         w.add_obj(lower);
         w.add_obj(upper);
@@ -423,7 +419,7 @@ mod tests {
                 reflectivity: 0.5,
                 ..Default::default()
             },
-            translation_matrix(0., -1., 0.),
+            Matrix::translation(0., -1., 0.),
         );
         world.add_obj(plane);
 
@@ -522,7 +518,7 @@ mod tests {
                 refractive_index: 1.5,
                 ..Default::default()
             },
-            translation_matrix(0., -1., 0.),
+            Matrix::translation(0., -1., 0.),
         );
         let ball = Object::new(
             Shape::Sphere,
@@ -531,7 +527,7 @@ mod tests {
                 ambient: 0.5,
                 ..Default::default()
             },
-            translation_matrix(0., -3.5, -0.5),
+            Matrix::translation(0., -3.5, -0.5),
         );
         world.add_obj(floor);
         world.add_obj(ball);
@@ -560,7 +556,7 @@ mod tests {
                 refractive_index: 1.5,
                 ..Default::default()
             },
-            translation_matrix(0., -1., 0.),
+            Matrix::translation(0., -1., 0.),
         );
         let ball = Object::new(
             Shape::Sphere,
@@ -569,7 +565,7 @@ mod tests {
                 ambient: 0.5,
                 ..Default::default()
             },
-            translation_matrix(0., -3.5, -0.5),
+            Matrix::translation(0., -3.5, -0.5),
         );
         world.add_obj(floor);
         world.add_obj(ball);

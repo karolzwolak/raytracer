@@ -1,17 +1,21 @@
 use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4};
 
 use crate::{
-    primitive::{point::Point, tuple::Tuple, vector::Vector},
+    primitive::{
+        matrix::{view_tranformation_matrix, Matrix, Transform},
+        point::Point,
+        tuple::Tuple,
+        vector::Vector,
+    },
     render::{
         camera::Camera, canvas::Canvas, color::Color, light::PointLightSource, material::Material,
         object::Object, object::Shape, pattern::Pattern, world::World,
     },
-    transformation::{scaling_matrix, translation_matrix, view_tranformation_matrix, Transform},
 };
 
 pub fn scene_objects() -> Vec<Object> {
     let mut middle_sphere =
-        Object::with_transformation(Shape::Sphere, translation_matrix(-0.5, 1., 0.5));
+        Object::with_transformation(Shape::Sphere, Matrix::translation(-0.5, 1., 0.5));
 
     middle_sphere.set_material(Material {
         pattern: Pattern::Const(Color::new(0.1, 1., 0.5)),
@@ -23,17 +27,17 @@ pub fn scene_objects() -> Vec<Object> {
     let mut right_sphere = Object::new(
         Shape::Sphere,
         middle_sphere.material().clone(),
-        scaling_matrix(0.5, 0.5, 0.5)
+        Matrix::scaling_uniform(0.5)
             .translate(1.5, 0.5, -0.5)
-            .get_transformed(),
+            .transformed(),
     );
     right_sphere.material_mut().pattern = Pattern::Const(Color::new(0.5, 1., 0.1));
 
     let mut left_sphere = Object::with_transformation(
         Shape::Sphere,
-        scaling_matrix(0.33, 0.33, 0.33)
+        Matrix::scaling_uniform(0.33)
             .translate(-1.5, 0.33, -0.75)
-            .get_transformed(),
+            .transformed(),
     );
 
     left_sphere.set_material(Material {
@@ -47,28 +51,28 @@ pub fn scene_objects() -> Vec<Object> {
 }
 
 pub fn scene_walls() -> Vec<Object> {
-    let mut floor = Object::with_transformation(Shape::Sphere, scaling_matrix(10., 0.01, 10.));
+    let mut floor = Object::with_transformation(Shape::Sphere, Matrix::scaling(10., 0.01, 10.));
     floor.material_mut().specular = 0.;
     floor.material_mut().pattern = Pattern::Const(Color::new(1., 0.9, 0.9));
 
     let left_wall = Object::new(
         Shape::Sphere,
         floor.material().clone(),
-        scaling_matrix(10., 0.01, 10.)
+        Matrix::scaling(10., 0.01, 10.)
             .rotate_x(FRAC_PI_2)
             .rotate_y(-FRAC_PI_4)
             .translate(0., 0., 5.)
-            .get_transformed(),
+            .transformed(),
     );
 
     let right_wall = Object::new(
         Shape::Sphere,
         floor.material().clone(),
-        scaling_matrix(10., 0.01, 10.)
+        Matrix::scaling(10., 0.01, 10.)
             .rotate_x(FRAC_PI_2)
             .rotate_y(FRAC_PI_4)
             .translate(0., 0., 5.)
-            .get_transformed(),
+            .transformed(),
     );
 
     vec![floor, left_wall, right_wall]
