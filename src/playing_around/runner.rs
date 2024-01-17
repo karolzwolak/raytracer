@@ -7,7 +7,7 @@ use super::{
 };
 
 const SIZE: usize = 1200;
-const DEFAULT_CHAPTER: &str = "reflections";
+const DEFAULT_CHAPTER: &str = "refractions";
 
 pub fn run() -> Result<(), String> {
     match parse_args() {
