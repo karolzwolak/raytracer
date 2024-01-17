@@ -98,7 +98,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let mut objects = scene_walls();
     objects.extend(scene_objects());
 
-    let world = World::new(objects, scene_lights());
+    let world = World::new(objects, scene_lights(), None);
     let camera = scene_camera(width, height);
 
     world.render(&camera)

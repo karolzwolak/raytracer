@@ -71,6 +71,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let world = World::new(
         vec![wall, sphere1, sphere2, sphere3, carrot, flat, cylinder, top],
         vec![light_source],
+        None,
     );
 
     let camera = Camera::new(width, height, consts::FRAC_PI_4);

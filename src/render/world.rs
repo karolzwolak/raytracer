@@ -16,21 +16,26 @@ use super::{
 };
 use super::{object::Shape, pattern::Pattern};
 
-const MAX_RECURSIVE_DEPTH: usize = 5 - 1;
-
 pub struct World {
     objects: Vec<Object>,
     light_sources: Vec<PointLightSource>,
+    max_recursive_depth: usize,
     /// shadows have to be true/false for testing purposes,
     /// because all tests values were calculated with bool shadows
     use_shadow_intensity: bool,
 }
 
 impl World {
-    pub fn new(objects: Vec<Object>, light_sources: Vec<PointLightSource>) -> Self {
+    const MAX_RECURSIVE_DEPTH: usize = 5 - 1;
+    pub fn new(
+        objects: Vec<Object>,
+        light_sources: Vec<PointLightSource>,
+        max_recursive_depth: Option<usize>,
+    ) -> Self {
         Self {
             objects,
             light_sources,
+            max_recursive_depth: max_recursive_depth.unwrap_or(Self::MAX_RECURSIVE_DEPTH),
             use_shadow_intensity: true,
         }
     }
@@ -38,16 +43,18 @@ impl World {
     pub fn new_with_bool_shadows(
         objects: Vec<Object>,
         light_sources: Vec<PointLightSource>,
+        max_recursive_depth: Option<usize>,
     ) -> Self {
         Self {
             objects,
             light_sources,
+            max_recursive_depth: max_recursive_depth.unwrap_or(Self::MAX_RECURSIVE_DEPTH),
             use_shadow_intensity: false,
         }
     }
 
     pub fn empty() -> Self {
-        Self::new(Vec::new(), Vec::new())
+        Self::new(Vec::new(), Vec::new(), None)
     }
     pub fn intersect(&self, ray: Ray) -> IntersecVec {
         IntersecVec::from_ray_and_mult_objects(ray, &self.objects)
@@ -133,7 +140,8 @@ impl World {
     }
 
     fn reflected_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
-        if depth >= MAX_RECURSIVE_DEPTH || hit_comps.object().material().reflectivity.approx_eq(&0.)
+        if depth >= self.max_recursive_depth
+            || hit_comps.object().material().reflectivity.approx_eq(&0.)
         {
             return Color::black();
         }
@@ -144,7 +152,8 @@ impl World {
     }
 
     fn refracted_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
-        if depth >= MAX_RECURSIVE_DEPTH || hit_comps.object().material().transparency.approx_eq(&0.)
+        if depth >= self.max_recursive_depth
+            || hit_comps.object().material().transparency.approx_eq(&0.)
         {
             return Color::black();
         }
@@ -220,7 +229,7 @@ impl World {
             Point::new(-10., 10., -10.),
             Color::white(),
         )];
-        Self::new_with_bool_shadows(objects, lights)
+        Self::new_with_bool_shadows(objects, lights, None)
     }
 }
 
@@ -407,7 +416,7 @@ mod tests {
 
     #[test]
     fn reflected_color_at_max_recursive_depth() {
-        let mut w = World::default_testing();
+        let mut world = World::default_testing();
         let plane = Object::new(
             Shape::Plane,
             Material {
@@ -416,17 +425,17 @@ mod tests {
             },
             translation_matrix(0., -1., 0.),
         );
-        w.add_obj(plane);
+        world.add_obj(plane);
 
         let r = Ray::new(
             Point::new(0., 0., -3.),
             Vector::new(0., -FRAC_1_SQRT_2, FRAC_1_SQRT_2),
         );
-        let i = Intersection::new(SQRT_2, w.objects.last().unwrap());
+        let i = Intersection::new(SQRT_2, world.objects.last().unwrap());
         let comps = i.computations(&r);
 
         assert_eq!(
-            w.reflected_color(&comps, MAX_RECURSIVE_DEPTH),
+            world.reflected_color(&comps, world.max_recursive_depth),
             Color::black()
         );
     }
@@ -455,7 +464,7 @@ mod tests {
         let comps = intersections.hit_computations().unwrap();
 
         assert_eq!(
-            world.refracted_color(&comps, MAX_RECURSIVE_DEPTH),
+            world.refracted_color(&comps, world.max_recursive_depth),
             Color::black()
         );
     }

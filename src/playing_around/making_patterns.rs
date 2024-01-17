@@ -37,7 +37,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let light = PointLightSource::new(Point::new(-10.0, 10.0, -10.0), Color::white());
 
-    let world = World::new(vec![floor, sphere], vec![light]);
+    let world = World::new(vec![floor, sphere], vec![light], None);
     let camera = making_scene::scene_camera(width, height);
 
     world.render(&camera)
