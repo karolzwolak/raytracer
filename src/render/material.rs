@@ -71,7 +71,7 @@ impl Material {
         Self {
             pattern: Pattern::Const(Color::black()),
             ambient: 0.025,
-            diffuse: 0.1,
+            diffuse: 0.2,
             specular: 1.,
             shininess: 300.,
             reflectivity: 0.9,
