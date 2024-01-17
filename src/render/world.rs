@@ -90,7 +90,7 @@ impl World {
         self.light_sources.as_ref()
     }
 
-    // 0. means no shadow, 1. means full shadow
+    /// 0. means no shadow, 1. means full shadow
     pub fn point_shadow_intensity(&self, light_source: &PointLightSource, point: Point) -> f64 {
         let v = light_source.position() - point;
 
@@ -100,11 +100,23 @@ impl World {
         let ray = Ray::new(point, direction);
         let intersections = self.intersect(ray);
 
-        match intersections.hit() {
-            None => 0.,
-            Some(inter) if inter.time() > distance || inter.time().approx_eq(&distance) => 0.,
-            Some(inter) => 1. - inter.object().material().transparency,
+        // calculate shadow intensity by summation of transparency of all objects
+        // (1 - transparency to be exact)
+        let mut intensity = 0.;
+        for inter in intersections.data() {
+            // skip intersections behind light source
+            if inter.time() < 0. {
+                continue;
+            }
+            if inter.time() >= distance {
+                break;
+            }
+            intensity += 1. - inter.object().material().transparency;
+            if intensity >= 1. {
+                return 1.;
+            }
         }
+        intensity
     }
 
     fn reflected_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
