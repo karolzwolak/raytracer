@@ -7,8 +7,6 @@ use super::{canvas::Canvas, ray::Ray};
 pub struct Camera {
     target_width: usize,
     target_height: usize,
-    field_of_view: f64,
-    transformation: Matrix4,
     inverse_transformation: Matrix4,
 
     pixel_size: f64,
@@ -49,8 +47,6 @@ impl Camera {
         Self {
             target_width,
             target_height,
-            field_of_view,
-            transformation,
             inverse_transformation,
 
             pixel_size,
@@ -95,7 +91,7 @@ mod tests {
     fn identity_matrix_is_default_transformation() {
         let camera = Camera::new(160, 120, FRAC_PI_2);
 
-        assert_eq!(camera.transformation, Matrix4::identity_matrix());
+        assert_eq!(camera.inverse_transformation, Matrix4::identity_matrix());
     }
     #[test]
     fn pixel_size_for_horizontal_canvas() {

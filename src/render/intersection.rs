@@ -102,7 +102,6 @@ impl<'a> IntersecComputations<'a> {
 
     pub fn from_intersections(
         hit: &Intersection<'a>,
-        // intersections: Vec<&Intersection<'a>>,
         intersection_vec: &IntersecVec,
     ) -> IntersecComputations<'a> {
         let mut refractive_from = AIR_REFRACTIVE_INDEX;
@@ -201,12 +200,6 @@ impl<'a> IntersecComputations<'a> {
     }
 }
 
-// impl<'a> PartialEq for Intersection<'a> {
-//     fn eq(&self, other: &Self) -> bool {
-//         self.time.approq_eq(other.time) && self.intersected_object == other.intersected_object
-//     }
-// }
-
 pub struct IntersecVec<'a> {
     ray: Ray,
     vec: Vec<Intersection<'a>>,
@@ -288,7 +281,6 @@ impl<'a> IntersecVec<'a> {
     }
 
     pub fn hit_computations(&self) -> Option<IntersecComputations> {
-        // self.hit().map(|inter| inter.computations(&self.ray))
         self.hit().map(|inter| self.computations(inter))
     }
 
