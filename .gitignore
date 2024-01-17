@@ -2,3 +2,4 @@
 *.ppm
 *.svg
 perf*
+/images

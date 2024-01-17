@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, fs};
 
 use crate::playing_around::{making_patterns, planes, reflections, shadows};
 
@@ -7,6 +7,7 @@ use super::{
 };
 
 const SIZE: usize = 1200;
+const IMAGES_DIR: &str = "images";
 const DEFAULT_CHAPTER: &str = "refractions";
 
 pub fn run() -> Result<(), String> {
@@ -58,6 +59,15 @@ fn run_with_args(
 ) -> Result<(), String> {
     let chapter = chapter.trim();
 
+    match fs::create_dir_all(IMAGES_DIR) {
+        Ok(it) => it,
+        Err(err) => {
+            return Err(format!(
+                "cannot create directory '{IMAGES_DIR}' because '{err}'"
+            ))
+        }
+    };
+
     let canvas = match chapter {
         "projectiles" => projectiles::run(width, height),
         "transformations" => transformations::run(),
@@ -72,8 +82,9 @@ fn run_with_args(
         _ => return Err(format!("no such chapter '{chapter}'")),
     };
 
-    match canvas.save_to_file(filename) {
-        Err(err) => Err(format!("failed to run '{chapter}' because '{err}'")),
+    let filename = format!("{IMAGES_DIR}/{filename}");
+    match canvas.save_to_file(&filename) {
+        Err(err) => Err(format!("failed to save '{filename}' because '{err}'")),
         Ok(_) => {
             println!("created file: {filename} with size {width}x{height} pixels");
             Ok(())
