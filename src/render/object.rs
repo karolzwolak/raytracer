@@ -16,6 +16,8 @@ pub enum Shape {
     Sphere,
     /// Plane extending in x and z directions, at y = 0
     Plane,
+    /// Cube with sides of length 2, centered at origin
+    Cube,
 }
 
 impl Shape {
@@ -23,6 +25,20 @@ impl Shape {
         match self {
             Shape::Sphere => object_point - Point::zero(),
             Shape::Plane => Vector::new(0., 1., 0.),
+            Shape::Cube => {
+                let abs_x = object_point.x().abs();
+                let abs_y = object_point.y().abs();
+                let abs_z = object_point.z().abs();
+                let max = abs_x.max(abs_y).max(abs_z);
+
+                if max == abs_x {
+                    Vector::new(object_point.x(), 0., 0.)
+                } else if max == abs_y {
+                    Vector::new(0., object_point.y(), 0.)
+                } else {
+                    Vector::new(0., 0., object_point.z())
+                }
+            }
         }
     }
 }
@@ -82,6 +98,21 @@ impl Object {
         world_normal.normalize()
     }
 
+    fn cube_axis_intersec_times(&self, origin: f64, direction: f64) -> (f64, f64) {
+        assert!(matches!(self.shape, Shape::Cube));
+        let tmin_numerator = -1. - origin;
+        let tmax_numerator = 1. - origin;
+
+        let tmin = tmin_numerator / direction;
+        let tmax = tmax_numerator / direction;
+
+        if tmin < tmax {
+            (tmin, tmax)
+        } else {
+            (tmax, tmin)
+        }
+    }
+
     pub fn intersection_times(&self, ray: &Ray) -> Vec<f64> {
         let object_ray = ray.transform(self.transformation_inverse().unwrap());
 
@@ -107,6 +138,23 @@ impl Object {
                     return Vec::new();
                 }
                 vec![-object_ray.origin().y() / object_ray.direction().y()]
+            }
+            Shape::Cube => {
+                let (xtmin, xtmax) = self
+                    .cube_axis_intersec_times(object_ray.origin().x(), object_ray.direction().x());
+                let (ytmin, ytmax) = self
+                    .cube_axis_intersec_times(object_ray.origin().y(), object_ray.direction().y());
+                let (ztmin, ztmax) = self
+                    .cube_axis_intersec_times(object_ray.origin().z(), object_ray.direction().z());
+
+                let tmin = xtmin.max(ytmin).max(ztmin);
+                let tmax = xtmax.min(ytmax).min(ztmax);
+
+                if tmin > tmax {
+                    return Vec::new();
+                }
+
+                vec![tmin, tmax]
             }
         }
     }
@@ -174,7 +222,6 @@ mod tests {
 
         assert_eq!(obj.intersection_times(&ray), vec![]);
     }
-
     #[test]
     fn ray_intersecting_plane_from_above() {
         let plane = Object::with_shape(Shape::Plane);
@@ -189,6 +236,52 @@ mod tests {
         let ray = Ray::new(Point::new(0., -1., 0.), Vector::new(0., 1., 0.));
 
         assert_eq!(plane.intersection_times(&ray), vec![1.]);
+    }
+
+    #[test]
+    fn ray_intersects_cube() {
+        let cube = Object::with_shape(Shape::Cube);
+        let examples = vec![
+            Ray::new(Point::new(5., 0.5, 0.), Vector::new(-1., 0., 0.)),
+            Ray::new(Point::new(-5., 0.5, 0.), Vector::new(1., 0., 0.)),
+            Ray::new(Point::new(0.5, 5., 0.), Vector::new(0., -1., 0.)),
+            Ray::new(Point::new(0.5, -5., 0.), Vector::new(0., 1., 0.)),
+            Ray::new(Point::new(0.5, 0., 5.), Vector::new(0., 0., -1.)),
+            Ray::new(Point::new(0.5, 0., -5.), Vector::new(0., 0., 1.)),
+            Ray::new(Point::new(0., 0.5, 0.), Vector::new(0., 0., 1.)),
+        ];
+        let expected_times = vec![
+            vec![4., 6.],
+            vec![4., 6.],
+            vec![4., 6.],
+            vec![4., 6.],
+            vec![4., 6.],
+            vec![4., 6.],
+            vec![-1., 1.],
+        ];
+        assert_eq!(examples.len(), expected_times.len());
+
+        for (ray, expected) in examples.iter().zip(expected_times.iter()) {
+            assert_eq!(cube.intersection_times(ray), *expected);
+        }
+    }
+
+    #[test]
+    fn ray_misses_cube() {
+        let cube = Object::with_shape(Shape::Cube);
+
+        let rays = vec![
+            Ray::new(Point::new(-2., 0., 0.), Vector::new(0.2673, 0.5345, 0.8018)),
+            Ray::new(Point::new(0., -2., 0.), Vector::new(0.8018, 0.2673, 0.5345)),
+            Ray::new(Point::new(0., 0., -2.), Vector::new(0.5345, 0.8018, 0.2673)),
+            Ray::new(Point::new(2., 0., 2.), Vector::new(0., 0., -1.)),
+            Ray::new(Point::new(0., 2., 2.), Vector::new(0., -1., 0.)),
+            Ray::new(Point::new(2., 2., 0.), Vector::new(-1., 0., 0.)),
+        ];
+
+        for ray in rays {
+            assert!(!cube.is_intersected_by_ray(&ray));
+        }
     }
 
     #[test]
@@ -265,5 +358,24 @@ mod tests {
         assert_eq!(plane.normal_vector_at(Point::new(0., 0., 0.,)), expected);
         assert_eq!(plane.normal_vector_at(Point::new(10., 0., -10.,)), expected);
         assert_eq!(plane.normal_vector_at(Point::new(-5., 0., 150.,)), expected);
+    }
+
+    #[test]
+    fn normal_on_surface_of_cube() {
+        let cube = Object::with_shape(Shape::Cube);
+        let examples = vec![
+            (Point::new(1., 0.5, -0.8), Vector::new(1., 0., 0.)),
+            (Point::new(-1., -0.2, 0.9), Vector::new(-1., 0., 0.)),
+            (Point::new(-0.4, 1., -0.1), Vector::new(0., 1., 0.)),
+            (Point::new(0.3, -1., -0.7), Vector::new(0., -1., 0.)),
+            (Point::new(-0.6, 0.3, 1.), Vector::new(0., 0., 1.)),
+            (Point::new(0.4, 0.4, -1.), Vector::new(0., 0., -1.)),
+            (Point::new(1., 1., 1.), Vector::new(1., 0., 0.)),
+            (Point::new(-1., -1., -1.), Vector::new(-1., 0., 0.)),
+        ];
+
+        for (point, expected) in examples {
+            assert_eq!(cube.normal_vector_at(point), expected);
+        }
     }
 }
