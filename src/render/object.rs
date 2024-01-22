@@ -1,11 +1,14 @@
-use crate::primitive::{
-    matrix::{Matrix, Transform},
-    point::Point,
-    tuple::Tuple,
-    vector::Vector,
+use crate::{
+    approx_eq::ApproxEq,
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+        tuple::Tuple,
+        vector::Vector,
+    },
 };
 
-use super::{intersection::IntersecVec, material::Material, ray::Ray};
+use super::{material::Material, ray::Ray};
 
 #[derive(Copy, Clone)]
 pub enum Shape {
@@ -70,9 +73,6 @@ impl Object {
     pub fn apply_transformation(&mut self, matrix: Matrix) {
         self.transformation = self.transformation * matrix;
     }
-    pub fn has_intersection_with_ray(&self, ray: &Ray) -> bool {
-        IntersecVec::does_intersect(ray, self)
-    }
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
         let inverse = self.transformation_inverse().unwrap();
         let object_point = inverse * world_point;
@@ -82,6 +82,38 @@ impl Object {
         world_normal.normalize()
     }
 
+    pub fn intersection_times(&self, ray: &Ray) -> Vec<f64> {
+        let object_ray = ray.transform(self.transformation_inverse().unwrap());
+
+        match self.shape {
+            Shape::Sphere => {
+                let vector_sphere_to_ray = *object_ray.origin() - Point::new(0., 0., 0.);
+
+                let a = object_ray.direction().dot(*object_ray.direction());
+                let b = 2. * object_ray.direction().dot(vector_sphere_to_ray);
+                let c = vector_sphere_to_ray.dot(vector_sphere_to_ray) - 1.;
+
+                let discriminant = b * b - 4. * a * c;
+                if discriminant < 0. || a == 0. {
+                    return Vec::new();
+                }
+
+                let delta_sqrt = discriminant.sqrt();
+                vec![(-b - delta_sqrt) / (2. * a), (-b + delta_sqrt) / (2. * a)]
+            }
+            Shape::Plane => {
+                let parallel = object_ray.direction().y().approx_eq(&0.);
+                if parallel {
+                    return Vec::new();
+                }
+                vec![-object_ray.origin().y() / object_ray.direction().y()]
+            }
+        }
+    }
+
+    pub fn is_intersected_by_ray(&self, ray: &Ray) -> bool {
+        !self.intersection_times(ray).is_empty()
+    }
     pub fn material(&self) -> &Material {
         &self.material
     }
@@ -115,18 +147,50 @@ mod tests {
         let obj = Object::sphere(Point::new(2., 2., 2.), 4.);
 
         let direction = Vector::new(0., 0., 1.);
-        assert!(obj.has_intersection_with_ray(&Ray::new(Point::new(2., 2., 2.), direction)));
-        assert!(obj.has_intersection_with_ray(&Ray::new(Point::new(2., 2., -2.), direction)));
-        assert!(obj.has_intersection_with_ray(&Ray::new(Point::new(4., 2., -2.), direction)));
-        assert!(obj.has_intersection_with_ray(&Ray::new(Point::new(6., 2., -2.), direction)));
-        assert!(obj.has_intersection_with_ray(&Ray::new(Point::new(-2., 2., -2.), direction)));
-        assert!(obj.has_intersection_with_ray(&Ray::new(Point::new(-1., 2., -2.), direction)));
-        assert!(obj.has_intersection_with_ray(&Ray::new(Point::new(3., -1., -2.), direction)));
+        assert!(obj.is_intersected_by_ray(&Ray::new(Point::new(2., 2., 2.), direction)));
+        assert!(obj.is_intersected_by_ray(&Ray::new(Point::new(2., 2., -2.), direction)));
+        assert!(obj.is_intersected_by_ray(&Ray::new(Point::new(4., 2., -2.), direction)));
+        assert!(obj.is_intersected_by_ray(&Ray::new(Point::new(6., 2., -2.), direction)));
+        assert!(obj.is_intersected_by_ray(&Ray::new(Point::new(-2., 2., -2.), direction)));
+        assert!(obj.is_intersected_by_ray(&Ray::new(Point::new(-1., 2., -2.), direction)));
+        assert!(obj.is_intersected_by_ray(&Ray::new(Point::new(3., -1., -2.), direction)));
 
-        assert!(!obj.has_intersection_with_ray(&Ray::new(Point::new(-1., -2., -2.), direction)));
-        assert!(!obj.has_intersection_with_ray(&Ray::new(Point::new(3., -8., -2.), direction)));
-        assert!(!obj.has_intersection_with_ray(&Ray::new(Point::new(3., -6., -2.), direction)));
+        assert!(!obj.is_intersected_by_ray(&Ray::new(Point::new(-1., -2., -2.), direction)));
+        assert!(!obj.is_intersected_by_ray(&Ray::new(Point::new(3., -8., -2.), direction)));
+        assert!(!obj.is_intersected_by_ray(&Ray::new(Point::new(3., -6., -2.), direction)));
     }
+
+    #[test]
+    fn intersect_scaled_sphere() {
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let obj = Object::with_transformation(Shape::Sphere, Matrix::scaling_uniform(2.));
+
+        assert_eq!(obj.intersection_times(&ray), vec![3., 7.]);
+    }
+    #[test]
+    fn intersect_translated_sphere() {
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let obj = Object::with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
+
+        assert_eq!(obj.intersection_times(&ray), vec![]);
+    }
+
+    #[test]
+    fn ray_intersecting_plane_from_above() {
+        let plane = Object::with_shape(Shape::Plane);
+        let ray = Ray::new(Point::new(0., 1., 0.), Vector::new(0., -1., 0.));
+
+        assert_eq!(plane.intersection_times(&ray), vec![1.]);
+    }
+
+    #[test]
+    fn ray_intersecting_plane_from_below() {
+        let plane = Object::with_shape(Shape::Plane);
+        let ray = Ray::new(Point::new(0., -1., 0.), Vector::new(0., 1., 0.));
+
+        assert_eq!(plane.intersection_times(&ray), vec![1.]);
+    }
+
     #[test]
     fn normal_on_sphere_x_axis() {
         let sphere_obj = Object::with_shape(Shape::Sphere);

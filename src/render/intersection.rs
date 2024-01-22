@@ -1,7 +1,6 @@
 use crate::{
-    approx_eq::{self, ApproxEq},
-    primitive::{point::Point, tuple::Tuple, vector::Vector},
-    render::object::Shape,
+    approx_eq::{self},
+    primitive::{point::Point, vector::Vector},
 };
 
 use super::{
@@ -206,34 +205,6 @@ pub struct IntersecVec<'a> {
 }
 
 impl<'a> IntersecVec<'a> {
-    fn intersection_times(ray: &Ray, object: &'a Object) -> Vec<f64> {
-        let object_ray = ray.transform(object.transformation_inverse().unwrap());
-
-        match object.shape() {
-            Shape::Sphere => {
-                let vector_sphere_to_ray = *object_ray.origin() - Point::new(0., 0., 0.);
-
-                let a = object_ray.direction().dot(*object_ray.direction());
-                let b = 2. * object_ray.direction().dot(vector_sphere_to_ray);
-                let c = vector_sphere_to_ray.dot(vector_sphere_to_ray) - 1.;
-
-                let discriminant = b * b - 4. * a * c;
-                if discriminant < 0. || a == 0. {
-                    return Vec::new();
-                }
-
-                let delta_sqrt = discriminant.sqrt();
-                vec![(-b - delta_sqrt) / (2. * a), (-b + delta_sqrt) / (2. * a)]
-            }
-            Shape::Plane => {
-                let parallel = object_ray.direction().y().approx_eq(&0.);
-                if parallel {
-                    return Vec::new();
-                }
-                vec![-object_ray.origin().y() / object_ray.direction().y()]
-            }
-        }
-    }
     pub fn new(ray: Ray, mut vec: Vec<Intersection<'a>>) -> Self {
         vec.sort_unstable_by(|i1, i2| i1.time().partial_cmp(&i2.time()).unwrap());
         Self { vec, ray }
@@ -251,7 +222,8 @@ impl<'a> IntersecVec<'a> {
         let intersections: Vec<Intersection> = objects
             .iter()
             .flat_map(|object| {
-                Self::intersection_times(&ray, object)
+                object
+                    .intersection_times(&ray)
                     .into_iter()
                     .map(|time| Intersection::new(time, object))
             })
@@ -260,12 +232,8 @@ impl<'a> IntersecVec<'a> {
         Self::new(ray, intersections)
     }
     pub fn from_ray_and_obj(ray: Ray, object: &'a Object) -> Self {
-        let times = Self::intersection_times(&ray, object);
+        let times = object.intersection_times(&ray);
         Self::from_times_and_obj(ray, times, object)
-    }
-
-    pub fn does_intersect(ray: &Ray, object: &'a Object) -> bool {
-        !Self::intersection_times(ray, object).is_empty()
     }
 
     pub fn has_intersection(&self) -> bool {
@@ -428,24 +396,6 @@ mod tests {
         assert!(hit.is_some());
         assert_eq!(hit.unwrap().time(), 2.);
     }
-
-    #[test]
-    fn intersect_scaled_sphere() {
-        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::with_transformation(Shape::Sphere, Matrix::scaling_uniform(2.));
-
-        let int_times = IntersecVec::intersection_times(&ray, &obj);
-        assert_eq!(int_times, vec![3., 7.]);
-    }
-    #[test]
-    fn intersect_translated_sphere() {
-        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
-
-        let int_times = IntersecVec::intersection_times(&ray, &obj);
-        assert_eq!(int_times, vec![]);
-    }
-
     #[test]
     fn intersec_comps_outside_obj() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
@@ -499,22 +449,6 @@ mod tests {
 
         let intersections = IntersecVec::from_ray_and_obj(ray, &plane);
         assert!(!intersections.has_intersection());
-    }
-
-    #[test]
-    fn ray_intersecting_plane_from_above() {
-        let plane = Object::with_shape(Shape::Plane);
-        let ray = Ray::new(Point::new(0., 1., 0.), Vector::new(0., -1., 0.));
-
-        assert_eq!(IntersecVec::intersection_times(&ray, &plane), vec![1.]);
-    }
-
-    #[test]
-    fn ray_intersecting_plane_from_below() {
-        let plane = Object::with_shape(Shape::Plane);
-        let ray = Ray::new(Point::new(0., -1., 0.), Vector::new(0., 1., 0.));
-
-        assert_eq!(IntersecVec::intersection_times(&ray, &plane), vec![1.]);
     }
 
     #[test]
