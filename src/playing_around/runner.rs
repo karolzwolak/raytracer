@@ -3,12 +3,13 @@ use std::{env, fs};
 use crate::playing_around::{making_patterns, planes, reflections, shadows};
 
 use super::{
-    light_and_shading, making_scene, projectiles, rays_and_spheres, refractions, transformations,
+    cubes, light_and_shading, making_scene, projectiles, rays_and_spheres, refractions,
+    transformations,
 };
 
 const SIZE: usize = 1200;
 const IMAGES_DIR: &str = "images";
-const DEFAULT_CHAPTER: &str = "refractions";
+const DEFAULT_CHAPTER: &str = "cubes";
 
 pub fn run() -> Result<(), String> {
     match parse_args() {
@@ -79,6 +80,7 @@ fn run_with_args(
         "patterns" => making_patterns::run(width, height),
         "reflections" => reflections::run(width, height),
         "refractions" => refractions::run(width, height),
+        "cubes" => cubes::run(width, height),
         _ => return Err(format!("no such chapter '{chapter}'")),
     };
 
