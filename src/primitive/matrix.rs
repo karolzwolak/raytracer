@@ -192,6 +192,24 @@ impl Matrix {
             0., 0., 0., 1.,
         ])
     }
+
+    pub fn view_tranformation(from: Point, to: Point, up_v: Vector) -> Matrix {
+        let up_v = up_v.normalize();
+
+        let forward_v = (to - from).normalize();
+        let left_v = forward_v.cross(up_v);
+        let true_up_v = left_v.cross(forward_v);
+
+        #[rustfmt::skip]
+    let orientation = Matrix::new([
+        left_v.x(), left_v.y(), left_v.z(), 0.,
+        true_up_v.x(), true_up_v.y(), true_up_v.z(), 0.,
+        -forward_v.x(), -forward_v.y(), -forward_v.z(), 0.,
+        0., 0., 0., 1.,
+    ]);
+
+        orientation * Matrix::translation(-from.x(), -from.y(), -from.z())
+    }
 }
 
 impl ApproxEq for Matrix {
@@ -312,24 +330,6 @@ pub trait Transform {
             x_prop_y, x_prop_z, y_prop_x, y_prop_z, z_prop_x, z_prop_y,
         ))
     }
-}
-
-pub fn view_tranformation_matrix(from: Point, to: Point, up_v: Vector) -> Matrix {
-    let up_v = up_v.normalize();
-
-    let forward_v = (to - from).normalize();
-    let left_v = forward_v.cross(up_v);
-    let true_up_v = left_v.cross(forward_v);
-
-    #[rustfmt::skip]
-    let orientation = Matrix::new([
-        left_v.x(), left_v.y(), left_v.z(), 0.,
-        true_up_v.x(), true_up_v.y(), true_up_v.z(), 0.,
-        -forward_v.x(), -forward_v.y(), -forward_v.z(), 0.,
-        0., 0., 0., 1.,
-    ]);
-
-    orientation * Matrix::translation(-from.x(), -from.y(), -from.z())
 }
 
 #[cfg(test)]
@@ -687,7 +687,7 @@ mod tests {
         let up_v = Vector::new(0., 1., 0.);
 
         assert_eq!(
-            view_tranformation_matrix(from, to, up_v),
+            Matrix::view_tranformation(from, to, up_v),
             Matrix::identity()
         )
     }
@@ -698,7 +698,7 @@ mod tests {
         let up_v = Vector::new(0., 1., 0.);
 
         assert_eq!(
-            view_tranformation_matrix(from, to, up_v),
+            Matrix::view_tranformation(from, to, up_v),
             Matrix::scaling(-1., 1., -1.)
         )
     }
@@ -709,7 +709,7 @@ mod tests {
         let up_v = Vector::new(0., 1., 0.);
 
         assert_eq!(
-            view_tranformation_matrix(from, to, up_v),
+            Matrix::view_tranformation(from, to, up_v),
             Matrix::translation(0., 0., -8.)
         )
     }
@@ -727,7 +727,7 @@ mod tests {
             0.00000, 0.00000, 0.00000, 1.00000,
         ]);
 
-        assert_eq!(view_tranformation_matrix(from, to, up_v), expected);
+        assert_eq!(Matrix::view_tranformation(from, to, up_v), expected);
     }
 
     #[test]

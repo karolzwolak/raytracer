@@ -2,7 +2,7 @@ use std::f64::consts::{FRAC_PI_2, FRAC_PI_3, FRAC_PI_4};
 
 use crate::{
     primitive::{
-        matrix::{view_tranformation_matrix, Matrix, Transform},
+        matrix::{Matrix, Transform},
         point::Point,
         tuple::Tuple,
         vector::Vector,
@@ -94,7 +94,7 @@ pub fn scene_camera(width: usize, height: usize) -> Camera {
         width,
         height,
         FRAC_PI_3,
-        view_tranformation_matrix(from, to, up_v),
+        Matrix::view_tranformation(from, to, up_v),
     )
 }
 

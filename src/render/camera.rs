@@ -80,11 +80,7 @@ mod tests {
 
     use crate::{
         approx_eq::ApproxEq,
-        primitive::{
-            matrix::{view_tranformation_matrix, Transform},
-            tuple::Tuple,
-            vector::Vector,
-        },
+        primitive::{matrix::Transform, tuple::Tuple, vector::Vector},
         render::{color::Color, world::World},
     };
 
@@ -158,7 +154,7 @@ mod tests {
             11,
             11,
             FRAC_PI_2,
-            view_tranformation_matrix(from, to, up_v),
+            Matrix::view_tranformation(from, to, up_v),
         );
 
         let canvas = world.render(&camera);
