@@ -79,6 +79,13 @@ impl Material {
             refractive_index: 1.5,
         }
     }
+    pub fn mirror() -> Self {
+        Self {
+            reflectivity: 0.98,
+            transparency: 0.,
+            ..Self::glass()
+        }
+    }
     pub fn air() -> Self {
         Self {
             pattern: Pattern::Const(Color::black()),
