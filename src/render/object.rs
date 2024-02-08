@@ -18,6 +18,8 @@ pub enum Shape {
     Plane,
     /// Cube with sides of length 2, centered at origin
     Cube,
+    /// Cylinder with radius 1, extending infinitely in y direction
+    Cylinder,
 }
 
 impl Shape {
@@ -39,6 +41,7 @@ impl Shape {
                     Vector::new(0., 0., object_point.z())
                 }
             }
+            Shape::Cylinder => Vector::new(object_point.x(), 0., object_point.z()).normalize(),
         }
     }
 }
@@ -155,6 +158,27 @@ impl Object {
                 }
 
                 vec![tmin, tmax]
+            }
+            Shape::Cylinder => {
+                let a = object_ray.direction().x().powi(2) + object_ray.direction().z().powi(2);
+
+                // ray is parallel to the y axis
+                if a.approx_eq(&0.) {
+                    return Vec::new();
+                }
+
+                let b = 2. * object_ray.origin().x() * object_ray.direction().x()
+                    + 2. * object_ray.origin().z() * object_ray.direction().z();
+                let c = object_ray.origin().x().powi(2) + object_ray.origin().z().powi(2) - 1.;
+
+                let discriminant = b * b - 4. * a * c;
+
+                if discriminant < 0. {
+                    return Vec::new();
+                }
+
+                let delta_sqrt = discriminant.sqrt();
+                vec![(-b - delta_sqrt) / (2. * a), (-b + delta_sqrt) / (2. * a)]
             }
         }
     }
@@ -376,6 +400,69 @@ mod tests {
 
         for (point, expected) in examples {
             assert_eq!(cube.normal_vector_at(point), expected);
+        }
+    }
+
+    #[test]
+    fn ray_misses_cylinder() {
+        let cyl = Object::with_shape(Shape::Cylinder);
+        let examples = vec![
+            Ray::new(Point::new(1., 0., 0.), Vector::new(0., 1., 0.)),
+            Ray::new(Point::new(0., 0., 0.), Vector::new(0., 1., 0.)),
+            Ray::new(Point::new(0., 0., -5.), Vector::new(1., 1., 1.)),
+        ];
+
+        for ray in examples {
+            assert!(!cyl.is_intersected_by_ray(&ray));
+        }
+    }
+
+    #[test]
+    fn ray_intersects_cylinder() {
+        let cyl = Object::with_shape(Shape::Cylinder);
+
+        let examples = vec![
+            (
+                Point::new(1., 0., -5.),
+                Vector::new(0., 0., 1.),
+                vec![5., 5.],
+            ),
+            (
+                Point::new(0., 0., -5.),
+                Vector::new(0., 0., 1.),
+                vec![4., 6.],
+            ),
+            (
+                Point::new(0.5, 0., -5.),
+                Vector::new(0.1, 1., 1.),
+                vec![6.80798, 7.08872],
+            ),
+        ];
+
+        for (origin, direction, expected) in examples {
+            let ray = Ray::new(origin, direction.normalize());
+            let times = cyl.intersection_times(&ray);
+
+            assert_eq!(times.len(), expected.len());
+            for t in times.iter().zip(expected.iter()) {
+                assert!(t.0.approx_eq(t.1));
+            }
+        }
+    }
+
+    #[test]
+    fn normal_of_cylinder() {
+        let cyl = Object::with_shape(Shape::Cylinder);
+
+        let examples = vec![
+            (Point::new(1., 0., 0.), Vector::new(1., 0., 0.)),
+            (Point::new(0., 5., -1.), Vector::new(0., 0., -1.)),
+            (Point::new(0., -2., 1.), Vector::new(0., 0., 1.)),
+            (Point::new(-1., 1., 0.), Vector::new(-1., 0., 0.)),
+        ];
+
+        for (point, expected) in examples {
+            assert_eq!(cyl.normal_vector_at(point), expected);
         }
     }
 }
