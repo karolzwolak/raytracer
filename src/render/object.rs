@@ -18,8 +18,8 @@ pub enum Shape {
     Plane,
     /// Cube with sides of length 2, centered at origin
     Cube,
-    /// Cylinder with radius 1, extending infinitely in y direction
-    Cylinder,
+    /// Cylinder with radius 1, extending from y_min to y_max exclusively
+    Cylinder { y_min: f64, y_max: f64 },
 }
 
 impl Shape {
@@ -41,7 +41,15 @@ impl Shape {
                     Vector::new(0., 0., object_point.z())
                 }
             }
-            Shape::Cylinder => Vector::new(object_point.x(), 0., object_point.z()).normalize(),
+            Shape::Cylinder { .. } => {
+                Vector::new(object_point.x(), 0., object_point.z()).normalize()
+            }
+        }
+    }
+    pub fn cylinder() -> Self {
+        Shape::Cylinder {
+            y_min: f64::NEG_INFINITY,
+            y_max: f64::INFINITY,
         }
     }
 }
@@ -159,7 +167,7 @@ impl Object {
 
                 vec![tmin, tmax]
             }
-            Shape::Cylinder => {
+            Shape::Cylinder { y_min, y_max } => {
                 let a = object_ray.direction().x().powi(2) + object_ray.direction().z().powi(2);
 
                 // ray is parallel to the y axis
@@ -178,7 +186,29 @@ impl Object {
                 }
 
                 let delta_sqrt = discriminant.sqrt();
-                vec![(-b - delta_sqrt) / (2. * a), (-b + delta_sqrt) / (2. * a)]
+
+                let mut t0 = (-b - delta_sqrt) / (2. * a);
+                let mut t1 = (-b + delta_sqrt) / (2. * a);
+
+                if t0 > t1 {
+                    std::mem::swap(&mut t0, &mut t1);
+                }
+
+                let mut res = Vec::with_capacity(2);
+
+                let y0 = object_ray.origin().y() + t0 * object_ray.direction().y();
+
+                if y_min < y0 && y0 < y_max {
+                    res.push(t0);
+                }
+
+                let y1 = object_ray.origin().y() + t1 * object_ray.direction().y();
+
+                if y_min < y1 && y1 < y_max {
+                    res.push(t1);
+                }
+
+                res
             }
         }
     }
@@ -405,7 +435,7 @@ mod tests {
 
     #[test]
     fn ray_misses_cylinder() {
-        let cyl = Object::with_shape(Shape::Cylinder);
+        let cyl = Object::with_shape(Shape::cylinder());
         let examples = vec![
             Ray::new(Point::new(1., 0., 0.), Vector::new(0., 1., 0.)),
             Ray::new(Point::new(0., 0., 0.), Vector::new(0., 1., 0.)),
@@ -419,7 +449,7 @@ mod tests {
 
     #[test]
     fn ray_intersects_cylinder() {
-        let cyl = Object::with_shape(Shape::Cylinder);
+        let cyl = Object::with_shape(Shape::cylinder());
 
         let examples = vec![
             (
@@ -452,7 +482,7 @@ mod tests {
 
     #[test]
     fn normal_of_cylinder() {
-        let cyl = Object::with_shape(Shape::Cylinder);
+        let cyl = Object::with_shape(Shape::cylinder());
 
         let examples = vec![
             (Point::new(1., 0., 0.), Vector::new(1., 0., 0.)),
@@ -463,6 +493,41 @@ mod tests {
 
         for (point, expected) in examples {
             assert_eq!(cyl.normal_vector_at(point), expected);
+        }
+    }
+
+    #[test]
+    fn default_min_max_for_cylinder() {
+        let cyl = Shape::cylinder();
+
+        if let Shape::Cylinder { y_min, y_max } = cyl {
+            assert_eq!(y_min, f64::NEG_INFINITY);
+            assert_eq!(y_max, f64::INFINITY);
+        } else {
+            panic!("Expected cylinder");
+        }
+    }
+
+    #[test]
+    fn intersecting_constrained_cylinder() {
+        let cyl = Object::with_shape(Shape::Cylinder {
+            y_min: 1.,
+            y_max: 2.,
+        });
+
+        let examples = vec![
+            (Point::new(0., 1.5, 0.), Vector::new(0.1, 1., 0.), 0),
+            (Point::new(0., 3., -5.), Vector::new(0., 0., 1.), 0),
+            (Point::new(0., 0., -5.), Vector::new(0., 0., 1.), 0),
+            (Point::new(0., 2., -5.), Vector::new(0., 0., 1.), 0),
+            (Point::new(0., 1., -5.), Vector::new(0., 0., 1.), 0),
+            (Point::new(0., 1.5, -2.), Vector::new(0., 0., 1.), 2),
+        ];
+
+        for (origin, direction, expected) in examples {
+            let ray = Ray::new(origin, direction.normalize());
+            let times = cyl.intersection_times(&ray);
+            assert_eq!(times.len(), expected);
         }
     }
 }
