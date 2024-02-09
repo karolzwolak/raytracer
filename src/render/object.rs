@@ -1,5 +1,5 @@
 use crate::{
-    approx_eq::ApproxEq,
+    approx_eq::{self, ApproxEq},
     primitive::{
         matrix::{Matrix, Transform},
         point::Point,
@@ -19,10 +19,16 @@ pub enum Shape {
     /// Cube with sides of length 2, centered at origin
     Cube,
     /// Cylinder with radius 1, extending from y_min to y_max exclusively
-    Cylinder { y_min: f64, y_max: f64 },
+    Cylinder {
+        y_min: f64,
+        y_max: f64,
+        closed: bool,
+    },
 }
 
 impl Shape {
+    const CYLINDER_RADIUS: f64 = 1.;
+
     pub fn object_normal_at(&self, object_point: Point) -> Vector {
         match self {
             Shape::Sphere => object_point - Point::zero(),
@@ -41,8 +47,17 @@ impl Shape {
                     Vector::new(0., 0., object_point.z())
                 }
             }
-            Shape::Cylinder { .. } => {
-                Vector::new(object_point.x(), 0., object_point.z()).normalize()
+            Shape::Cylinder { y_min, y_max, .. } => {
+                let dist = object_point.x().powi(2) + object_point.z().powi(2);
+                let point_within_radius = dist < Self::CYLINDER_RADIUS;
+
+                if point_within_radius && object_point.y() >= y_max - approx_eq::EPSILON {
+                    Vector::new(0., Self::CYLINDER_RADIUS, 0.)
+                } else if point_within_radius && object_point.y() <= y_min + approx_eq::EPSILON {
+                    Vector::new(0., -Self::CYLINDER_RADIUS, 0.)
+                } else {
+                    Vector::new(object_point.x(), 0., object_point.z())
+                }
             }
         }
     }
@@ -50,6 +65,7 @@ impl Shape {
         Shape::Cylinder {
             y_min: f64::NEG_INFINITY,
             y_max: f64::INFINITY,
+            closed: false,
         }
     }
 }
@@ -124,6 +140,37 @@ impl Object {
         }
     }
 
+    fn cyl_check_cap_within_radius(&self, ray: &Ray, t: f64) -> bool {
+        let x = ray.origin().x() + t * ray.direction().x();
+        let z = ray.origin().z() + t * ray.direction().z();
+
+        x * x + z * z <= Shape::CYLINDER_RADIUS
+    }
+
+    fn intersect_cyl_caps(&self, ray: &Ray, times: &mut Vec<f64>) {
+        match self.shape {
+            Shape::Cylinder {
+                y_min,
+                y_max,
+                closed,
+            } => {
+                if !closed || ray.direction().y().approx_eq(&0.) {
+                    return;
+                }
+                let tmin = (y_min - ray.origin().y()) / ray.direction().y();
+                let tmax = (y_max - ray.origin().y()) / ray.direction().y();
+
+                if self.cyl_check_cap_within_radius(ray, tmin) {
+                    times.push(tmin);
+                }
+                if self.cyl_check_cap_within_radius(ray, tmax) {
+                    times.push(tmax);
+                }
+            }
+            _ => panic!("expected Shape::Cylinder"),
+        }
+    }
+
     pub fn intersection_times(&self, ray: &Ray) -> Vec<f64> {
         let object_ray = ray.transform(self.transformation_inverse().unwrap());
 
@@ -167,12 +214,20 @@ impl Object {
 
                 vec![tmin, tmax]
             }
-            Shape::Cylinder { y_min, y_max } => {
+            Shape::Cylinder {
+                y_min,
+                y_max,
+                closed,
+            } => {
+                let mut res = Vec::new();
+
+                self.intersect_cyl_caps(ray, &mut res);
+
                 let a = object_ray.direction().x().powi(2) + object_ray.direction().z().powi(2);
 
                 // ray is parallel to the y axis
                 if a.approx_eq(&0.) {
-                    return Vec::new();
+                    return res;
                 }
 
                 let b = 2. * object_ray.origin().x() * object_ray.direction().x()
@@ -193,8 +248,6 @@ impl Object {
                 if t0 > t1 {
                     std::mem::swap(&mut t0, &mut t1);
                 }
-
-                let mut res = Vec::with_capacity(2);
 
                 let y0 = object_ray.origin().y() + t0 * object_ray.direction().y();
 
@@ -500,9 +553,15 @@ mod tests {
     fn default_min_max_for_cylinder() {
         let cyl = Shape::cylinder();
 
-        if let Shape::Cylinder { y_min, y_max } = cyl {
+        if let Shape::Cylinder {
+            y_min,
+            y_max,
+            closed,
+        } = cyl
+        {
             assert_eq!(y_min, f64::NEG_INFINITY);
             assert_eq!(y_max, f64::INFINITY);
+            assert!(!closed);
         } else {
             panic!("Expected cylinder");
         }
@@ -513,6 +572,7 @@ mod tests {
         let cyl = Object::with_shape(Shape::Cylinder {
             y_min: 1.,
             y_max: 2.,
+            closed: false,
         });
 
         let examples = vec![
@@ -528,6 +588,51 @@ mod tests {
             let ray = Ray::new(origin, direction.normalize());
             let times = cyl.intersection_times(&ray);
             assert_eq!(times.len(), expected);
+        }
+    }
+
+    #[test]
+    fn intersecting_cylinder_end_caps() {
+        let cyl = Object::with_shape(Shape::Cylinder {
+            y_min: 1.,
+            y_max: 2.,
+            closed: true,
+        });
+
+        let examples = vec![
+            (Point::new(0., 3., 0.), Vector::new(0., -1., 0.), 2),
+            (Point::new(0., 3., -2.), Vector::new(0., -1., 2.), 2),
+            (Point::new(0., 4., -2.), Vector::new(0., -1., 1.), 2), // corner case
+            (Point::new(0., 0., -2.), Vector::new(0., 1., 2.), 2),
+            (Point::new(0., -1., -2.), Vector::new(0., 1., 1.), 2), // corner case
+        ];
+
+        for (origin, direction, expected) in examples {
+            let ray = Ray::new(origin, direction.normalize());
+            let times = cyl.intersection_times(&ray);
+            assert_eq!(times.len(), expected);
+        }
+    }
+
+    #[test]
+    fn normal_of_cylinder_end_caps() {
+        let cyl = Object::with_shape(Shape::Cylinder {
+            y_min: 1.,
+            y_max: 2.,
+            closed: true,
+        });
+
+        let examples = vec![
+            (Point::new(0., 1., 0.), Vector::new(0., -1., 0.)),
+            (Point::new(0.5, 1., 0.), Vector::new(0., -1., 0.)),
+            (Point::new(0., 1., 0.5), Vector::new(0., -1., 0.)),
+            (Point::new(0., 2., 0.), Vector::new(0., 1., 0.)),
+            (Point::new(0.5, 2., 0.), Vector::new(0., 1., 0.)),
+            (Point::new(0., 2., 0.5), Vector::new(0., 1., 0.)),
+        ];
+
+        for (point, expected) in examples {
+            assert_eq!(cyl.normal_vector_at(point), expected);
         }
     }
 }
