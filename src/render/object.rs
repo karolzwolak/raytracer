@@ -171,8 +171,8 @@ impl Object {
         }
     }
 
-    pub fn intersection_times(&self, ray: &Ray) -> Vec<f64> {
-        let object_ray = ray.transform(self.transformation_inverse().unwrap());
+    pub fn intersection_times(&self, world_ray: &Ray) -> Vec<f64> {
+        let object_ray = world_ray.transform(self.transformation_inverse().unwrap());
 
         match self.shape {
             Shape::Sphere => {
@@ -214,14 +214,14 @@ impl Object {
 
                 vec![tmin, tmax]
             }
-            Shape::Cylinder {
-                y_min,
-                y_max,
-                closed,
-            } => {
-                let mut res = Vec::new();
+            Shape::Cylinder { y_min, y_max, .. } => {
+                if y_min.approx_eq(&y_max) {
+                    return Vec::new();
+                }
 
-                self.intersect_cyl_caps(ray, &mut res);
+                let mut res = Vec::with_capacity(2);
+
+                self.intersect_cyl_caps(&object_ray, &mut res);
 
                 let a = object_ray.direction().x().powi(2) + object_ray.direction().z().powi(2);
 
@@ -242,12 +242,8 @@ impl Object {
 
                 let delta_sqrt = discriminant.sqrt();
 
-                let mut t0 = (-b - delta_sqrt) / (2. * a);
-                let mut t1 = (-b + delta_sqrt) / (2. * a);
-
-                if t0 > t1 {
-                    std::mem::swap(&mut t0, &mut t1);
-                }
+                let t0 = (-b - delta_sqrt) / (2. * a);
+                let t1 = (-b + delta_sqrt) / (2. * a);
 
                 let y0 = object_ray.origin().y() + t0 * object_ray.direction().y();
 
