@@ -61,12 +61,23 @@ impl Shape {
             }
         }
     }
-    pub fn cylinder() -> Self {
+    pub fn cylinder(length: f64, closed: bool) -> Self {
+        assert!(length >= 0.);
+
+        let (y_min, y_max) = if length.approx_eq(&0.) {
+            (f64::NEG_INFINITY, f64::INFINITY)
+        } else {
+            (-length / 2., length / 2.)
+        };
+
         Shape::Cylinder {
-            y_min: f64::NEG_INFINITY,
-            y_max: f64::INFINITY,
-            closed: false,
+            y_min,
+            y_max,
+            closed,
         }
+    }
+    pub fn default_cylinder() -> Self {
+        Shape::cylinder(0., false)
     }
 }
 
@@ -484,7 +495,7 @@ mod tests {
 
     #[test]
     fn ray_misses_cylinder() {
-        let cyl = Object::with_shape(Shape::cylinder());
+        let cyl = Object::with_shape(Shape::default_cylinder());
         let examples = vec![
             Ray::new(Point::new(1., 0., 0.), Vector::new(0., 1., 0.)),
             Ray::new(Point::new(0., 0., 0.), Vector::new(0., 1., 0.)),
@@ -498,7 +509,7 @@ mod tests {
 
     #[test]
     fn ray_intersects_cylinder() {
-        let cyl = Object::with_shape(Shape::cylinder());
+        let cyl = Object::with_shape(Shape::default_cylinder());
 
         let examples = vec![
             (
@@ -531,7 +542,7 @@ mod tests {
 
     #[test]
     fn normal_of_cylinder() {
-        let cyl = Object::with_shape(Shape::cylinder());
+        let cyl = Object::with_shape(Shape::default_cylinder());
 
         let examples = vec![
             (Point::new(1., 0., 0.), Vector::new(1., 0., 0.)),
@@ -547,7 +558,7 @@ mod tests {
 
     #[test]
     fn default_min_max_for_cylinder() {
-        let cyl = Shape::cylinder();
+        let cyl = Shape::default_cylinder();
 
         if let Shape::Cylinder {
             y_min,
