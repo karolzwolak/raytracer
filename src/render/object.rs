@@ -85,13 +85,13 @@ impl Shape {
             }
         }
     }
-    pub fn cylinder(length: f64, closed: bool) -> Self {
-        assert!(length >= 0.);
+    pub fn cylinder(height: f64, closed: bool) -> Self {
+        assert!(height >= 0.);
 
-        let (y_min, y_max) = if length.approx_eq(&0.) {
+        let (y_min, y_max) = if height.approx_eq(&0.) {
             (f64::NEG_INFINITY, f64::INFINITY)
         } else {
-            (-length / 2., length / 2.)
+            (-height / 2., height / 2.)
         };
 
         Shape::Cylinder {
@@ -100,9 +100,27 @@ impl Shape {
             closed,
         }
     }
+
     pub fn default_cylinder() -> Self {
         Shape::cylinder(0., false)
     }
+
+    pub fn cone(height: f64, y_offset: f64, closed: bool) -> Self {
+        assert!(height >= 0.);
+
+        let (y_min, y_max) = if height.approx_eq(&0.) {
+            (f64::NEG_INFINITY, f64::INFINITY)
+        } else {
+            (-height / 2. + y_offset, height / 2. + y_offset)
+        };
+
+        Shape::Cone {
+            y_min,
+            y_max,
+            closed,
+        }
+    }
+
     pub fn default_cone() -> Self {
         Shape::Cone {
             y_min: f64::NEG_INFINITY,
