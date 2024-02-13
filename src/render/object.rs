@@ -24,6 +24,12 @@ pub enum Shape {
         y_max: f64,
         closed: bool,
     },
+    /// Double-sided cone, their tips meeting at the origin, extending from y_min to y_max exclusively
+    Cone {
+        y_min: f64,
+        y_max: f64,
+        closed: bool,
+    },
 }
 
 impl Shape {
@@ -52,11 +58,29 @@ impl Shape {
                 let point_within_radius = dist < Self::CYLINDER_RADIUS;
 
                 if point_within_radius && object_point.y() >= y_max - approx_eq::EPSILON {
-                    Vector::new(0., Self::CYLINDER_RADIUS, 0.)
+                    Vector::new(0., 1., 0.)
                 } else if point_within_radius && object_point.y() <= y_min + approx_eq::EPSILON {
-                    Vector::new(0., -Self::CYLINDER_RADIUS, 0.)
+                    Vector::new(0., -1., 0.)
                 } else {
                     Vector::new(object_point.x(), 0., object_point.z())
+                }
+            }
+            Shape::Cone { y_min, y_max, .. } => {
+                let dist = object_point.x().powi(2) + object_point.z().powi(2);
+
+                let min_radius = y_min.abs();
+                let max_radius = y_max.abs();
+
+                if dist < max_radius && object_point.y() >= y_max - approx_eq::EPSILON {
+                    Vector::new(0., 1., 0.)
+                } else if dist < min_radius && object_point.y() <= y_min + approx_eq::EPSILON {
+                    Vector::new(0., -1., 0.)
+                } else {
+                    let mut y = (object_point.x().powi(2) + object_point.z().powi(2)).sqrt();
+                    if object_point.y() > 0. {
+                        y = -y;
+                    }
+                    Vector::new(object_point.x(), y, object_point.z())
                 }
             }
         }
@@ -78,6 +102,13 @@ impl Shape {
     }
     pub fn default_cylinder() -> Self {
         Shape::cylinder(0., false)
+    }
+    pub fn default_cone() -> Self {
+        Shape::Cone {
+            y_min: f64::NEG_INFINITY,
+            y_max: f64::INFINITY,
+            closed: false,
+        }
     }
 }
 
@@ -151,11 +182,12 @@ impl Object {
         }
     }
 
-    fn cyl_check_cap_within_radius(&self, ray: &Ray, t: f64) -> bool {
+    fn check_cap_within_radius(&self, ray: &Ray, t: f64, radius: f64) -> bool {
+        assert!(radius >= 0.);
         let x = ray.origin().x() + t * ray.direction().x();
         let z = ray.origin().z() + t * ray.direction().z();
 
-        x * x + z * z <= Shape::CYLINDER_RADIUS
+        x * x + z * z <= radius
     }
 
     fn intersect_cyl_caps(&self, ray: &Ray, times: &mut Vec<f64>) {
@@ -171,14 +203,37 @@ impl Object {
                 let tmin = (y_min - ray.origin().y()) / ray.direction().y();
                 let tmax = (y_max - ray.origin().y()) / ray.direction().y();
 
-                if self.cyl_check_cap_within_radius(ray, tmin) {
+                if self.check_cap_within_radius(ray, tmin, Shape::CYLINDER_RADIUS) {
                     times.push(tmin);
                 }
-                if self.cyl_check_cap_within_radius(ray, tmax) {
+                if self.check_cap_within_radius(ray, tmax, Shape::CYLINDER_RADIUS) {
                     times.push(tmax);
                 }
             }
             _ => panic!("expected Shape::Cylinder"),
+        }
+    }
+    fn intersect_cone_caps(&self, ray: &Ray, times: &mut Vec<f64>) {
+        match self.shape {
+            Shape::Cone {
+                y_min,
+                y_max,
+                closed,
+            } => {
+                if !closed || ray.direction().y().approx_eq(&0.) {
+                    return;
+                }
+                let tmin = (y_min - ray.origin().y()) / ray.direction().y();
+                let tmax = (y_max - ray.origin().y()) / ray.direction().y();
+
+                if self.check_cap_within_radius(ray, tmin, y_min.abs()) {
+                    times.push(tmin);
+                }
+                if self.check_cap_within_radius(ray, tmax, y_max.abs()) {
+                    times.push(tmax);
+                }
+            }
+            _ => panic!("expected Shape::Cone"),
         }
     }
 
@@ -270,6 +325,51 @@ impl Object {
 
                 res
             }
+            Shape::Cone { y_min, y_max, .. } => {
+                if y_min.approx_eq(&y_max) {
+                    return Vec::new();
+                }
+
+                let mut res = Vec::with_capacity(4);
+
+                self.intersect_cone_caps(&object_ray, &mut res);
+
+                let dir = object_ray.direction();
+                let origin = object_ray.origin();
+
+                let a = dir.x().powi(2) - dir.y().powi(2) + dir.z().powi(2);
+                let b = 2. * (origin.x() * dir.x() - origin.y() * dir.y() + origin.z() * dir.z());
+                let c = origin.x().powi(2) - origin.y().powi(2) + origin.z().powi(2);
+
+                let ray_parallel_to_one_half = a.approx_eq(&0.);
+
+                if ray_parallel_to_one_half {
+                    if b.approx_eq(&0.) {
+                        return Vec::new();
+                    }
+                    let t = -c / (2. * b);
+                    res.push(t);
+                } else {
+                    let discriminant = b * b - 4. * a * c;
+                    if discriminant < 0. {
+                        return Vec::new();
+                    }
+                    let delta_sqrt = discriminant.sqrt();
+                    let t0 = (-b - delta_sqrt) / (2. * a);
+                    let t1 = (-b + delta_sqrt) / (2. * a);
+                    let y0 = origin.y() + t0 * dir.y();
+
+                    if y_min < y0 && y0 < y_max {
+                        res.push(t0);
+                    }
+                    let y1 = origin.y() + t1 * dir.y();
+                    if y_min < y1 && y1 < y_max {
+                        res.push(t1);
+                    }
+                }
+
+                res
+            }
         }
     }
 
@@ -291,7 +391,10 @@ impl Object {
 
 #[cfg(test)]
 mod tests {
-    use std::{f64::consts::FRAC_1_SQRT_2, f64::consts::PI};
+    use std::{
+        f64::consts::FRAC_1_SQRT_2,
+        f64::consts::{self, PI, SQRT_2},
+    };
 
     use super::*;
     use crate::primitive::{matrix::Matrix, vector::Vector};
@@ -640,6 +743,79 @@ mod tests {
 
         for (point, expected) in examples {
             assert_eq!(cyl.normal_vector_at(point), expected);
+        }
+    }
+
+    #[test]
+    fn intersecting_cone() {
+        let cone = Object::with_shape(Shape::default_cone());
+
+        let examples = vec![
+            (Point::new(0., 0., -5.), Vector::new(0., 0., 1.), (5., 5.)),
+            (
+                Point::new(0., 0., -5.),
+                Vector::new(1., 1., 1.),
+                (8.66025, 8.66025),
+            ),
+            (
+                Point::new(1., 1., -5.),
+                Vector::new(-0.5, -1., 1.),
+                (4.55006, 49.44994),
+            ),
+        ];
+
+        for (origin, direction, expected) in examples {
+            let ray = Ray::new(origin, direction.normalize());
+            let times = cone.intersection_times(&ray);
+
+            assert_eq!(times.len(), 2);
+            assert!(times[0].approx_eq(&expected.0));
+            assert!(times[1].approx_eq(&expected.1));
+        }
+    }
+
+    #[test]
+    fn intersecting_cone_with_ray_parallel_to_one_half() {
+        let cone = Object::with_shape(Shape::default_cone());
+        let ray = Ray::new(Point::new(0., 0., -1.), Vector::new(0., 1., 1.).normalize());
+        let times = cone.intersection_times(&ray);
+
+        assert_eq!(times.len(), 1);
+        assert!(times[0].approx_eq(&0.35355));
+    }
+
+    #[test]
+    fn intersecting_cone_caps() {
+        let cone = Object::with_shape(Shape::Cone {
+            y_min: -0.5,
+            y_max: 0.5,
+            closed: true,
+        });
+        let examples = vec![
+            (Point::new(0., 0., -5.), Vector::new(0., 1., 0.), 0),
+            (Point::new(0., 0., -0.25), Vector::new(0., 1., 1.), 2),
+            (Point::new(0., 0., -0.25), Vector::new(0., 1., 0.), 4),
+        ];
+
+        for (origin, direction, expected) in examples {
+            let ray = Ray::new(origin, direction.normalize());
+            let times = cone.intersection_times(&ray);
+            assert_eq!(times.len(), expected);
+        }
+    }
+
+    #[test]
+    fn normal_of_cone_caps() {
+        let cone = Object::with_shape(Shape::default_cone());
+
+        let examples = vec![
+            (Point::new(0., 0., 0.), Vector::new(0., 0., 0.)),
+            (Point::new(1., 1., 1.), Vector::new(1., -SQRT_2, 1.)),
+            (Point::new(-1., -1., 0.), Vector::new(-1., 1., 0.)),
+        ];
+
+        for (point, expected) in examples {
+            assert_eq!(cone.normal_vector_at(point), expected.normalize());
         }
     }
 }
