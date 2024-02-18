@@ -106,7 +106,6 @@ impl Canvas {
                             format!("{}{}", sep, val_str)
                         }
                     })
-                    .into_iter()
                     .collect::<String>()
             })
             .collect::<String>()

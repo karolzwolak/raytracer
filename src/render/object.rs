@@ -419,7 +419,7 @@ impl Object {
 mod tests {
     use std::{
         f64::consts::FRAC_1_SQRT_2,
-        f64::consts::{self, PI, SQRT_2},
+        f64::consts::{PI, SQRT_2},
     };
 
     use super::*;
