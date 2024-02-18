@@ -105,6 +105,10 @@ impl Shape {
         Shape::cylinder(0., false)
     }
 
+    pub fn unit_cylinder() -> Self {
+        Shape::cylinder(1., true)
+    }
+
     pub fn cone(height: f64, y_offset: f64, closed: bool) -> Self {
         assert!(height >= 0.);
 
@@ -127,6 +131,10 @@ impl Shape {
             y_max: f64::INFINITY,
             closed: false,
         }
+    }
+
+    pub fn unit_cone() -> Self {
+        Shape::cone(1., -0.5, true)
     }
 }
 
