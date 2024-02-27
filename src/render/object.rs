@@ -8,9 +8,47 @@ use crate::{
     },
 };
 
-use super::{material::Material, ray::Ray};
+use super::{intersection::Intersection, material::Material, ray::Ray};
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
+/// A group of objects that can be transformed simultaneously.
+/// However, children added later will not be affected by previous transformations.
+pub struct ObjectGroup {
+    children: Vec<Object>,
+}
+
+impl ObjectGroup {
+    pub fn new(children: Vec<Object>) -> Self {
+        Self { children }
+    }
+    pub fn with_transformations(children: Vec<Object>, transformation: Matrix) -> Self {
+        let mut group = Self::new(children);
+        group.apply_transformation(transformation);
+        group
+    }
+    pub fn empty() -> Self {
+        Self::new(Vec::new())
+    }
+    pub fn apply_transformation(&mut self, matrix: Matrix) {
+        for child in self.children.iter_mut() {
+            child.apply_group_transformation(matrix);
+        }
+    }
+    pub fn add_child(&mut self, child: Object) {
+        self.children.push(child);
+    }
+    pub fn into_shape(self) -> Shape {
+        Shape::Group(self)
+    }
+}
+
+impl Default for ObjectGroup {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+#[derive(Clone)]
 pub enum Shape {
     /// Unit sphere at point zero
     Sphere,
@@ -30,6 +68,7 @@ pub enum Shape {
         y_max: f64,
         closed: bool,
     },
+    Group(ObjectGroup),
 }
 
 impl Shape {
@@ -82,6 +121,9 @@ impl Shape {
                     }
                     Vector::new(object_point.x(), y, object_point.z())
                 }
+            }
+            Shape::Group(_) => {
+                panic!("Internal bug: this function should not be called on a group")
             }
         }
     }
@@ -136,6 +178,13 @@ impl Shape {
     pub fn unit_cone() -> Self {
         Shape::cone(1., -0.5, true)
     }
+
+    pub fn get_group(&self) -> Option<&ObjectGroup> {
+        match self {
+            Shape::Group(group) => Some(group),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -152,6 +201,13 @@ impl Object {
             material,
             transformation,
         }
+    }
+
+    pub fn group(children: Vec<Object>, transformation: Matrix) -> Self {
+        Self::with_shape(Shape::Group(ObjectGroup::with_transformations(
+            children,
+            transformation,
+        )))
     }
 
     pub fn with_shape(shape: Shape) -> Self {
@@ -184,6 +240,11 @@ impl Object {
     pub fn apply_transformation(&mut self, matrix: Matrix) {
         self.transformation = matrix * self.transformation;
     }
+    pub fn apply_group_transformation(&mut self, matrix: Matrix) {
+        match &mut self.shape {
+            Shape::Group(group) => group.apply_transformation(matrix),
+            _ => self.apply_transformation(matrix),
+        }
     }
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
         let inverse = self.transformation_inverse().unwrap();
@@ -397,6 +458,25 @@ impl Object {
 
                 res
             }
+            Shape::Group(_) => {
+                panic!("Internal bug: this function should not be called on a group")
+            }
+        }
+    }
+
+    pub fn intersect<'a>(&'a self, ray: &Ray) -> Vec<Intersection<'a>> {
+        match &self.shape {
+            Shape::Group(ref group) => group.children.iter().fold(Vec::new(), |mut acc, child| {
+                acc.extend(child.intersect(ray));
+                acc
+            }),
+            _ => {
+                let times = self.intersection_times(ray);
+                times
+                    .into_iter()
+                    .map(|t| Intersection::new(t, self))
+                    .collect()
+            }
         }
     }
 
@@ -414,6 +494,10 @@ impl Object {
     pub fn material_mut(&mut self) -> &mut Material {
         &mut self.material
     }
+
+    pub fn get_group(&self) -> Option<&ObjectGroup> {
+        self.shape.get_group()
+    }
 }
 
 #[cfg(test)]
@@ -424,7 +508,10 @@ mod tests {
     };
 
     use super::*;
-    use crate::primitive::{matrix::Matrix, vector::Vector};
+    use crate::{
+        primitive::{matrix::Matrix, vector::Vector},
+        render::intersection::IntersecVec,
+    };
 
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {
@@ -844,5 +931,63 @@ mod tests {
         for (point, expected) in examples {
             assert_eq!(cone.normal_vector_at(point), expected.normalize());
         }
+    }
+
+    #[test]
+    fn intersecting_ray_with_empty_group() {
+        let group = ObjectGroup::empty();
+        let object = Object::with_shape(group.into_shape());
+        let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
+        assert!(object.intersect(&ray).is_empty());
+    }
+
+    #[test]
+    fn intersecting_ray_with_nonempty_group() {
+        let s1 = Object::with_shape(Shape::Sphere);
+        let s2 = Object::sphere(Point::new(0., 0., -3.), 1.);
+        let s3 = Object::sphere(Point::new(5., 0., 0.), 1.);
+
+        let group = ObjectGroup::new(vec![s1, s2, s3]);
+        let object = Object::with_shape(group.into_shape());
+
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let xs = IntersecVec::from_ray_and_obj(ray, &object);
+        let data = xs.data();
+
+        match object.shape() {
+            Shape::Group(group) => {
+                assert_eq!(data.len(), 4);
+
+                assert!(std::ptr::eq(data[0].object(), &group.children[1]));
+                assert!(std::ptr::eq(data[1].object(), &group.children[1]));
+                assert!(std::ptr::eq(data[2].object(), &group.children[0]));
+                assert!(std::ptr::eq(data[3].object(), &group.children[0]));
+            }
+            _ => panic!("expected Shape::Group"),
+        }
+    }
+
+    #[test]
+    fn intersecting_transformed_group() {
+        let sphere = Object::sphere(Point::new(5., 0., 0.), 1.);
+        let group = ObjectGroup::with_transformations(vec![sphere], Matrix::scaling_uniform(2.));
+        let object = Object::with_shape(group.into_shape());
+
+        let ray = Ray::new(Point::new(10., 0., -10.), Vector::new(0., 0., 1.));
+        assert_eq!(object.intersect(&ray).len(), 2);
+    }
+
+    #[test]
+    fn normal_on_group_child() {
+        let sphere = Object::with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
+        let g2 = Object::group(vec![sphere], Matrix::scaling(1., 2., 3.));
+        let g1 = Object::group(vec![g2], Matrix::rotation_y(std::f64::consts::FRAC_PI_2));
+
+        let sphere = &g1.get_group().unwrap().children[0]
+            .get_group()
+            .unwrap()
+            .children[0];
+        let normal = sphere.normal_vector_at(Point::new(1.7321, 1.1547, -5.5774));
+        assert!(normal.approx_eq_low_prec(&Vector::new(0.2857, 0.4286, -0.8571)));
     }
 }

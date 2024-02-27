@@ -221,19 +221,14 @@ impl<'a> IntersecVec<'a> {
     pub fn from_ray_and_mult_objects(ray: Ray, objects: &'a [Object]) -> Self {
         let intersections: Vec<Intersection> = objects
             .iter()
-            .flat_map(|object| {
-                object
-                    .intersection_times(&ray)
-                    .into_iter()
-                    .map(|time| Intersection::new(time, object))
-            })
+            .flat_map(|object| object.intersect(&ray))
             .collect();
 
         Self::new(ray, intersections)
     }
     pub fn from_ray_and_obj(ray: Ray, object: &'a Object) -> Self {
-        let times = object.intersection_times(&ray);
-        Self::from_times_and_obj(ray, times, object)
+        let intersections = object.intersect(&ray);
+        Self::new(ray, intersections)
     }
 
     pub fn has_intersection(&self) -> bool {
