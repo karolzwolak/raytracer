@@ -182,7 +182,8 @@ impl Object {
         self.transformation.inverse()
     }
     pub fn apply_transformation(&mut self, matrix: Matrix) {
-        self.transformation = self.transformation * matrix;
+        self.transformation = matrix * self.transformation;
+    }
     }
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
         let inverse = self.transformation_inverse().unwrap();
