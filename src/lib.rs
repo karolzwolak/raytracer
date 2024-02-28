@@ -23,6 +23,7 @@ pub mod render {
 pub mod playing_around {
     pub mod cubes;
     pub mod cylinders;
+    pub mod groups;
     pub mod light_and_shading;
     pub mod making_patterns;
     pub mod making_scene;
