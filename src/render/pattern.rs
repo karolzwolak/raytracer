@@ -125,7 +125,7 @@ impl Pattern {
             | Self::Ring { inv_transform, .. }
             | Self::Checkers { inv_transform, .. }
             | Self::TestPattern { inv_transform } => {
-                let object_point = object.transformation_inverse().unwrap() * point;
+                let object_point = object.transformation_inverse() * point;
                 *inv_transform * object_point
             }
         };

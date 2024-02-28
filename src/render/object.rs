@@ -191,7 +191,7 @@ impl Shape {
 pub struct Object {
     shape: Shape,
     material: Material,
-    transformation: Matrix,
+    transformation_inverse: Matrix,
 }
 
 impl Object {
@@ -199,7 +199,9 @@ impl Object {
         Self {
             shape,
             material,
-            transformation,
+            transformation_inverse: transformation
+                .inverse()
+                .expect("Object with singular tranfromation matrix cannot be rendered"),
         }
     }
 
@@ -231,22 +233,20 @@ impl Object {
     pub fn shape(&self) -> &Shape {
         &self.shape
     }
-    pub fn transformation(&self) -> &Matrix {
-        &self.transformation
-    }
-    pub fn transformation_inverse(&self) -> Option<Matrix> {
-        self.transformation.inverse()
+    pub fn transformation_inverse(&self) -> Matrix {
+        self.transformation_inverse
     }
     pub fn apply_transformation(&mut self, matrix: Matrix) {
         match &mut self.shape {
             Shape::Group(group) => group.apply_transformation(matrix),
             _ => {
-                self.transformation = matrix * self.transformation;
+                self.transformation_inverse =
+                    self.transformation_inverse * matrix.inverse().unwrap();
             }
         }
     }
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
-        let inverse = self.transformation_inverse().unwrap();
+        let inverse = self.transformation_inverse();
         let object_point = inverse * world_point;
 
         let object_normal = self.shape.object_normal_at(object_point);
@@ -325,7 +325,7 @@ impl Object {
     }
 
     pub fn intersection_times(&self, world_ray: &Ray) -> Vec<f64> {
-        let object_ray = world_ray.transform(self.transformation_inverse().unwrap());
+        let object_ray = world_ray.transform(self.transformation_inverse());
 
         match self.shape {
             Shape::Sphere => {
@@ -515,7 +515,7 @@ mod tests {
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {
         assert_eq!(
-            Object::with_shape(Shape::Sphere).transformation,
+            Object::with_shape(Shape::Sphere).transformation_inverse(),
             Matrix::identity()
         );
     }
