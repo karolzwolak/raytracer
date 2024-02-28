@@ -31,7 +31,7 @@ impl ObjectGroup {
     }
     pub fn apply_transformation(&mut self, matrix: Matrix) {
         for child in self.children.iter_mut() {
-            child.apply_group_transformation(matrix);
+            child.apply_transformation(matrix);
         }
     }
     pub fn add_child(&mut self, child: Object) {
@@ -238,12 +238,11 @@ impl Object {
         self.transformation.inverse()
     }
     pub fn apply_transformation(&mut self, matrix: Matrix) {
-        self.transformation = matrix * self.transformation;
-    }
-    pub fn apply_group_transformation(&mut self, matrix: Matrix) {
         match &mut self.shape {
             Shape::Group(group) => group.apply_transformation(matrix),
-            _ => self.apply_transformation(matrix),
+            _ => {
+                self.transformation = matrix * self.transformation;
+            }
         }
     }
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
