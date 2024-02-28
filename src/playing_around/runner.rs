@@ -7,18 +7,23 @@ use super::{
     refractions, transformations,
 };
 
-const SIZE: usize = 1200;
+const DEFAULT_WIDTH: usize = 1200;
+const DEFAULT_HEIGHT: usize = 1200;
 const IMAGES_DIR: &str = "images";
 const DEFAULT_CHAPTER: &str = "groups";
 
 pub fn run() -> Result<(), String> {
     match parse_args() {
-        Some((chapter, size, filename)) => run_with_args(chapter, size, size, &filename),
-        None => Err("usage: cargo run -r -- <chapter>? <size>? <output file>?".to_string()),
+        Some((chapter, width, height, filename)) => {
+            run_with_args(chapter, width, height, &filename)
+        }
+        None => {
+            Err("usage: cargo run -r -- <chapter>? <width>? <height>? <output file>?".to_string())
+        }
     }
 }
 
-fn parse_args() -> Option<(String, usize, String)> {
+fn parse_args() -> Option<(String, usize, usize, String)> {
     let mut args = env::args();
 
     // skip executable file
@@ -34,13 +39,23 @@ fn parse_args() -> Option<(String, usize, String)> {
         return None;
     }
 
-    let size = match args
+    let width = match args
         .next()
         .unwrap_or_else(|| "0".to_string())
         .parse::<usize>()
     {
         Ok(n) if n > 0 => n,
-        Ok(_) => SIZE,
+        Ok(_) => DEFAULT_WIDTH,
+        _ => return None,
+    };
+
+    let height = match args
+        .next()
+        .unwrap_or_else(|| "0".to_string())
+        .parse::<usize>()
+    {
+        Ok(n) if n > 0 => n,
+        Ok(_) => DEFAULT_HEIGHT,
         _ => return None,
     };
 
@@ -49,7 +64,7 @@ fn parse_args() -> Option<(String, usize, String)> {
         Some(s) => s.trim().to_owned(),
     };
 
-    Some((chapter, size, filename))
+    Some((chapter, width, height, filename))
 }
 
 fn run_with_args(
