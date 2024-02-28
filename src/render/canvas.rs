@@ -50,13 +50,12 @@ impl Canvas {
         F: Fn(usize, usize) -> Color + std::marker::Sync,
     {
         let width = self.width;
-        let height = self.height;
         self.pixels
             .par_iter_mut()
             .enumerate()
             .for_each(|(id, pixel_color)| {
                 let x = id % width;
-                let y = id / height;
+                let y = id / width;
                 *pixel_color = fun(x, y);
             })
     }
