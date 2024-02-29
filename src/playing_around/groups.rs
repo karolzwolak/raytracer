@@ -30,13 +30,17 @@ fn hexagon() -> Object {
             .translate(0., 0., -1.)
             .transformed(),
     );
-    let hexagon_part = Object::group(vec![cylinder, corner_sphere], Matrix::identity());
+    let mut hexagon_group = ObjectGroup::new(vec![cylinder.clone(), corner_sphere.clone()]);
+    hexagon_group.add_bounds_as_obj();
+    let hexagon_part = Object::with_shape(hexagon_group.into_shape());
+
     let mut hexagon = ObjectGroup::new(vec![hexagon_part.clone()]);
 
     for _ in 0..6 {
         hexagon.apply_transformation(Matrix::rotation_y(consts::FRAC_PI_3));
         hexagon.add_child(hexagon_part.clone());
     }
+    hexagon.add_bounds_as_obj();
     Object::with_shape(hexagon.into_shape())
 }
 
