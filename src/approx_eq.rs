@@ -15,7 +15,7 @@ pub trait ApproxEq<Rhs = Self> {
 
 impl ApproxEq for f64 {
     fn approx_eq_epsilon(&self, rhs: &Self, epsilon: f64) -> bool {
-        (*self - *rhs).abs() < epsilon
+        self == rhs || (*self - *rhs).abs() < epsilon
     }
 }
 
