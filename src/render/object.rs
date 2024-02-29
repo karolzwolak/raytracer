@@ -8,18 +8,164 @@ use crate::{
     },
 };
 
-use super::{intersection::Intersection, material::Material, ray::Ray};
+use super::{
+    color::Color, intersection::Intersection, material::Material, pattern::Pattern, ray::Ray,
+};
+
+#[derive(Clone, Debug)]
+pub struct Bounds {
+    min: Point,
+    max: Point,
+}
+
+impl Bounds {
+    fn empty() -> Self {
+        Self {
+            min: Point::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
+            max: Point::new(f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY),
+        }
+    }
+    fn is_empty(&self) -> bool {
+        self.min == self.max
+            || self.min.x() > self.max.x()
+                && self.min.y() > self.max.y()
+                && self.min.z() > self.max.z()
+    }
+    fn add_point(&mut self, point: Point) {
+        self.min = Point::new(
+            self.min.x().min(point.x()),
+            self.min.y().min(point.y()),
+            self.min.z().min(point.z()),
+        );
+        self.max = Point::new(
+            self.max.x().max(point.x()),
+            self.max.y().max(point.y()),
+            self.max.z().max(point.z()),
+        );
+    }
+    fn add_bounds(&mut self, other: Bounds) {
+        if other.is_empty() {
+            return;
+        }
+        self.add_point(other.min);
+        self.add_point(other.max);
+    }
+    fn transformed(&self, matrix: Matrix) -> Self {
+        let mut new_bounds = Bounds::empty();
+        let corners = vec![
+            self.min,
+            Point::new(self.min.x(), self.min.y(), self.max.z()),
+            Point::new(self.min.x(), self.max.y(), self.min.z()),
+            Point::new(self.min.x(), self.max.y(), self.max.z()),
+            Point::new(self.max.x(), self.min.y(), self.min.z()),
+            Point::new(self.max.x(), self.min.y(), self.max.z()),
+            Point::new(self.max.x(), self.max.y(), self.min.z()),
+            self.max,
+        ];
+        for corner in corners {
+            new_bounds.add_point(matrix * corner);
+        }
+        new_bounds
+    }
+    fn transform(&mut self, matrix: Matrix) {
+        *self = self.transformed(matrix);
+    }
+    fn axis_intersection_times(
+        &self,
+        origin: f64,
+        direction: f64,
+        min: f64,
+        max: f64,
+    ) -> (f64, f64) {
+        let tmin_numerator = min - origin;
+        let tmax_numerator = max - origin;
+
+        let tmin = tmin_numerator / direction;
+        let tmax = tmax_numerator / direction;
+
+        if tmin < tmax {
+            (tmin, tmax)
+        } else {
+            (tmax, tmin)
+        }
+    }
+    fn intersection_times(&self, ray: &Ray) -> Vec<f64> {
+        let (xtmin, xtmax) = self.axis_intersection_times(
+            ray.origin().x(),
+            ray.direction().x(),
+            self.min.x(),
+            self.max.x(),
+        );
+        let (ytmin, ytmax) = self.axis_intersection_times(
+            ray.origin().y(),
+            ray.direction().y(),
+            self.min.y(),
+            self.max.y(),
+        );
+        let (ztmin, ztmax) = self.axis_intersection_times(
+            ray.origin().z(),
+            ray.direction().z(),
+            self.min.z(),
+            self.max.z(),
+        );
+
+        let tmin = xtmin.max(ytmin).max(ztmin);
+        let tmax = xtmax.min(ytmax).min(ztmax);
+
+        if tmin > tmax {
+            Vec::new()
+        } else {
+            vec![tmin, tmax]
+        }
+    }
+    fn is_intersected(&self, ray: &Ray) -> bool {
+        !self.intersection_times(ray).is_empty()
+    }
+    pub fn as_object(&self) -> Object {
+        // render slightly bigger box to avoid acne effect
+        const LEN_FACTOR: f64 = 0.5 * (1. + approx_eq::EPSILON);
+
+        let x_len = self.max.x() - self.min.x();
+        let y_len = self.max.y() - self.min.y();
+        let z_len = self.max.z() - self.min.z();
+        let center = Point::new(
+            self.min.x() + x_len / 2.,
+            self.min.y() + y_len / 2.,
+            self.min.z() + z_len / 2.,
+        );
+        Object::new(
+            Shape::Cube,
+            Material {
+                pattern: Pattern::Const(Color::red()),
+                transparency: 0.9,
+                ambient: 0.1,
+                ..Material::air()
+            },
+            Matrix::identity()
+                .scale(x_len * LEN_FACTOR, y_len * LEN_FACTOR, z_len * LEN_FACTOR)
+                .translate(center.x(), center.y(), center.z())
+                .transformed(),
+        )
+    }
+}
 
 #[derive(Clone)]
 /// A group of objects that can be transformed simultaneously.
 /// However, children added later will not be affected by previous transformations.
+/// It also features automatic bounds calculation, that reduce ray intersection checks.
 pub struct ObjectGroup {
     children: Vec<Object>,
+    bounds: Bounds,
 }
 
 impl ObjectGroup {
     pub fn new(children: Vec<Object>) -> Self {
-        Self { children }
+        let mut bounds = Bounds::empty();
+        for child in children.iter() {
+            bounds.add_bounds(child.bounds());
+        }
+
+        Self { children, bounds }
     }
     pub fn with_transformations(children: Vec<Object>, transformation: Matrix) -> Self {
         let mut group = Self::new(children);
@@ -33,12 +179,33 @@ impl ObjectGroup {
         for child in self.children.iter_mut() {
             child.apply_transformation(matrix);
         }
+        self.bounds.transform(matrix);
     }
     pub fn add_child(&mut self, child: Object) {
+        self.bounds.add_bounds(child.bounds());
         self.children.push(child);
     }
     pub fn into_shape(self) -> Shape {
         Shape::Group(self)
+    }
+    pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
+        if !self.bounds.is_intersected(ray) {
+            return Vec::new();
+        }
+        self.children
+            .iter()
+            .flat_map(|child| child.intersect(ray))
+            .collect()
+    }
+    pub fn bounds(&self) -> &Bounds {
+        &self.bounds
+    }
+
+    pub fn children(&self) -> &[Object] {
+        self.children.as_ref()
+    }
+    pub fn add_bounds_as_obj(&mut self) {
+        self.children.push(self.bounds.as_object())
     }
 }
 
@@ -127,6 +294,33 @@ impl Shape {
             }
         }
     }
+    pub fn bounds(&self) -> Bounds {
+        match self {
+            Shape::Sphere | Shape::Cube => Bounds {
+                min: Point::new(-1., -1., -1.),
+                max: Point::new(1., 1., 1.),
+            },
+            Shape::Plane => Bounds {
+                min: Point::new(f64::NEG_INFINITY, 0., f64::NEG_INFINITY),
+                max: Point::new(f64::INFINITY, 0., f64::INFINITY),
+            },
+            Shape::Cylinder {
+                ref y_min, y_max, ..
+            } => Bounds {
+                min: Point::new(-1., *y_min, -1.),
+                max: Point::new(1., *y_max, 1.),
+            },
+            Shape::Cone { y_min, y_max, .. } => Bounds {
+                min: Point::new(*y_min, *y_min, *y_min),
+                max: Point::new(*y_max, *y_max, *y_max),
+            },
+            Shape::Group(ref group) => group.children.iter().fold(Bounds::empty(), |acc, child| {
+                let mut new_bounds = child.bounds();
+                new_bounds.add_bounds(acc);
+                new_bounds
+            }),
+        }
+    }
     pub fn cylinder(height: f64, closed: bool) -> Self {
         assert!(height >= 0.);
 
@@ -210,6 +404,12 @@ impl Object {
             children,
             transformation,
         )))
+    }
+
+    pub fn bounds(&self) -> Bounds {
+        self.shape
+            .bounds()
+            .transformed(self.transformation_inverse.inverse().unwrap())
     }
 
     pub fn with_shape(shape: Shape) -> Self {
@@ -465,10 +665,11 @@ impl Object {
 
     pub fn intersect<'a>(&'a self, ray: &Ray) -> Vec<Intersection<'a>> {
         match &self.shape {
-            Shape::Group(ref group) => group.children.iter().fold(Vec::new(), |mut acc, child| {
-                acc.extend(child.intersect(ray));
-                acc
-            }),
+            // Shape::Group(ref group) => group.children.iter().fold(Vec::new(), |mut acc, child| {
+            //     acc.extend(child.intersect(ray));
+            //     acc
+            // }),
+            Shape::Group(ref group) => group.intersect(ray),
             _ => {
                 let times = self.intersection_times(ray);
                 times
