@@ -385,6 +385,7 @@ impl Shape {
 pub struct Object {
     shape: Shape,
     material: Material,
+    transformation: Matrix,
     transformation_inverse: Matrix,
 }
 
@@ -393,6 +394,7 @@ impl Object {
         Self {
             shape,
             material,
+            transformation,
             transformation_inverse: transformation
                 .inverse()
                 .expect("Object with singular tranfromation matrix cannot be rendered"),
@@ -407,9 +409,7 @@ impl Object {
     }
 
     pub fn bounds(&self) -> Bounds {
-        self.shape
-            .bounds()
-            .transformed(self.transformation_inverse.inverse().unwrap())
+        self.shape.bounds().transformed(self.transformation)
     }
 
     pub fn with_shape(shape: Shape) -> Self {
@@ -440,8 +440,8 @@ impl Object {
         match &mut self.shape {
             Shape::Group(group) => group.apply_transformation(matrix),
             _ => {
-                self.transformation_inverse =
-                    self.transformation_inverse * matrix.inverse().unwrap();
+                self.transformation = matrix * self.transformation;
+                self.transformation_inverse = self.transformation.inverse().unwrap();
             }
         }
     }
