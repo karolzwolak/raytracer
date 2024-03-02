@@ -241,8 +241,8 @@ pub enum Shape {
 impl Shape {
     const CYLINDER_RADIUS: f64 = 1.;
 
-    pub fn object_normal_at(&self, object_point: Point) -> Vector {
-        match self {
+    pub fn local_normal_at(&self, object_point: Point) -> Vector {
+        match *self {
             Shape::Sphere => object_point - Point::zero(),
             Shape::Plane => Vector::new(0., 1., 0.),
             Shape::Cube => {
@@ -379,6 +379,213 @@ impl Shape {
             _ => None,
         }
     }
+
+    fn cube_axis_intersec_times(&self, origin: f64, direction: f64) -> (f64, f64) {
+        assert!(matches!(self, Shape::Cube));
+        let tmin_numerator = -1. - origin;
+        let tmax_numerator = 1. - origin;
+
+        let tmin = tmin_numerator / direction;
+        let tmax = tmax_numerator / direction;
+
+        if tmin < tmax {
+            (tmin, tmax)
+        } else {
+            (tmax, tmin)
+        }
+    }
+
+    fn check_cap_within_radius(&self, ray: &Ray, t: f64, radius: f64) -> bool {
+        assert!(radius >= 0.);
+        let x = ray.origin().x() + t * ray.direction().x();
+        let z = ray.origin().z() + t * ray.direction().z();
+
+        x * x + z * z <= radius
+    }
+
+    fn intersect_cyl_caps(&self, ray: &Ray, times: &mut Vec<f64>) {
+        match self {
+            Shape::Cylinder {
+                y_min,
+                y_max,
+                closed,
+            } => {
+                if !closed || ray.direction().y().approx_eq(&0.) {
+                    return;
+                }
+                let tmin = (y_min - ray.origin().y()) / ray.direction().y();
+                let tmax = (y_max - ray.origin().y()) / ray.direction().y();
+
+                if self.check_cap_within_radius(ray, tmin, Shape::CYLINDER_RADIUS) {
+                    times.push(tmin);
+                }
+                if self.check_cap_within_radius(ray, tmax, Shape::CYLINDER_RADIUS) {
+                    times.push(tmax);
+                }
+            }
+            _ => panic!("expected Shape::Cylinder"),
+        }
+    }
+    fn intersect_cone_caps(&self, ray: &Ray, times: &mut Vec<f64>) {
+        match self {
+            Shape::Cone {
+                y_min,
+                y_max,
+                closed,
+            } => {
+                if !closed || ray.direction().y().approx_eq(&0.) {
+                    return;
+                }
+                let tmin = (y_min - ray.origin().y()) / ray.direction().y();
+                let tmax = (y_max - ray.origin().y()) / ray.direction().y();
+
+                if self.check_cap_within_radius(ray, tmin, y_min.abs()) {
+                    times.push(tmin);
+                }
+                if self.check_cap_within_radius(ray, tmax, y_max.abs()) {
+                    times.push(tmax);
+                }
+            }
+            _ => panic!("expected Shape::Cone"),
+        }
+    }
+
+    pub fn local_intersection_times(&self, object_ray: &Ray) -> Vec<f64> {
+        match *self {
+            Shape::Sphere => {
+                let vector_sphere_to_ray = *object_ray.origin() - Point::new(0., 0., 0.);
+
+                let a = object_ray.direction().dot(*object_ray.direction());
+                let b = 2. * object_ray.direction().dot(vector_sphere_to_ray);
+                let c = vector_sphere_to_ray.dot(vector_sphere_to_ray) - 1.;
+
+                let discriminant = b * b - 4. * a * c;
+                if discriminant < 0. || a == 0. {
+                    return Vec::new();
+                }
+
+                let delta_sqrt = discriminant.sqrt();
+                vec![(-b - delta_sqrt) / (2. * a), (-b + delta_sqrt) / (2. * a)]
+            }
+            Shape::Plane => {
+                let parallel = object_ray.direction().y().approx_eq(&0.);
+                if parallel {
+                    return Vec::new();
+                }
+                vec![-object_ray.origin().y() / object_ray.direction().y()]
+            }
+            Shape::Cube => {
+                let (xtmin, xtmax) = self
+                    .cube_axis_intersec_times(object_ray.origin().x(), object_ray.direction().x());
+                let (ytmin, ytmax) = self
+                    .cube_axis_intersec_times(object_ray.origin().y(), object_ray.direction().y());
+                let (ztmin, ztmax) = self
+                    .cube_axis_intersec_times(object_ray.origin().z(), object_ray.direction().z());
+
+                let tmin = xtmin.max(ytmin).max(ztmin);
+                let tmax = xtmax.min(ytmax).min(ztmax);
+
+                if tmin > tmax {
+                    return Vec::new();
+                }
+
+                vec![tmin, tmax]
+            }
+            Shape::Cylinder { y_min, y_max, .. } => {
+                if y_min.approx_eq(&y_max) {
+                    return Vec::new();
+                }
+
+                let mut res = Vec::with_capacity(2);
+
+                self.intersect_cyl_caps(object_ray, &mut res);
+
+                let a = object_ray.direction().x().powi(2) + object_ray.direction().z().powi(2);
+
+                // ray is parallel to the y axis
+                if a.approx_eq(&0.) {
+                    return res;
+                }
+
+                let b = 2. * object_ray.origin().x() * object_ray.direction().x()
+                    + 2. * object_ray.origin().z() * object_ray.direction().z();
+                let c = object_ray.origin().x().powi(2) + object_ray.origin().z().powi(2) - 1.;
+
+                let discriminant = b * b - 4. * a * c;
+
+                if discriminant < 0. {
+                    return Vec::new();
+                }
+
+                let delta_sqrt = discriminant.sqrt();
+
+                let t0 = (-b - delta_sqrt) / (2. * a);
+                let t1 = (-b + delta_sqrt) / (2. * a);
+
+                let y0 = object_ray.origin().y() + t0 * object_ray.direction().y();
+
+                if y_min < y0 && y0 < y_max {
+                    res.push(t0);
+                }
+
+                let y1 = object_ray.origin().y() + t1 * object_ray.direction().y();
+
+                if y_min < y1 && y1 < y_max {
+                    res.push(t1);
+                }
+
+                res
+            }
+            Shape::Cone { y_min, y_max, .. } => {
+                if y_min.approx_eq(&y_max) {
+                    return Vec::new();
+                }
+
+                let mut res = Vec::with_capacity(4);
+
+                self.intersect_cone_caps(object_ray, &mut res);
+
+                let dir = object_ray.direction();
+                let origin = object_ray.origin();
+
+                let a = dir.x().powi(2) - dir.y().powi(2) + dir.z().powi(2);
+                let b = 2. * (origin.x() * dir.x() - origin.y() * dir.y() + origin.z() * dir.z());
+                let c = origin.x().powi(2) - origin.y().powi(2) + origin.z().powi(2);
+
+                let ray_parallel_to_one_half = a.approx_eq(&0.);
+
+                if ray_parallel_to_one_half {
+                    if b.approx_eq(&0.) {
+                        return Vec::new();
+                    }
+                    let t = -c / (2. * b);
+                    res.push(t);
+                } else {
+                    let discriminant = b * b - 4. * a * c;
+                    if discriminant < 0. {
+                        return Vec::new();
+                    }
+                    let delta_sqrt = discriminant.sqrt();
+                    let t0 = (-b - delta_sqrt) / (2. * a);
+                    let t1 = (-b + delta_sqrt) / (2. * a);
+                    let y0 = origin.y() + t0 * dir.y();
+
+                    if y_min < y0 && y0 < y_max {
+                        res.push(t0);
+                    }
+                    let y1 = origin.y() + t1 * dir.y();
+                    if y_min < y1 && y1 < y_max {
+                        res.push(t1);
+                    }
+                }
+
+                res
+            }
+            Shape::Group(_) => {
+                panic!("Internal bug: this function should not be called on a group")
+            }
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -449,226 +656,18 @@ impl Object {
         let inverse = self.transformation_inverse();
         let object_point = inverse * world_point;
 
-        let object_normal = self.shape.object_normal_at(object_point);
+        let object_normal = self.shape.local_normal_at(object_point);
         let world_normal = inverse.transpose() * object_normal;
         world_normal.normalize()
     }
 
-    fn cube_axis_intersec_times(&self, origin: f64, direction: f64) -> (f64, f64) {
-        assert!(matches!(self.shape, Shape::Cube));
-        let tmin_numerator = -1. - origin;
-        let tmax_numerator = 1. - origin;
-
-        let tmin = tmin_numerator / direction;
-        let tmax = tmax_numerator / direction;
-
-        if tmin < tmax {
-            (tmin, tmax)
-        } else {
-            (tmax, tmin)
-        }
-    }
-
-    fn check_cap_within_radius(&self, ray: &Ray, t: f64, radius: f64) -> bool {
-        assert!(radius >= 0.);
-        let x = ray.origin().x() + t * ray.direction().x();
-        let z = ray.origin().z() + t * ray.direction().z();
-
-        x * x + z * z <= radius
-    }
-
-    fn intersect_cyl_caps(&self, ray: &Ray, times: &mut Vec<f64>) {
-        match self.shape {
-            Shape::Cylinder {
-                y_min,
-                y_max,
-                closed,
-            } => {
-                if !closed || ray.direction().y().approx_eq(&0.) {
-                    return;
-                }
-                let tmin = (y_min - ray.origin().y()) / ray.direction().y();
-                let tmax = (y_max - ray.origin().y()) / ray.direction().y();
-
-                if self.check_cap_within_radius(ray, tmin, Shape::CYLINDER_RADIUS) {
-                    times.push(tmin);
-                }
-                if self.check_cap_within_radius(ray, tmax, Shape::CYLINDER_RADIUS) {
-                    times.push(tmax);
-                }
-            }
-            _ => panic!("expected Shape::Cylinder"),
-        }
-    }
-    fn intersect_cone_caps(&self, ray: &Ray, times: &mut Vec<f64>) {
-        match self.shape {
-            Shape::Cone {
-                y_min,
-                y_max,
-                closed,
-            } => {
-                if !closed || ray.direction().y().approx_eq(&0.) {
-                    return;
-                }
-                let tmin = (y_min - ray.origin().y()) / ray.direction().y();
-                let tmax = (y_max - ray.origin().y()) / ray.direction().y();
-
-                if self.check_cap_within_radius(ray, tmin, y_min.abs()) {
-                    times.push(tmin);
-                }
-                if self.check_cap_within_radius(ray, tmax, y_max.abs()) {
-                    times.push(tmax);
-                }
-            }
-            _ => panic!("expected Shape::Cone"),
-        }
-    }
-
     pub fn intersection_times(&self, world_ray: &Ray) -> Vec<f64> {
-        let object_ray = world_ray.transform(self.transformation_inverse());
-
-        match self.shape {
-            Shape::Sphere => {
-                let vector_sphere_to_ray = *object_ray.origin() - Point::new(0., 0., 0.);
-
-                let a = object_ray.direction().dot(*object_ray.direction());
-                let b = 2. * object_ray.direction().dot(vector_sphere_to_ray);
-                let c = vector_sphere_to_ray.dot(vector_sphere_to_ray) - 1.;
-
-                let discriminant = b * b - 4. * a * c;
-                if discriminant < 0. || a == 0. {
-                    return Vec::new();
-                }
-
-                let delta_sqrt = discriminant.sqrt();
-                vec![(-b - delta_sqrt) / (2. * a), (-b + delta_sqrt) / (2. * a)]
-            }
-            Shape::Plane => {
-                let parallel = object_ray.direction().y().approx_eq(&0.);
-                if parallel {
-                    return Vec::new();
-                }
-                vec![-object_ray.origin().y() / object_ray.direction().y()]
-            }
-            Shape::Cube => {
-                let (xtmin, xtmax) = self
-                    .cube_axis_intersec_times(object_ray.origin().x(), object_ray.direction().x());
-                let (ytmin, ytmax) = self
-                    .cube_axis_intersec_times(object_ray.origin().y(), object_ray.direction().y());
-                let (ztmin, ztmax) = self
-                    .cube_axis_intersec_times(object_ray.origin().z(), object_ray.direction().z());
-
-                let tmin = xtmin.max(ytmin).max(ztmin);
-                let tmax = xtmax.min(ytmax).min(ztmax);
-
-                if tmin > tmax {
-                    return Vec::new();
-                }
-
-                vec![tmin, tmax]
-            }
-            Shape::Cylinder { y_min, y_max, .. } => {
-                if y_min.approx_eq(&y_max) {
-                    return Vec::new();
-                }
-
-                let mut res = Vec::with_capacity(2);
-
-                self.intersect_cyl_caps(&object_ray, &mut res);
-
-                let a = object_ray.direction().x().powi(2) + object_ray.direction().z().powi(2);
-
-                // ray is parallel to the y axis
-                if a.approx_eq(&0.) {
-                    return res;
-                }
-
-                let b = 2. * object_ray.origin().x() * object_ray.direction().x()
-                    + 2. * object_ray.origin().z() * object_ray.direction().z();
-                let c = object_ray.origin().x().powi(2) + object_ray.origin().z().powi(2) - 1.;
-
-                let discriminant = b * b - 4. * a * c;
-
-                if discriminant < 0. {
-                    return Vec::new();
-                }
-
-                let delta_sqrt = discriminant.sqrt();
-
-                let t0 = (-b - delta_sqrt) / (2. * a);
-                let t1 = (-b + delta_sqrt) / (2. * a);
-
-                let y0 = object_ray.origin().y() + t0 * object_ray.direction().y();
-
-                if y_min < y0 && y0 < y_max {
-                    res.push(t0);
-                }
-
-                let y1 = object_ray.origin().y() + t1 * object_ray.direction().y();
-
-                if y_min < y1 && y1 < y_max {
-                    res.push(t1);
-                }
-
-                res
-            }
-            Shape::Cone { y_min, y_max, .. } => {
-                if y_min.approx_eq(&y_max) {
-                    return Vec::new();
-                }
-
-                let mut res = Vec::with_capacity(4);
-
-                self.intersect_cone_caps(&object_ray, &mut res);
-
-                let dir = object_ray.direction();
-                let origin = object_ray.origin();
-
-                let a = dir.x().powi(2) - dir.y().powi(2) + dir.z().powi(2);
-                let b = 2. * (origin.x() * dir.x() - origin.y() * dir.y() + origin.z() * dir.z());
-                let c = origin.x().powi(2) - origin.y().powi(2) + origin.z().powi(2);
-
-                let ray_parallel_to_one_half = a.approx_eq(&0.);
-
-                if ray_parallel_to_one_half {
-                    if b.approx_eq(&0.) {
-                        return Vec::new();
-                    }
-                    let t = -c / (2. * b);
-                    res.push(t);
-                } else {
-                    let discriminant = b * b - 4. * a * c;
-                    if discriminant < 0. {
-                        return Vec::new();
-                    }
-                    let delta_sqrt = discriminant.sqrt();
-                    let t0 = (-b - delta_sqrt) / (2. * a);
-                    let t1 = (-b + delta_sqrt) / (2. * a);
-                    let y0 = origin.y() + t0 * dir.y();
-
-                    if y_min < y0 && y0 < y_max {
-                        res.push(t0);
-                    }
-                    let y1 = origin.y() + t1 * dir.y();
-                    if y_min < y1 && y1 < y_max {
-                        res.push(t1);
-                    }
-                }
-
-                res
-            }
-            Shape::Group(_) => {
-                panic!("Internal bug: this function should not be called on a group")
-            }
-        }
+        self.shape
+            .local_intersection_times(&world_ray.transform(self.transformation_inverse))
     }
 
     pub fn intersect<'a>(&'a self, ray: &Ray) -> Vec<Intersection<'a>> {
         match &self.shape {
-            // Shape::Group(ref group) => group.children.iter().fold(Vec::new(), |mut acc, child| {
-            //     acc.extend(child.intersect(ray));
-            //     acc
-            // }),
             Shape::Group(ref group) => group.intersect(ray),
             _ => {
                 let times = self.intersection_times(ray);
