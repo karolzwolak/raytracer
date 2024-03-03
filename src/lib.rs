@@ -14,6 +14,7 @@ pub mod render {
     pub mod intersection;
     pub mod light;
     pub mod material;
+    pub mod obj_parser;
     pub mod object;
     pub mod pattern;
     pub mod ray;

@@ -149,7 +149,7 @@ impl Bounds {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 /// A group of objects that can be transformed simultaneously.
 /// However, children added later will not be affected by previous transformations.
 /// It also features automatic bounds calculation, that reduce ray intersection checks.
@@ -185,8 +185,16 @@ impl ObjectGroup {
         self.bounds.add_bounds(child.bounds());
         self.children.push(child);
     }
+    pub fn add_children(&mut self, children: impl IntoIterator<Item = Object>) {
+        for child in children {
+            self.add_child(child);
+        }
+    }
     pub fn into_shape(self) -> Shape {
         Shape::Group(self)
+    }
+    pub fn into_object(self) -> Object {
+        Object::with_shape(self.into_shape())
     }
     pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
         if !self.bounds.is_intersected(ray) {
@@ -215,7 +223,7 @@ impl Default for ObjectGroup {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Triangle {
     p1: Point,
     p2: Point,
@@ -242,7 +250,7 @@ impl Triangle {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Shape {
     /// Unit sphere at point zero
     Sphere,
@@ -652,7 +660,7 @@ impl Shape {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Object {
     shape: Shape,
     material: Material,
