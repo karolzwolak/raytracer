@@ -216,6 +216,33 @@ impl Default for ObjectGroup {
 }
 
 #[derive(Clone)]
+pub struct Triangle {
+    p1: Point,
+    p2: Point,
+    p3: Point,
+    e1: Vector,
+    e2: Vector,
+    normal: Vector,
+}
+
+impl Triangle {
+    pub fn new(p1: Point, p2: Point, p3: Point) -> Self {
+        let v12 = p2 - p1;
+        let v13 = p3 - p1;
+        let normal = v13.cross(v12).normalize();
+
+        Self {
+            p1,
+            p2,
+            p3,
+            e1: v12,
+            e2: v13,
+            normal,
+        }
+    }
+}
+
+#[derive(Clone)]
 pub enum Shape {
     /// Unit sphere at point zero
     Sphere,
@@ -235,6 +262,7 @@ pub enum Shape {
         y_max: f64,
         closed: bool,
     },
+    Triangle(Triangle),
     Group(ObjectGroup),
 }
 
@@ -289,6 +317,7 @@ impl Shape {
                     Vector::new(object_point.x(), y, object_point.z())
                 }
             }
+            Shape::Triangle(ref triangle) => triangle.normal,
             Shape::Group(_) => {
                 panic!("Internal bug: this function should not be called on a group")
             }
@@ -314,6 +343,13 @@ impl Shape {
                 min: Point::new(*y_min, *y_min, *y_min),
                 max: Point::new(*y_max, *y_max, *y_max),
             },
+            Shape::Triangle(ref triangle) => {
+                let mut bounds = Bounds::empty();
+                bounds.add_point(triangle.p1);
+                bounds.add_point(triangle.p2);
+                bounds.add_point(triangle.p3);
+                bounds
+            }
             Shape::Group(ref group) => group.children.iter().fold(Bounds::empty(), |acc, child| {
                 let mut new_bounds = child.bounds();
                 new_bounds.add_bounds(acc);
@@ -371,6 +407,10 @@ impl Shape {
 
     pub fn unit_cone() -> Self {
         Shape::cone(1., -0.5, true)
+    }
+
+    pub fn triangle(p1: Point, p2: Point, p3: Point) -> Self {
+        Shape::Triangle(Triangle::new(p1, p2, p3))
     }
 
     pub fn get_group(&self) -> Option<&ObjectGroup> {
@@ -580,6 +620,30 @@ impl Shape {
                 }
 
                 res
+            }
+            Shape::Triangle(ref triangle) => {
+                let dir_cross_e2 = object_ray.direction().cross(triangle.e2);
+                let det = triangle.e1.dot(dir_cross_e2);
+
+                if det.approx_eq(&0.) {
+                    return Vec::new();
+                }
+
+                let f = 1. / det;
+                let p1_to_origin = *object_ray.origin() - triangle.p1;
+                let u = f * p1_to_origin.dot(dir_cross_e2);
+                if !(0.0..=1.).contains(&u) {
+                    return Vec::new();
+                }
+
+                let origin_cross_e1 = p1_to_origin.cross(triangle.e1);
+                let v = f * object_ray.direction().dot(origin_cross_e1);
+                if v < 0. || u + v > 1. {
+                    return Vec::new();
+                }
+
+                let t = f * triangle.e2.dot(origin_cross_e1);
+                vec![t]
             }
             Shape::Group(_) => {
                 panic!("Internal bug: this function should not be called on a group")
@@ -1188,5 +1252,98 @@ mod tests {
             .children[0];
         let normal = sphere.normal_vector_at(Point::new(1.7321, 1.1547, -5.5774));
         assert!(normal.approx_eq_low_prec(&Vector::new(0.2857, 0.4286, -0.8571)));
+    }
+
+    #[test]
+    fn constructing_triangle() {
+        let p1 = Point::new(0., 1., 0.);
+        let p2 = Point::new(-1., 0., 0.);
+        let p3 = Point::new(1., 0., 0.);
+
+        let t = Triangle::new(p1, p2, p3);
+
+        assert_eq!(t.e1, Vector::new(-1., -1., 0.));
+        assert_eq!(t.e2, Vector::new(1., -1., 0.));
+        assert_eq!(t.normal, Vector::new(0., 0., -1.));
+    }
+
+    #[test]
+    fn finding_normal_on_triangle() {
+        let t = Triangle::new(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+        );
+
+        let shape = Shape::Triangle(t.clone());
+
+        assert_eq!(shape.local_normal_at(Point::new(0., 0.5, 0.)), t.normal);
+        assert_eq!(shape.local_normal_at(Point::new(-0.5, 0.75, 0.)), t.normal);
+        assert_eq!(shape.local_normal_at(Point::new(0.5, 0.25, 0.)), t.normal);
+    }
+
+    #[test]
+    fn intersecting_triangle_with_parallel_ray() {
+        let t = Shape::triangle(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+        );
+
+        let ray = Ray::new(Point::new(0., -1., -2.), Vector::new(0., 1., 0.));
+        let xs = t.local_intersection_times(&ray);
+
+        assert!(xs.is_empty());
+    }
+
+    #[test]
+    fn ray_misses_p1_p3_edge() {
+        let t = Shape::triangle(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+        );
+        let ray = Ray::new(Point::new(1., 1., -2.), Vector::new(0., 0., 1.));
+        let xs = t.local_intersection_times(&ray);
+        assert!(xs.is_empty());
+    }
+
+    #[test]
+    fn ray_misses_p1_p2_edge() {
+        let t = Shape::triangle(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+        );
+
+        let ray = Ray::new(Point::new(-1., 1., -2.), Vector::new(0., 0., 1.));
+        let xs = t.local_intersection_times(&ray);
+
+        assert!(xs.is_empty());
+    }
+
+    #[test]
+    fn ray_misses_p2_p3_edge() {
+        let t = Shape::triangle(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+        );
+        let ray = Ray::new(Point::new(0., -1., -2.), Vector::new(0., 0., 1.));
+        let xs = t.local_intersection_times(&ray);
+        assert!(xs.is_empty());
+    }
+
+    #[test]
+    fn ray_strikes_triangle() {
+        let t = Shape::triangle(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+        );
+        let ray = Ray::new(Point::new(0., 0.5, -2.), Vector::new(0., 0., 1.));
+        let xs = t.local_intersection_times(&ray);
+        assert_eq!(xs.len(), 1);
+        assert!(xs[0].approx_eq(&2.));
     }
 }
