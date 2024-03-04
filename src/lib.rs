@@ -36,4 +36,5 @@ pub mod playing_around {
     pub mod runner;
     pub mod shadows;
     pub mod transformations;
+    pub mod triangles;
 }

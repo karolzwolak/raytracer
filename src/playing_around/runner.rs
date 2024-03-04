@@ -4,13 +4,13 @@ use crate::playing_around::{making_patterns, planes, reflections, shadows};
 
 use super::{
     cubes, cylinders, groups, light_and_shading, making_scene, projectiles, rays_and_spheres,
-    refractions, transformations,
+    refractions, transformations, triangles,
 };
 
 const DEFAULT_WIDTH: usize = 1200;
 const DEFAULT_HEIGHT: usize = 1200;
 const IMAGES_DIR: &str = "images";
-const DEFAULT_CHAPTER: &str = "groups";
+const DEFAULT_CHAPTER: &str = "triangles";
 
 pub fn run() -> Result<(), String> {
     match parse_args() {
@@ -98,6 +98,7 @@ fn run_with_args(
         "cubes" => cubes::run(width, height),
         "cylinders" => cylinders::run(width, height),
         "groups" => groups::run(width, height),
+        "triangles" => triangles::run(width, height),
         _ => return Err(format!("no such chapter '{chapter}'")),
     };
 
