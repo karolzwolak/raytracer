@@ -181,6 +181,11 @@ impl ObjectGroup {
         }
         self.bounds.transform(matrix);
     }
+    pub fn set_material(&mut self, material: Material) {
+        for child in self.children.iter_mut() {
+            child.set_material(material.clone());
+        }
+    }
     pub fn add_child(&mut self, child: Object) {
         self.bounds.add_bounds(child.bounds());
         self.children.push(child);
@@ -759,6 +764,9 @@ impl Object {
     }
 
     pub fn set_material(&mut self, material: Material) {
+        if let Shape::Group(group) = &mut self.shape {
+            group.set_material(material.clone())
+        }
         self.material = material;
     }
 
