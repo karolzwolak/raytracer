@@ -128,11 +128,7 @@ impl Bounds {
         let x_len = self.max.x() - self.min.x();
         let y_len = self.max.y() - self.min.y();
         let z_len = self.max.z() - self.min.z();
-        let center = Point::new(
-            self.min.x() + x_len / 2.,
-            self.min.y() + y_len / 2.,
-            self.min.z() + z_len / 2.,
-        );
+        let center = self.center();
         Object::new(
             Shape::Cube,
             Material {
@@ -147,6 +143,13 @@ impl Bounds {
                 .transformed(),
         )
     }
+    pub fn center(&self) -> Point {
+        Point::new(
+            (self.min.x() + self.max.x()) / 2.,
+            (self.min.y() + self.max.y()) / 2.,
+            (self.min.z() + self.max.z()) / 2.,
+        )
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -159,13 +162,17 @@ pub struct ObjectGroup {
 }
 
 impl ObjectGroup {
+    const TARGET_CHILDREN: usize = 5;
+    const MERGE_THRESHOLD: usize = 200;
+
     pub fn new(children: Vec<Object>) -> Self {
         let mut bounds = Bounds::empty();
         for child in children.iter() {
             bounds.add_bounds(child.bounds());
         }
-
-        Self { children, bounds }
+        let mut res = Self { children, bounds };
+        res.merge_children();
+        res
     }
     pub fn with_transformations(children: Vec<Object>, transformation: Matrix) -> Self {
         let mut group = Self::new(children);
@@ -173,7 +180,7 @@ impl ObjectGroup {
         group
     }
     pub fn empty() -> Self {
-        Self::new(Vec::new())
+        Self::new(Vec::with_capacity(Self::TARGET_CHILDREN))
     }
     pub fn apply_transformation(&mut self, matrix: Matrix) {
         for child in self.children.iter_mut() {
@@ -186,14 +193,29 @@ impl ObjectGroup {
             child.set_material(material.clone());
         }
     }
-    pub fn add_child(&mut self, child: Object) {
+    fn add_child_no_merge(&mut self, child: Object) {
         self.bounds.add_bounds(child.bounds());
         self.children.push(child);
     }
+    pub fn add_child(&mut self, child: Object) {
+        self.add_child_no_merge(child);
+        self.merge_children()
+    }
     pub fn add_children(&mut self, children: impl IntoIterator<Item = Object>) {
         for child in children {
-            self.add_child(child);
+            self.add_child_no_merge(child);
         }
+        self.merge_children()
+    }
+    pub fn merge_children(&mut self) {
+        if self.children.len() < Self::MERGE_THRESHOLD {
+            return;
+        }
+        let old_children = std::mem::take(&mut self.children);
+        self.children = old_children
+            .chunks(Self::TARGET_CHILDREN)
+            .map(|chunk| Object::group(chunk.to_vec(), Matrix::identity()))
+            .collect();
     }
     pub fn into_shape(self) -> Shape {
         Shape::Group(self)

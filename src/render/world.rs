@@ -88,7 +88,9 @@ impl World {
     pub fn render(&self, camera: &Camera) -> Canvas {
         let mut image = camera.canvas();
 
+        let now = std::time::Instant::now();
         image.set_each_pixel(|x: usize, y: usize| self.color_at(camera.ray_for_pixel(x, y)));
+        println!("Render time: {:?}", now.elapsed());
         image
     }
 
