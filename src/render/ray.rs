@@ -1,14 +1,20 @@
-use crate::primitive::{matrix::Matrix, point::Point, vector::Vector};
+use crate::primitive::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector};
 
 #[derive(Clone)]
 pub struct Ray {
     origin: Point,
     direction: Vector,
+    dir_inv: Vector,
 }
 
 impl Ray {
     pub fn new(origin: Point, direction: Vector) -> Self {
-        Self { origin, direction }
+        let dir_inv = Vector::new(1. / direction.x(), 1. / direction.y(), 1. / direction.z());
+        Self {
+            origin,
+            direction,
+            dir_inv,
+        }
     }
 
     pub fn position(&self, time: f64) -> Point {
@@ -19,6 +25,9 @@ impl Ray {
     }
     pub fn direction(&self) -> &Vector {
         &self.direction
+    }
+    pub fn dir_inv(&self) -> &Vector {
+        &self.dir_inv
     }
 
     pub fn transform(&self, matrix: Matrix) -> Self {

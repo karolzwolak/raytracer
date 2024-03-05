@@ -70,18 +70,12 @@ impl Bounds {
     fn transform(&mut self, matrix: Matrix) {
         *self = self.transformed(matrix);
     }
-    fn axis_intersection_times(
-        &self,
-        origin: f64,
-        direction: f64,
-        min: f64,
-        max: f64,
-    ) -> (f64, f64) {
+    fn axis_intersection_times(&self, origin: f64, dir_inv: f64, min: f64, max: f64) -> (f64, f64) {
         let tmin_numerator = min - origin;
         let tmax_numerator = max - origin;
 
-        let tmin = tmin_numerator / direction;
-        let tmax = tmax_numerator / direction;
+        let tmin = tmin_numerator * dir_inv;
+        let tmax = tmax_numerator * dir_inv;
 
         if tmin < tmax {
             (tmin, tmax)
@@ -89,37 +83,36 @@ impl Bounds {
             (tmax, tmin)
         }
     }
-    fn intersection_times(&self, ray: &Ray) -> Vec<f64> {
+    fn is_intersected(&self, ray: &Ray) -> bool {
         let (xtmin, xtmax) = self.axis_intersection_times(
             ray.origin().x(),
-            ray.direction().x(),
+            ray.dir_inv().x(),
             self.min.x(),
             self.max.x(),
         );
         let (ytmin, ytmax) = self.axis_intersection_times(
             ray.origin().y(),
-            ray.direction().y(),
+            ray.dir_inv().y(),
             self.min.y(),
             self.max.y(),
         );
+        let tmin = xtmin.max(ytmin);
+        let tmax = xtmax.min(ytmax);
+
+        if tmin > tmax {
+            return false;
+        }
         let (ztmin, ztmax) = self.axis_intersection_times(
             ray.origin().z(),
-            ray.direction().z(),
+            ray.dir_inv().z(),
             self.min.z(),
             self.max.z(),
         );
 
-        let tmin = xtmin.max(ytmin).max(ztmin);
-        let tmax = xtmax.min(ytmax).min(ztmax);
+        let tmin = tmin.max(ztmin);
+        let tmax = tmax.min(ztmax);
 
-        if tmin > tmax {
-            Vec::new()
-        } else {
-            vec![tmin, tmax]
-        }
-    }
-    fn is_intersected(&self, ray: &Ray) -> bool {
-        !self.intersection_times(ray).is_empty()
+        tmin <= tmax
     }
     pub fn as_object(&self) -> Object {
         // render slightly bigger box to avoid acne effect
@@ -455,13 +448,13 @@ impl Shape {
         }
     }
 
-    fn cube_axis_intersec_times(&self, origin: f64, direction: f64) -> (f64, f64) {
+    fn cube_axis_intersec_times(&self, origin: f64, dir_inv: f64) -> (f64, f64) {
         assert!(matches!(self, Shape::Cube));
         let tmin_numerator = -1. - origin;
         let tmax_numerator = 1. - origin;
 
-        let tmin = tmin_numerator / direction;
-        let tmax = tmax_numerator / direction;
+        let tmin = tmin_numerator * dir_inv;
+        let tmax = tmax_numerator * dir_inv;
 
         if tmin < tmax {
             (tmin, tmax)
@@ -551,11 +544,11 @@ impl Shape {
             }
             Shape::Cube => {
                 let (xtmin, xtmax) = self
-                    .cube_axis_intersec_times(object_ray.origin().x(), object_ray.direction().x());
+                    .cube_axis_intersec_times(object_ray.origin().x(), object_ray.dir_inv().x());
                 let (ytmin, ytmax) = self
-                    .cube_axis_intersec_times(object_ray.origin().y(), object_ray.direction().y());
+                    .cube_axis_intersec_times(object_ray.origin().y(), object_ray.dir_inv().y());
                 let (ztmin, ztmax) = self
-                    .cube_axis_intersec_times(object_ray.origin().z(), object_ray.direction().z());
+                    .cube_axis_intersec_times(object_ray.origin().z(), object_ray.dir_inv().z());
 
                 let tmin = xtmin.max(ytmin).max(ztmin);
                 let tmax = xtmax.min(ytmax).min(ztmax);
