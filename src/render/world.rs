@@ -10,7 +10,7 @@ use super::{
     intersection::{IntersecComputations, IntersecVec},
     light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
     material::Material,
-    object::Object,
+    object::{Object, ObjectGroup},
     ray::Ray,
 };
 use super::{object::Shape, pattern::Pattern};
@@ -26,6 +26,27 @@ pub struct World {
 
 impl World {
     const MAX_RECURSIVE_DEPTH: usize = 5 - 1;
+    pub fn new_group_objects(
+        objects: Vec<Object>,
+        light_sources: Vec<PointLightSource>,
+        max_recursive_depth: Option<usize>,
+        use_shadow_intensity: bool,
+    ) -> Self {
+        let objects = if objects.len() > ObjectGroup::MERGE_THRESHOLD / 4 {
+            let mut group = ObjectGroup::new(objects);
+            group.merge_children_check_threshold();
+            group.into_children()
+        } else {
+            objects
+        };
+
+        Self {
+            objects,
+            light_sources,
+            max_recursive_depth: max_recursive_depth.unwrap_or(Self::MAX_RECURSIVE_DEPTH),
+            use_shadow_intensity,
+        }
+    }
     pub fn new(
         objects: Vec<Object>,
         light_sources: Vec<PointLightSource>,

@@ -156,7 +156,7 @@ pub struct ObjectGroup {
 
 impl ObjectGroup {
     const TARGET_CHILDREN: usize = 5;
-    const MERGE_THRESHOLD: usize = 200;
+    pub const MERGE_THRESHOLD: usize = 200;
 
     pub fn new(children: Vec<Object>) -> Self {
         let mut bounds = Bounds::empty();
@@ -164,7 +164,7 @@ impl ObjectGroup {
             bounds.add_bounds(child.bounds());
         }
         let mut res = Self { children, bounds };
-        res.merge_children();
+        res.merge_children_check_threshold();
         res
     }
     pub fn with_transformations(children: Vec<Object>, transformation: Matrix) -> Self {
@@ -192,23 +192,29 @@ impl ObjectGroup {
     }
     pub fn add_child(&mut self, child: Object) {
         self.add_child_no_merge(child);
-        self.merge_children()
+        self.merge_children_check_threshold()
     }
     pub fn add_children(&mut self, children: impl IntoIterator<Item = Object>) {
         for child in children {
             self.add_child_no_merge(child);
         }
-        self.merge_children()
+        self.merge_children_check_threshold()
     }
     pub fn merge_children(&mut self) {
-        if self.children.len() < Self::MERGE_THRESHOLD {
-            return;
-        }
         let old_children = std::mem::take(&mut self.children);
         self.children = old_children
             .chunks(Self::TARGET_CHILDREN)
             .map(|chunk| Object::group(chunk.to_vec(), Matrix::identity()))
             .collect();
+    }
+    pub fn merge_children_check_threshold(&mut self) {
+        if self.children.len() < Self::MERGE_THRESHOLD {
+            return;
+        }
+        self.merge_children()
+    }
+    pub fn into_children(self) -> Vec<Object> {
+        self.children
     }
     pub fn into_shape(self) -> Shape {
         Shape::Group(self)
