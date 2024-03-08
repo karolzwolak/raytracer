@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use crate::primitive::{point::Point, tuple::Tuple};
+use crate::primitive::{point::Point, tuple::Tuple, vector::Vector};
 
 use super::object::{Object, ObjectGroup, Shape, Triangle};
 
 pub struct ObjParser {
     ignored: usize,
     vertices: Vec<Point>,
+    normals: Vec<Vector>,
     groups: HashMap<String, ObjectGroup>,
     curr_group: Option<String>,
     main_group: ObjectGroup,
@@ -18,6 +19,7 @@ impl ObjParser {
             ignored: 0,
             groups: HashMap::new(),
             vertices: Vec::new(),
+            normals: Vec::new(),
             curr_group: None,
             main_group: ObjectGroup::default(),
         }
@@ -38,27 +40,99 @@ impl ObjParser {
         }
     }
 
-    fn fan_triangulation(&mut self, vertex_indices: Vec<usize>) {
+    fn fan_triangulation(
+        &mut self,
+        vertex_indices: Vec<usize>,
+        normal_indices: Option<Vec<usize>>,
+    ) {
         let v = self.vertices[vertex_indices[0]];
-        let triangles: Vec<Object> = vertex_indices
-            .windows(2)
-            .skip(1)
-            .map(|slice| match slice {
-                [id1, id2] => {
-                    Object::with_shape(Shape::triangle(v, self.vertices[*id1], self.vertices[*id2]))
-                }
-                _ => unreachable!(),
-            })
-            .collect();
-        self.curr_group_mut().add_children(triangles);
+        let triangle_iter: Vec<Object> = match normal_indices {
+            None => vertex_indices
+                .windows(2)
+                .skip(1)
+                .map(|slice| match slice {
+                    [id1, id2] => Object::with_shape(Shape::triangle(
+                        v,
+                        self.vertices[*id1],
+                        self.vertices[*id2],
+                    )),
+                    _ => unreachable!(),
+                })
+                .collect(),
+            Some(normal_indices) => {
+                let n = self.normals[normal_indices[0]];
+                assert_eq!(vertex_indices.len(), normal_indices.len());
+
+                vertex_indices
+                    .iter()
+                    .zip(normal_indices.iter())
+                    .enumerate()
+                    .skip(2)
+                    .map(|(index_id, pair)| {
+                        let v1 = vertex_indices[index_id - 1];
+                        let n1 = normal_indices[index_id - 1];
+
+                        let v2 = *pair.0;
+                        let n2 = *pair.1;
+
+                        Object::with_shape(Shape::smooth_triangle(
+                            v,
+                            self.vertices[v1],
+                            self.vertices[v2],
+                            n,
+                            self.normals[n1],
+                            self.normals[n2],
+                        ))
+                    })
+                    .collect()
+            }
+        };
+        self.curr_group_mut().add_children(triangle_iter);
+    }
+
+    fn face<'a>(&'a mut self, iter: &mut impl Iterator<Item = &'a str>) {
+        let mut vertex_indices = Vec::new();
+        let mut normal_indices = Vec::new();
+
+        for face in iter {
+            let mut indices = face.split('/');
+            let vertex_index = indices.next().unwrap().parse::<usize>().unwrap() - 1;
+            // skip texture index
+            indices.next();
+            vertex_indices.push(vertex_index);
+            if let Some(normal_index) = indices.next() {
+                normal_indices.push(normal_index.parse::<usize>().unwrap() - 1);
+            }
+        }
+        self.fan_triangulation(
+            vertex_indices,
+            if normal_indices.is_empty() {
+                None
+            } else {
+                Some(normal_indices)
+            },
+        );
     }
 
     fn add_group(&mut self, name: String) {
         self.curr_group = Some(name);
     }
 
-    fn add_vertex(&mut self, x: f64, y: f64, z: f64) {
+    fn add_vertex(&mut self, tuple: (f64, f64, f64)) {
+        let (x, y, z) = tuple;
         self.vertices.push(Point::new(x, y, z));
+    }
+
+    fn add_normal(&mut self, tuple: (f64, f64, f64)) {
+        let (x, y, z) = tuple;
+        self.normals.push(Vector::new(x, y, z));
+    }
+
+    fn parse_tuple<'a>(&'a self, iter: &mut impl Iterator<Item = &'a str>) -> (f64, f64, f64) {
+        let x = iter.next().unwrap().parse().unwrap();
+        let y = iter.next().unwrap().parse().unwrap();
+        let z = iter.next().unwrap().parse().unwrap();
+        (x, y, z)
     }
 
     fn parse_line(&mut self, line: &str) -> Result<(), String> {
@@ -69,17 +143,13 @@ impl ObjParser {
         let mut iter = line.split_whitespace();
         match iter.next() {
             Some("v") => {
-                let x = iter.next().unwrap().parse().unwrap();
-                let y = iter.next().unwrap().parse().unwrap();
-                let z = iter.next().unwrap().parse().unwrap();
-                self.add_vertex(x, y, z);
+                self.add_vertex(self.parse_tuple(&mut iter));
             }
-            Some("f") => {
-                let vertex_indices = iter
-                    .map(|s| s.parse::<usize>().unwrap() - 1)
-                    .collect::<Vec<usize>>();
-                self.fan_triangulation(vertex_indices);
+            Some("vn") => {
+                self.add_normal(self.parse_tuple(&mut iter));
             }
+
+            Some("f") => self.face(&mut iter),
             Some("g") => {
                 self.add_group(iter.next().unwrap().to_string());
             }
@@ -123,7 +193,7 @@ impl Default for ObjParser {
 }
 
 mod tests {
-    use crate::render::object::{Object, Shape};
+    use crate::render::object::{Object, Shape, SmoothTriangle};
 
     use super::*;
 
@@ -262,5 +332,56 @@ mod tests {
         assert_eq!(children.len(), 2);
         assert!(matches!(children[0].shape(), &Shape::Group(_)));
         assert!(matches!(children[1].shape(), &Shape::Group(_)));
+    }
+
+    #[test]
+    fn vertex_normal_records() {
+        let data = r#"
+            vn 0 0 1
+            vn 0.707 0 -0.707
+            vn 1 2 3
+        "#;
+        let mut parser = ObjParser::new();
+        parser.not_consuming_parse(data.to_string()).unwrap();
+
+        assert_eq!(parser.ignored(), 0);
+        assert_eq!(parser.normals.len(), 3);
+        assert_eq!(parser.normals[0], Vector::new(0.0, 0.0, 1.0));
+        assert_eq!(parser.normals[1], Vector::new(0.707, 0.0, -0.707));
+        assert_eq!(parser.normals[2], Vector::new(1.0, 2.0, 3.0));
+    }
+
+    fn _obj_as_smooth_triangle(object: &Object) -> SmoothTriangle {
+        match object.shape() {
+            Shape::SmoothTriangle(t) => t.clone(),
+            _ => unreachable!(),
+        }
+    }
+
+    #[test]
+    fn faces_with_normals() {
+        let data = r#"
+            v 0 1 0
+            v -1 0 0
+            v 1 0 0
+            vn -1 0 0
+            vn 1 0 0
+            vn 0 1 0
+            f 1//3 2//1 3//2
+            f 1/0/3 2/0/1 3/0/2
+        "#;
+        let mut parser = ObjParser::new();
+        parser.not_consuming_parse(data.to_string()).unwrap();
+
+        let child1 = _obj_as_smooth_triangle(&parser.main_group.children()[0]);
+        let child2 = _obj_as_smooth_triangle(&parser.main_group.children()[1]);
+
+        assert_eq!(child1, child2);
+        assert_eq!(child1.p1(), parser.vertices[0]);
+        assert_eq!(child1.p2(), parser.vertices[1]);
+        assert_eq!(child1.p3(), parser.vertices[2]);
+        assert_eq!(child1.n1(), parser.normals[2]);
+        assert_eq!(child1.n2(), parser.normals[0]);
+        assert_eq!(child1.n3(), parser.normals[1]);
     }
 }
