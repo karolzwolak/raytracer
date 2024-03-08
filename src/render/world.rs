@@ -10,7 +10,7 @@ use super::{
     color::Color,
     light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
     material::Material,
-    object::{Object, ObjectGroup},
+    object::Object,
     ray::Ray,
 };
 use super::{object::Shape, pattern::Pattern};
@@ -18,28 +18,24 @@ use super::{object::Shape, pattern::Pattern};
 pub struct World {
     objects: Vec<Object>,
     light_sources: Vec<PointLightSource>,
+    /// Depth of recursive calls for reflections and refractions
+    /// 0 means no reflections or refractions
     max_recursive_depth: usize,
-    /// shadows have to be true/false for testing purposes,
+    /// If true, shadows are calculated with intensity,
+    /// so that all objects don't cast full shadow
+    /// boolean shadows are required for testing purposes,
     /// because all tests values were calculated with bool shadows
     use_shadow_intensity: bool,
 }
 
 impl World {
     const MAX_RECURSIVE_DEPTH: usize = 5 - 1;
-    pub fn new_group_objects(
+    pub fn with_shadow_intensity(
         objects: Vec<Object>,
         light_sources: Vec<PointLightSource>,
         max_recursive_depth: Option<usize>,
         use_shadow_intensity: bool,
     ) -> Self {
-        let objects = if objects.len() > ObjectGroup::MERGE_THRESHOLD / 4 {
-            let mut group = ObjectGroup::new(objects);
-            group.merge_children_check_threshold();
-            group.into_children()
-        } else {
-            objects
-        };
-
         Self {
             objects,
             light_sources,
@@ -52,25 +48,15 @@ impl World {
         light_sources: Vec<PointLightSource>,
         max_recursive_depth: Option<usize>,
     ) -> Self {
-        Self {
-            objects,
-            light_sources,
-            max_recursive_depth: max_recursive_depth.unwrap_or(Self::MAX_RECURSIVE_DEPTH),
-            use_shadow_intensity: true,
-        }
+        Self::with_shadow_intensity(objects, light_sources, max_recursive_depth, true)
     }
 
-    pub fn new_with_bool_shadows(
+    pub fn with_bool_shadows(
         objects: Vec<Object>,
         light_sources: Vec<PointLightSource>,
         max_recursive_depth: Option<usize>,
     ) -> Self {
-        Self {
-            objects,
-            light_sources,
-            max_recursive_depth: max_recursive_depth.unwrap_or(Self::MAX_RECURSIVE_DEPTH),
-            use_shadow_intensity: false,
-        }
+        Self::with_shadow_intensity(objects, light_sources, max_recursive_depth, false)
     }
 
     pub fn empty() -> Self {
@@ -251,7 +237,7 @@ impl World {
             Point::new(-10., 10., -10.),
             Color::white(),
         )];
-        Self::new_with_bool_shadows(objects, lights, None)
+        Self::with_bool_shadows(objects, lights, None)
     }
 }
 
