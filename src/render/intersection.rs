@@ -102,7 +102,7 @@ impl<'a> Intersection<'a> {
     }
 
     pub fn computations(&self, ray: &Ray) -> IntersecComputations {
-        IntersecComputations::from_intersection(*self, ray)
+        IntersecComputations::from_intersection(self, ray)
     }
 
     pub fn u(&self) -> f64 {
@@ -131,15 +131,18 @@ pub struct IntersecComputations<'a> {
 
 impl<'a> IntersecComputations<'a> {
     pub fn new(
-        time: f64,
-        object: &'a Object,
+        intersection: &'a Intersection<'a>,
         ray: &Ray,
         refractive_from: f64,
         refractive_to: f64,
     ) -> Self {
+        let time = intersection.time();
+        let object = intersection.object();
+
         let world_point = ray.position(time);
         let eye_v = -*ray.direction();
-        let mut normal_v = object.normal_vector_at(world_point);
+        let mut normal_v =
+            object.normal_vector_at_with_intersection(world_point, Some(intersection));
 
         let inside_obj = normal_v.dot(eye_v) < 0.;
         if inside_obj {
@@ -169,7 +172,7 @@ impl<'a> IntersecComputations<'a> {
     }
 
     pub fn from_intersections(
-        hit: &Intersection<'a>,
+        hit: &'a Intersection<'a>,
         intersection_vec: &IntersectionCollection,
     ) -> IntersecComputations<'a> {
         let mut refractive_from = AIR_REFRACTIVE_INDEX;
@@ -200,19 +203,12 @@ impl<'a> IntersecComputations<'a> {
                 break;
             }
         }
-        Self::new(
-            hit.time(),
-            hit.object(),
-            intersection_vec.ray(),
-            refractive_from,
-            refractive_to,
-        )
+        Self::new(hit, intersection_vec.ray(), refractive_from, refractive_to)
     }
 
-    pub fn from_intersection(intersection: Intersection<'a>, ray: &Ray) -> Self {
+    pub fn from_intersection(intersection: &'a Intersection<'a>, ray: &Ray) -> Self {
         Self::new(
-            intersection.time,
-            intersection.object(),
+            intersection,
             ray,
             AIR_REFRACTIVE_INDEX,
             intersection.object().material().refractive_index,

@@ -336,7 +336,11 @@ pub enum Shape {
 impl Shape {
     const CYLINDER_RADIUS: f64 = 1.;
 
-    pub fn local_normal_at(&self, object_point: Point) -> Vector {
+    pub fn local_normal_at<'a>(
+        &self,
+        object_point: Point,
+        i: Option<&'a Intersection<'a>>,
+    ) -> Vector {
         match *self {
             Shape::Sphere => object_point - Point::zero(),
             Shape::Plane => Vector::new(0., 1., 0.),
@@ -385,7 +389,10 @@ impl Shape {
                 }
             }
             Shape::Triangle(ref triangle) => triangle.normal,
-            Shape::SmoothTriangle(_) => todo!(),
+            Shape::SmoothTriangle(ref triangle) => {
+                let i = i.unwrap();
+                triangle.n2 * i.u() + triangle.n3 * i.v() + triangle.n1 * (1. - i.u() - i.v())
+            }
             Shape::Group(_) => {
                 panic!("Internal bug: this function should not be called on a group")
             }
@@ -814,10 +821,17 @@ impl Object {
         }
     }
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
+        self.normal_vector_at_with_intersection(world_point, None)
+    }
+    pub fn normal_vector_at_with_intersection<'a>(
+        &self,
+        world_point: Point,
+        i: Option<&'a Intersection<'a>>,
+    ) -> Vector {
         let inverse = self.transformation_inverse();
         let object_point = inverse * world_point;
 
-        let object_normal = self.shape.local_normal_at(object_point);
+        let object_normal = self.shape.local_normal_at(object_point, i);
         let world_normal = inverse.transpose() * object_normal;
         world_normal.normalize()
     }
@@ -1393,17 +1407,21 @@ mod tests {
 
     #[test]
     fn finding_normal_on_triangle() {
-        let t = Triangle::new(
-            Point::new(0., 1., 0.),
-            Point::new(-1., 0., 0.),
-            Point::new(1., 0., 0.),
+        let t = get_triangle();
+        let t_shape = match t.shape() {
+            Shape::Triangle(ref triangle) => triangle.clone(),
+            _ => unreachable!(),
+        };
+
+        assert_eq!(t.normal_vector_at(Point::new(1., 0.5, 0.)), t_shape.normal);
+        assert_eq!(
+            t.normal_vector_at(Point::new(-0.5, 0.75, 0.)),
+            t_shape.normal
         );
-
-        let shape = Shape::Triangle(t.clone());
-
-        assert_eq!(shape.local_normal_at(Point::new(0., 0.5, 0.)), t.normal);
-        assert_eq!(shape.local_normal_at(Point::new(-0.5, 0.75, 0.)), t.normal);
-        assert_eq!(shape.local_normal_at(Point::new(0.5, 0.25, 0.)), t.normal);
+        assert_eq!(
+            t.normal_vector_at(Point::new(0.5, 0.25, 0.)),
+            t_shape.normal
+        );
     }
 
     #[test]
@@ -1467,5 +1485,25 @@ mod tests {
         let i = xs[0];
         assert!(i.u().approx_eq(&0.45));
         assert!(i.v().approx_eq(&0.25));
+    }
+
+    #[test]
+    fn smooth_triangle_uses_uv_to_interpolate_normal() {
+        let t = get_smooth_triangle();
+        let i = Intersection::new_with_uv(1., &t, 0.45, 0.25);
+
+        assert_eq!(
+            t.normal_vector_at_with_intersection(Point::new(0., 0., 0.), Some(&i)),
+            Vector::new(-0.5547, 0.83205, 0.)
+        );
+    }
+
+    #[test]
+    fn preparing_normal_on_smooth_triangle() {
+        let t = get_smooth_triangle();
+        let i = Intersection::new_with_uv(1., &t, 0.45, 0.25);
+        let n = t.normal_vector_at_with_intersection(Point::new(0., 0., 0.), Some(&i));
+
+        assert_eq!(n, Vector::new(-0.5547, 0.83205, 0.));
     }
 }
