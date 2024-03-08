@@ -3,6 +3,8 @@ use std::ops;
 use crate::approx_eq::ApproxEq;
 
 #[derive(Copy, Clone, Debug)]
+/// A color is represented by three floating point values
+/// where each value is in range [0, 1]
 pub struct Color {
     r: f64,
     g: f64,

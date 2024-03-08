@@ -4,6 +4,8 @@ use crate::primitive::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vecto
 pub struct Ray {
     origin: Point,
     direction: Vector,
+    /// Precomputed inverse of the direction vector
+    /// to avoid division in the intersection calculations
     dir_inv: Vector,
 }
 

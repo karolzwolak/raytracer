@@ -4,6 +4,7 @@ use std::ops;
 use super::{point::Point, tuple::Tuple, vector::Vector};
 
 #[derive(Debug, Clone, Copy)]
+/// Simple 4x4 matrix
 pub struct Matrix {
     data: [f64; 16],
 }
