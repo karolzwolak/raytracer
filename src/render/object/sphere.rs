@@ -1,3 +1,41 @@
+use crate::{
+    primitive::{point::Point, tuple::Tuple, vector::Vector},
+    render::{intersection::IntersectionCollector, ray::Ray},
+};
+
+use super::bounding_box::BoundingBox;
+
+pub struct UnitSphere {}
+
+impl UnitSphere {
+    pub fn local_normal_at(object_point: Point) -> Vector {
+        object_point - Point::zero()
+    }
+    pub fn bounding_box() -> BoundingBox {
+        BoundingBox {
+            min: Point::new(-1., -1., -1.),
+            max: Point::new(1., 1., 1.),
+        }
+    }
+
+    pub fn local_intersect(object_ray: &Ray, collector: &mut IntersectionCollector) {
+        let vector_sphere_to_ray = *object_ray.origin() - Point::new(0., 0., 0.);
+
+        let a = object_ray.direction().dot(*object_ray.direction());
+        let b = 2. * object_ray.direction().dot(vector_sphere_to_ray);
+        let c = vector_sphere_to_ray.dot(vector_sphere_to_ray) - 1.;
+
+        let discriminant = b * b - 4. * a * c;
+        if discriminant < 0. || a == 0. {
+            return;
+        }
+
+        let delta_sqrt = discriminant.sqrt();
+        collector.add((-b - delta_sqrt) / (2. * a));
+        collector.add((-b + delta_sqrt) / (2. * a));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::{f64::consts::FRAC_1_SQRT_2, f64::consts::PI};

@@ -11,7 +11,7 @@ use crate::{
         canvas::Canvas,
         color::Color,
         light::PointLightSource,
-        object::{group::ObjectGroup, shape::Shape, Object},
+        object::{cylinder::Cylinder, group::ObjectGroup, shape::Shape, Object},
         world::World,
     },
 };
@@ -19,11 +19,11 @@ use crate::{
 fn hexagon() -> Object {
     let corner_sphere = Object::sphere(Point::new(0., 0., -1.), 0.25);
     let cylinder = Object::with_transformation(
-        Shape::Cylinder {
+        Shape::Cylinder(Cylinder {
             y_min: 0.,
             y_max: 1.,
             closed: false,
-        },
+        }),
         Matrix::scaling(0.25, 1., 0.25)
             .rotate_z(-consts::FRAC_PI_2)
             .rotate_y(-consts::FRAC_PI_6)

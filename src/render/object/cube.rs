@@ -1,3 +1,69 @@
+use crate::{
+    primitive::{point::Point, tuple::Tuple, vector::Vector},
+    render::{intersection::IntersectionCollector, ray::Ray},
+};
+
+use super::bounding_box::BoundingBox;
+
+pub struct UnitCube {}
+
+impl UnitCube {
+    pub fn local_normal_at(object_point: Point) -> Vector {
+        let abs_x = object_point.x().abs();
+        let abs_y = object_point.y().abs();
+        let abs_z = object_point.z().abs();
+        let max = abs_x.max(abs_y).max(abs_z);
+
+        if max == abs_x {
+            Vector::new(object_point.x(), 0., 0.)
+        } else if max == abs_y {
+            Vector::new(0., object_point.y(), 0.)
+        } else {
+            Vector::new(0., 0., object_point.z())
+        }
+    }
+
+    pub fn local_intersect(object_ray: &Ray, collector: &mut IntersectionCollector) {
+        let (xtmin, xtmax) =
+            Self::cube_axis_intersec_times(object_ray.origin().x(), object_ray.dir_inv().x());
+        let (ytmin, ytmax) =
+            Self::cube_axis_intersec_times(object_ray.origin().y(), object_ray.dir_inv().y());
+        let (ztmin, ztmax) =
+            Self::cube_axis_intersec_times(object_ray.origin().z(), object_ray.dir_inv().z());
+
+        let tmin = xtmin.max(ytmin).max(ztmin);
+        let tmax = xtmax.min(ytmax).min(ztmax);
+
+        if tmin > tmax {
+            return;
+        }
+
+        collector.add(tmin);
+        collector.add(tmax);
+    }
+
+    pub fn bounding_box() -> BoundingBox {
+        BoundingBox {
+            min: Point::new(-1., -1., -1.),
+            max: Point::new(1., 1., 1.),
+        }
+    }
+
+    fn cube_axis_intersec_times(origin: f64, dir_inv: f64) -> (f64, f64) {
+        let tmin_numerator = -1. - origin;
+        let tmax_numerator = 1. - origin;
+
+        let tmin = tmin_numerator * dir_inv;
+        let tmax = tmax_numerator * dir_inv;
+
+        if tmin < tmax {
+            (tmin, tmax)
+        } else {
+            (tmax, tmin)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{

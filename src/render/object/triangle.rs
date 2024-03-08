@@ -1,4 +1,10 @@
-use crate::primitive::{point::Point, vector::Vector};
+use crate::{
+    approx_eq::ApproxEq,
+    primitive::{point::Point, vector::Vector},
+    render::{intersection::IntersectionCollector, ray::Ray},
+};
+
+use super::bounding_box::BoundingBox;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Triangle {
@@ -24,6 +30,38 @@ impl Triangle {
             e2: v13,
             normal,
         }
+    }
+    pub fn local_intersect(&self, object_ray: &Ray, collector: &mut IntersectionCollector) {
+        let dir_cross_e2 = object_ray.direction().cross(self.e2());
+        let det = self.e1().dot(dir_cross_e2);
+
+        if det.approx_eq(&0.) {
+            return;
+        }
+
+        let f = 1. / det;
+        let p1_to_origin = *object_ray.origin() - self.p1();
+        let u = f * p1_to_origin.dot(dir_cross_e2);
+        if !(0.0..=1.).contains(&u) {
+            return;
+        }
+
+        let origin_cross_e1 = p1_to_origin.cross(self.e1());
+        let v = f * object_ray.direction().dot(origin_cross_e1);
+        if v < 0. || u + v > 1. {
+            return;
+        }
+
+        let t = f * self.e2().dot(origin_cross_e1);
+        collector.add(t);
+    }
+
+    pub fn bounding_box(&self) -> BoundingBox {
+        let mut bounding_box = BoundingBox::empty();
+        bounding_box.add_point(self.p1);
+        bounding_box.add_point(self.p2);
+        bounding_box.add_point(self.p3);
+        bounding_box
     }
 
     pub fn p1(&self) -> Point {

@@ -1,3 +1,32 @@
+use crate::{
+    approx_eq::ApproxEq,
+    primitive::{point::Point, tuple::Tuple, vector::Vector},
+    render::{intersection::IntersectionCollector, ray::Ray},
+};
+
+use super::bounding_box::BoundingBox;
+
+pub struct PlaneXZ {}
+
+impl PlaneXZ {
+    pub fn local_normal_at() -> Vector {
+        Vector::new(0., 1., 0.)
+    }
+    pub fn local_intersect(object_ray: &Ray, collector: &mut IntersectionCollector) {
+        let parallel = object_ray.direction().y().approx_eq(&0.);
+        if parallel {
+            return;
+        }
+        collector.add(-object_ray.origin().y() / object_ray.direction().y());
+    }
+    pub fn bounding_box() -> BoundingBox {
+        BoundingBox {
+            min: Point::new(f64::NEG_INFINITY, 0., f64::NEG_INFINITY),
+            max: Point::new(f64::INFINITY, 0., f64::INFINITY),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{

@@ -151,7 +151,7 @@ impl Object {
     }
 
     pub fn get_group(&self) -> Option<&ObjectGroup> {
-        self.shape.get_group()
+        self.shape.as_group()
     }
 }
 
