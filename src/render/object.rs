@@ -9,7 +9,11 @@ use crate::{
 };
 
 use super::{
-    color::Color, intersection::Intersection, material::Material, pattern::Pattern, ray::Ray,
+    color::Color,
+    intersection::{Intersection, IntersectionCollector},
+    material::Material,
+    pattern::Pattern,
+    ray::Ray,
 };
 
 #[derive(Clone, Debug)]
@@ -222,14 +226,13 @@ impl ObjectGroup {
     pub fn into_object(self) -> Object {
         Object::with_shape(self.into_shape())
     }
-    pub fn intersect(&self, ray: &Ray) -> Vec<Intersection> {
-        if !self.bounds.is_intersected(ray) {
-            return Vec::new();
+    pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
+        if !self.bounds.is_intersected(world_ray) {
+            return;
         }
-        self.children
-            .iter()
-            .flat_map(|child| child.intersect(ray))
-            .collect()
+        for child in self.children.iter() {
+            child.intersect_with_collector(world_ray, collector)
+        }
     }
     pub fn bounds(&self) -> &Bounds {
         &self.bounds
@@ -281,6 +284,8 @@ pub struct SmoothTriangle {
     p1: Point,
     p2: Point,
     p3: Point,
+    e1: Vector,
+    e2: Vector,
     n1: Vector,
     n2: Vector,
     n3: Vector,
@@ -288,10 +293,14 @@ pub struct SmoothTriangle {
 
 impl SmoothTriangle {
     pub fn new(p1: Point, p2: Point, p3: Point, n1: Vector, n2: Vector, n3: Vector) -> Self {
+        let v12 = p2 - p1;
+        let v13 = p3 - p1;
         Self {
             p1,
             p2,
             p3,
+            e1: v12,
+            e2: v13,
             n1,
             n2,
             n3,
@@ -514,7 +523,7 @@ impl Shape {
         x * x + z * z <= radius
     }
 
-    fn intersect_cyl_caps(&self, ray: &Ray, times: &mut Vec<f64>) {
+    fn intersect_cyl_caps(&self, ray: &Ray, collector: &mut IntersectionCollector) {
         match self {
             Shape::Cylinder {
                 y_min,
@@ -528,16 +537,16 @@ impl Shape {
                 let tmax = (y_max - ray.origin().y()) / ray.direction().y();
 
                 if self.check_cap_within_radius(ray, tmin, Shape::CYLINDER_RADIUS) {
-                    times.push(tmin);
+                    collector.add(tmin);
                 }
                 if self.check_cap_within_radius(ray, tmax, Shape::CYLINDER_RADIUS) {
-                    times.push(tmax);
+                    collector.add(tmax);
                 }
             }
             _ => panic!("expected Shape::Cylinder"),
         }
     }
-    fn intersect_cone_caps(&self, ray: &Ray, times: &mut Vec<f64>) {
+    fn intersect_cone_caps(&self, ray: &Ray, collector: &mut IntersectionCollector) {
         match self {
             Shape::Cone {
                 y_min,
@@ -551,17 +560,17 @@ impl Shape {
                 let tmax = (y_max - ray.origin().y()) / ray.direction().y();
 
                 if self.check_cap_within_radius(ray, tmin, y_min.abs()) {
-                    times.push(tmin);
+                    collector.add(tmin);
                 }
                 if self.check_cap_within_radius(ray, tmax, y_max.abs()) {
-                    times.push(tmax);
+                    collector.add(tmax);
                 }
             }
             _ => panic!("expected Shape::Cone"),
         }
     }
 
-    pub fn local_intersection_times(&self, object_ray: &Ray) -> Vec<f64> {
+    pub fn local_intersect(&self, object_ray: &Ray, collector: &mut IntersectionCollector) {
         match *self {
             Shape::Sphere => {
                 let vector_sphere_to_ray = *object_ray.origin() - Point::new(0., 0., 0.);
@@ -572,18 +581,19 @@ impl Shape {
 
                 let discriminant = b * b - 4. * a * c;
                 if discriminant < 0. || a == 0. {
-                    return Vec::new();
+                    return;
                 }
 
                 let delta_sqrt = discriminant.sqrt();
-                vec![(-b - delta_sqrt) / (2. * a), (-b + delta_sqrt) / (2. * a)]
+                collector.add((-b - delta_sqrt) / (2. * a));
+                collector.add((-b + delta_sqrt) / (2. * a));
             }
             Shape::Plane => {
                 let parallel = object_ray.direction().y().approx_eq(&0.);
                 if parallel {
-                    return Vec::new();
+                    return;
                 }
-                vec![-object_ray.origin().y() / object_ray.direction().y()]
+                collector.add(-object_ray.origin().y() / object_ray.direction().y());
             }
             Shape::Cube => {
                 let (xtmin, xtmax) = self
@@ -597,25 +607,24 @@ impl Shape {
                 let tmax = xtmax.min(ytmax).min(ztmax);
 
                 if tmin > tmax {
-                    return Vec::new();
+                    return;
                 }
 
-                vec![tmin, tmax]
+                collector.add(tmin);
+                collector.add(tmax);
             }
             Shape::Cylinder { y_min, y_max, .. } => {
                 if y_min.approx_eq(&y_max) {
-                    return Vec::new();
+                    return;
                 }
 
-                let mut res = Vec::with_capacity(2);
-
-                self.intersect_cyl_caps(object_ray, &mut res);
+                self.intersect_cyl_caps(object_ray, collector);
 
                 let a = object_ray.direction().x().powi(2) + object_ray.direction().z().powi(2);
 
                 // ray is parallel to the y axis
                 if a.approx_eq(&0.) {
-                    return res;
+                    return;
                 }
 
                 let b = 2. * object_ray.origin().x() * object_ray.direction().x()
@@ -625,7 +634,7 @@ impl Shape {
                 let discriminant = b * b - 4. * a * c;
 
                 if discriminant < 0. {
-                    return Vec::new();
+                    return;
                 }
 
                 let delta_sqrt = discriminant.sqrt();
@@ -636,25 +645,20 @@ impl Shape {
                 let y0 = object_ray.origin().y() + t0 * object_ray.direction().y();
 
                 if y_min < y0 && y0 < y_max {
-                    res.push(t0);
+                    collector.add(t0);
                 }
 
                 let y1 = object_ray.origin().y() + t1 * object_ray.direction().y();
 
                 if y_min < y1 && y1 < y_max {
-                    res.push(t1);
+                    collector.add(t1);
                 }
-
-                res
             }
             Shape::Cone { y_min, y_max, .. } => {
                 if y_min.approx_eq(&y_max) {
-                    return Vec::new();
+                    return;
                 }
-
-                let mut res = Vec::with_capacity(4);
-
-                self.intersect_cone_caps(object_ray, &mut res);
+                self.intersect_cone_caps(object_ray, collector);
 
                 let dir = object_ray.direction();
                 let origin = object_ray.origin();
@@ -667,14 +671,14 @@ impl Shape {
 
                 if ray_parallel_to_one_half {
                     if b.approx_eq(&0.) {
-                        return Vec::new();
+                        return;
                     }
                     let t = -c / (2. * b);
-                    res.push(t);
+                    collector.add(t);
                 } else {
                     let discriminant = b * b - 4. * a * c;
                     if discriminant < 0. {
-                        return Vec::new();
+                        return;
                     }
                     let delta_sqrt = discriminant.sqrt();
                     let t0 = (-b - delta_sqrt) / (2. * a);
@@ -682,41 +686,62 @@ impl Shape {
                     let y0 = origin.y() + t0 * dir.y();
 
                     if y_min < y0 && y0 < y_max {
-                        res.push(t0);
+                        collector.add(t0);
                     }
                     let y1 = origin.y() + t1 * dir.y();
                     if y_min < y1 && y1 < y_max {
-                        res.push(t1);
+                        collector.add(t1);
                     }
                 }
-
-                res
             }
             Shape::Triangle(ref triangle) => {
                 let dir_cross_e2 = object_ray.direction().cross(triangle.e2);
                 let det = triangle.e1.dot(dir_cross_e2);
 
                 if det.approx_eq(&0.) {
-                    return Vec::new();
+                    return;
                 }
 
                 let f = 1. / det;
                 let p1_to_origin = *object_ray.origin() - triangle.p1;
                 let u = f * p1_to_origin.dot(dir_cross_e2);
                 if !(0.0..=1.).contains(&u) {
-                    return Vec::new();
+                    return;
                 }
 
                 let origin_cross_e1 = p1_to_origin.cross(triangle.e1);
                 let v = f * object_ray.direction().dot(origin_cross_e1);
                 if v < 0. || u + v > 1. {
-                    return Vec::new();
+                    return;
                 }
 
                 let t = f * triangle.e2.dot(origin_cross_e1);
-                vec![t]
+                collector.add(t);
             }
-            Shape::SmoothTriangle(_) => todo!(),
+            Shape::SmoothTriangle(ref triangle) => {
+                let dir_cross_e2 = object_ray.direction().cross(triangle.e2);
+                let det = triangle.e1.dot(dir_cross_e2);
+
+                if det.approx_eq(&0.) {
+                    return;
+                }
+
+                let f = 1. / det;
+                let p1_to_origin = *object_ray.origin() - triangle.p1;
+                let u = f * p1_to_origin.dot(dir_cross_e2);
+                if !(0.0..=1.).contains(&u) {
+                    return;
+                }
+
+                let origin_cross_e1 = p1_to_origin.cross(triangle.e1);
+                let v = f * object_ray.direction().dot(origin_cross_e1);
+                if v < 0. || u + v > 1. {
+                    return;
+                }
+
+                let t = f * triangle.e2.dot(origin_cross_e1);
+                collector.add_uv(t, u, v);
+            }
             Shape::Group(_) => {
                 panic!("Internal bug: this function should not be called on a group")
             }
@@ -797,26 +822,42 @@ impl Object {
         world_normal.normalize()
     }
 
-    pub fn intersection_times(&self, world_ray: &Ray) -> Vec<f64> {
-        self.shape
-            .local_intersection_times(&world_ray.transform(self.transformation_inverse))
-    }
+    // pub fn intersection_times(&self, world_ray: &Ray) -> Vec<f64> {
+    //     self.shape
+    //         .local_intersect(&world_ray.transform(self.transformation_inverse))
+    // }
+    //
 
-    pub fn intersect<'a>(&'a self, ray: &Ray) -> Vec<Intersection<'a>> {
+    pub fn intersect_with_collector<'a>(
+        &'a self,
+        world_ray: &Ray,
+        collector: &mut IntersectionCollector<'a>,
+    ) {
         match &self.shape {
-            Shape::Group(ref group) => group.intersect(ray),
+            Shape::Group(ref group) => group.intersect(world_ray, collector),
             _ => {
-                let times = self.intersection_times(ray);
-                times
-                    .into_iter()
-                    .map(|t| Intersection::new(t, self))
-                    .collect()
+                collector.set_next_object(self);
+                self.shape
+                    .local_intersect(&world_ray.transform(self.transformation_inverse), collector);
             }
         }
     }
 
+    pub fn intersect_to_vec<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
+        let mut collector = IntersectionCollector::with_next_object(&self);
+        self.intersect_with_collector(world_ray, &mut collector);
+        collector.collect_sorted()
+    }
+
+    pub fn intersection_times(&self, world_ray: &Ray) -> Vec<f64> {
+        self.intersect_to_vec(world_ray)
+            .iter_mut()
+            .map(|i| i.time())
+            .collect()
+    }
+
     pub fn is_intersected_by_ray(&self, ray: &Ray) -> bool {
-        !self.intersection_times(ray).is_empty()
+        !self.intersect_to_vec(ray).is_empty()
     }
     pub fn material(&self) -> &Material {
         &self.material
@@ -848,7 +889,7 @@ mod tests {
     use super::*;
     use crate::{
         primitive::{matrix::Matrix, vector::Vector},
-        render::intersection::IntersecVec,
+        render::intersection::IntersectionCollection,
     };
 
     #[test]
@@ -1276,7 +1317,7 @@ mod tests {
         let group = ObjectGroup::empty();
         let object = Object::with_shape(group.into_shape());
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
-        assert!(object.intersect(&ray).is_empty());
+        assert!(object.intersect_to_vec(&ray).is_empty());
     }
 
     #[test]
@@ -1289,8 +1330,8 @@ mod tests {
         let object = Object::with_shape(group.into_shape());
 
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let xs = IntersecVec::from_ray_and_obj(ray, &object);
-        let data = xs.data();
+        let xs = IntersectionCollection::from_ray_and_obj(ray, &object);
+        let data = xs.vec();
 
         match object.shape() {
             Shape::Group(group) => {
@@ -1312,7 +1353,7 @@ mod tests {
         let object = Object::with_shape(group.into_shape());
 
         let ray = Ray::new(Point::new(10., 0., -10.), Vector::new(0., 0., 1.));
-        assert_eq!(object.intersect(&ray).len(), 2);
+        assert_eq!(object.intersect_to_vec(&ray).len(), 2);
     }
 
     #[test]
@@ -1342,6 +1383,14 @@ mod tests {
         assert_eq!(t.normal, Vector::new(0., 0., -1.));
     }
 
+    fn get_triangle() -> Object {
+        Object::with_shape(Shape::triangle(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+        ))
+    }
+
     #[test]
     fn finding_normal_on_triangle() {
         let t = Triangle::new(
@@ -1359,65 +1408,42 @@ mod tests {
 
     #[test]
     fn intersecting_triangle_with_parallel_ray() {
-        let t = Shape::triangle(
-            Point::new(0., 1., 0.),
-            Point::new(-1., 0., 0.),
-            Point::new(1., 0., 0.),
-        );
+        let t = get_triangle();
 
         let ray = Ray::new(Point::new(0., -1., -2.), Vector::new(0., 1., 0.));
-        let xs = t.local_intersection_times(&ray);
-
-        assert!(xs.is_empty());
+        assert!(!t.is_intersected_by_ray(&ray));
     }
 
     #[test]
     fn ray_misses_p1_p3_edge() {
-        let t = Shape::triangle(
-            Point::new(0., 1., 0.),
-            Point::new(-1., 0., 0.),
-            Point::new(1., 0., 0.),
-        );
+        let t = get_triangle();
         let ray = Ray::new(Point::new(1., 1., -2.), Vector::new(0., 0., 1.));
-        let xs = t.local_intersection_times(&ray);
-        assert!(xs.is_empty());
+
+        assert!(!t.is_intersected_by_ray(&ray));
     }
 
     #[test]
     fn ray_misses_p1_p2_edge() {
-        let t = Shape::triangle(
-            Point::new(0., 1., 0.),
-            Point::new(-1., 0., 0.),
-            Point::new(1., 0., 0.),
-        );
-
+        let t = get_triangle();
         let ray = Ray::new(Point::new(-1., 1., -2.), Vector::new(0., 0., 1.));
-        let xs = t.local_intersection_times(&ray);
 
-        assert!(xs.is_empty());
+        assert!(!t.is_intersected_by_ray(&ray));
     }
 
     #[test]
     fn ray_misses_p2_p3_edge() {
-        let t = Shape::triangle(
-            Point::new(0., 1., 0.),
-            Point::new(-1., 0., 0.),
-            Point::new(1., 0., 0.),
-        );
+        let t = get_triangle();
         let ray = Ray::new(Point::new(0., -1., -2.), Vector::new(0., 0., 1.));
-        let xs = t.local_intersection_times(&ray);
-        assert!(xs.is_empty());
+
+        assert!(!t.is_intersected_by_ray(&ray));
     }
 
     #[test]
     fn ray_strikes_triangle() {
-        let t = Shape::triangle(
-            Point::new(0., 1., 0.),
-            Point::new(-1., 0., 0.),
-            Point::new(1., 0., 0.),
-        );
+        let t = get_triangle();
         let ray = Ray::new(Point::new(0., 0.5, -2.), Vector::new(0., 0., 1.));
-        let xs = t.local_intersection_times(&ray);
+
+        let xs = t.intersection_times(&ray);
         assert_eq!(xs.len(), 1);
         assert!(xs[0].approx_eq(&2.));
     }
@@ -1436,9 +1462,10 @@ mod tests {
     fn intersection_with_smooth_triangle_store_u_v() {
         let ray = Ray::new(Point::new(-0.2, 0.3, -2.), Vector::new(0., 0., 1.));
         let triangle = get_smooth_triangle();
-        let xs = triangle.intersect(&ray);
+
+        let xs = triangle.intersect_to_vec(&ray);
         let i = xs[0];
-        assert_eq!(i.u(), 0.45);
-        assert_eq!(i.v(), 0.25);
+        assert!(i.u().approx_eq(&0.45));
+        assert!(i.v().approx_eq(&0.25));
     }
 }

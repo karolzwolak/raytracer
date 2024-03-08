@@ -7,7 +7,7 @@ use crate::{
         tuple::Tuple,
         vector::Vector,
     },
-    render::{canvas::Canvas, color::Color, intersection::IntersecVec, object::Object, ray::Ray},
+    render::{canvas::Canvas, color::Color, intersection::IntersectionCollection, object::Object, ray::Ray},
 };
 
 const SPHERE_RADIUS: usize = 200;
@@ -36,7 +36,7 @@ pub fn run() -> Canvas {
             let point = Point::new(x as f64, y as f64, -radius - 1.);
             let ray = Ray::new(point, ray_direction);
 
-            if IntersecVec::from_ray_and_obj(ray, &sphere_obj).has_intersection() {
+            if IntersectionCollection::from_ray_and_obj(ray, &sphere_obj).has_intersection() {
                 canvas.write_pixel(x, CANVAS_SIZE - y, Color::red());
             }
         }

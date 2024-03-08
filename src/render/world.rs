@@ -3,11 +3,11 @@ use crate::{
     primitive::{matrix::Matrix, point::Point, tuple::Tuple},
 };
 
+use super::intersection::{IntersecComputations, IntersectionCollection};
 use super::{
     camera::Camera,
     canvas::Canvas,
     color::Color,
-    intersection::{IntersecComputations, IntersecVec},
     light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
     material::Material,
     object::{Object, ObjectGroup},
@@ -76,8 +76,8 @@ impl World {
     pub fn empty() -> Self {
         Self::new(Vec::new(), Vec::new(), None)
     }
-    pub fn intersect(&self, ray: Ray) -> IntersecVec {
-        IntersecVec::from_ray_and_mult_objects(ray, &self.objects)
+    pub fn intersect(&self, ray: Ray) -> IntersectionCollection {
+        IntersectionCollection::from_ray_and_mult_objects(ray, &self.objects)
     }
 
     fn color_at_depth(&self, ray: Ray, depth: usize) -> Color {
@@ -145,7 +145,7 @@ impl World {
         // calculate shadow intensity by summation of transparency of all objects
         // (1 - transparency to be exact)
         let mut intensity = 0.;
-        for inter in intersections.data() {
+        for inter in intersections.vec() {
             // skip intersections behind light source
             if inter.time() < 0. {
                 continue;
@@ -464,7 +464,7 @@ mod tests {
         let world = World::default_testing();
         let shape = &world.objects[0];
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let intersections = IntersecVec::from_times_and_obj(ray, vec![4., 6.], shape);
+        let intersections = IntersectionCollection::from_times_and_obj(ray, vec![4., 6.], shape);
         let comps = intersections.hit_computations().unwrap();
 
         assert_eq!(world.refracted_color(&comps, 0), Color::black());
@@ -479,7 +479,7 @@ mod tests {
         let shape = &world.objects[0];
 
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let intersections = IntersecVec::from_times_and_obj(ray, vec![4., 6.], shape);
+        let intersections = IntersectionCollection::from_times_and_obj(ray, vec![4., 6.], shape);
         let comps = intersections.hit_computations().unwrap();
 
         assert_eq!(
@@ -498,7 +498,7 @@ mod tests {
 
         let ray = Ray::new(Point::new(0., 0., SQRT_2 / 2.), Vector::new(0., 1., 0.));
         let intersections =
-            IntersecVec::from_times_and_obj(ray, vec![-SQRT_2 / 2., SQRT_2 / 2.], shape);
+            IntersectionCollection::from_times_and_obj(ray, vec![-SQRT_2 / 2., SQRT_2 / 2.], shape);
 
         let comps = intersections.computations_at_id(1).unwrap();
 
@@ -523,7 +523,7 @@ mod tests {
         let b = &world.objects[1];
         let objects = vec![a.clone(), b.clone()];
 
-        let intersections = IntersecVec::from_ray_and_mult_objects(ray, &objects);
+        let intersections = IntersectionCollection::from_ray_and_mult_objects(ray, &objects);
         let comps = intersections.hit_computations().unwrap();
 
         assert!(world

@@ -9,6 +9,55 @@ use super::{
     ray::Ray,
 };
 
+/// Will panic if you try to add intersection without setting next_object to Some first
+pub struct IntersectionCollector<'a> {
+    vec: Vec<Intersection<'a>>,
+    next_object: Option<&'a Object>,
+}
+
+impl<'a> IntersectionCollector<'a> {
+    pub fn new() -> Self {
+        Self {
+            vec: Vec::new(),
+            next_object: None,
+        }
+    }
+    pub fn with_next_object(next_object: &'a Object) -> Self {
+        Self {
+            vec: Vec::new(),
+            next_object: Some(next_object),
+        }
+    }
+    pub fn set_next_object(&mut self, object: &'a Object) {
+        self.next_object = Some(object);
+    }
+    fn get_next_object_expect(&self) -> &'a Object {
+        self.next_object
+            .expect("Internal error: tried adding intersection without providing object reference")
+    }
+    /// Will panic if next_object is None
+    pub fn add(&mut self, time: f64) {
+        let obj = self.get_next_object_expect();
+        self.vec.push(Intersection::new(time, obj));
+    }
+    /// Will panic if next_object is None
+    pub fn add_uv(&mut self, time: f64, u: f64, v: f64) {
+        let obj = self.get_next_object_expect();
+        self.vec.push(Intersection::new_with_uv(time, obj, u, v));
+    }
+    pub fn collect_sorted(mut self) -> Vec<Intersection<'a>> {
+        self.vec
+            .sort_unstable_by(|i1, i2| i1.time().partial_cmp(&i2.time()).unwrap());
+        self.vec
+    }
+}
+
+impl<'a> Default for IntersectionCollector<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct Intersection<'a> {
     time: f64,
@@ -121,12 +170,12 @@ impl<'a> IntersecComputations<'a> {
 
     pub fn from_intersections(
         hit: &Intersection<'a>,
-        intersection_vec: &IntersecVec,
+        intersection_vec: &IntersectionCollection,
     ) -> IntersecComputations<'a> {
         let mut refractive_from = AIR_REFRACTIVE_INDEX;
         let mut refractive_to = AIR_REFRACTIVE_INDEX;
 
-        let intersections = intersection_vec.data();
+        let intersections = intersection_vec.vec();
 
         let mut containers: Vec<&Object> = Vec::with_capacity(intersections.len());
 
@@ -219,18 +268,18 @@ impl<'a> IntersecComputations<'a> {
     }
 }
 
-pub struct IntersecVec<'a> {
-    ray: Ray,
+pub struct IntersectionCollection<'a> {
     vec: Vec<Intersection<'a>>,
+    ray: Ray,
 }
 
-impl<'a> IntersecVec<'a> {
-    pub fn new(ray: Ray, mut vec: Vec<Intersection<'a>>) -> Self {
-        vec.sort_unstable_by(|i1, i2| i1.time().partial_cmp(&i2.time()).unwrap());
-        Self { vec, ray }
+impl<'a> IntersectionCollection<'a> {
+    pub fn new_with_sorted_vec(ray: Ray, vec: Vec<Intersection<'a>>) -> Self {
+        Self { ray, vec }
     }
-    pub fn from_times_and_obj(ray: Ray, times: Vec<f64>, object: &'a Object) -> Self {
-        Self::new(
+    pub fn from_times_and_obj(ray: Ray, mut times: Vec<f64>, object: &'a Object) -> Self {
+        times.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
+        Self::new_with_sorted_vec(
             ray,
             times
                 .into_iter()
@@ -239,20 +288,20 @@ impl<'a> IntersecVec<'a> {
         )
     }
     pub fn from_ray_and_mult_objects(ray: Ray, objects: &'a [Object]) -> Self {
-        let intersections: Vec<Intersection> = objects
-            .iter()
-            .flat_map(|object| object.intersect(&ray))
-            .collect();
+        let mut collector = IntersectionCollector::new();
+        for object in objects {
+            object.intersect_with_collector(&ray, &mut collector);
+        }
 
-        Self::new(ray, intersections)
+        Self::new_with_sorted_vec(ray, collector.collect_sorted())
     }
     pub fn from_ray_and_obj(ray: Ray, object: &'a Object) -> Self {
-        let intersections = object.intersect(&ray);
-        Self::new(ray, intersections)
+        let intersections = object.intersect_to_vec(&ray);
+        Self::new_with_sorted_vec(ray, intersections)
     }
 
     pub fn has_intersection(&self) -> bool {
-        !self.data().is_empty()
+        !self.vec().is_empty()
     }
 
     pub fn hit(&self) -> Option<&Intersection> {
@@ -282,7 +331,7 @@ impl<'a> IntersecVec<'a> {
     pub fn count(&self) -> usize {
         self.vec.len()
     }
-    pub fn data(&self) -> &Vec<Intersection<'a>> {
+    pub fn vec(&self) -> &Vec<Intersection<'a>> {
         &self.vec
     }
     pub fn times_vec(&self) -> Vec<f64> {
@@ -308,11 +357,11 @@ mod tests {
     fn intersect_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let obj = Object::with_shape(Shape::Sphere);
-        let intersections = IntersecVec::from_ray_and_obj(ray, &obj);
+        let intersections = IntersectionCollection::from_ray_and_obj(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
 
-        let data = intersections.data();
+        let data = intersections.vec();
 
         assert_eq!(data[0].time(), 4.);
         assert_eq!(data[1].time(), 6.);
@@ -321,11 +370,11 @@ mod tests {
     fn ray_intersects_sphere_at_tangent() {
         let ray = Ray::new(Point::new(0., 1., -5.), Vector::new(0., 0., 1.));
         let obj = Object::with_shape(Shape::Sphere);
-        let intersections = IntersecVec::from_ray_and_obj(ray, &obj);
+        let intersections = IntersectionCollection::from_ray_and_obj(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
 
-        let data = intersections.data();
+        let data = intersections.vec();
 
         assert_eq!(data[0].time(), 5.);
         assert_eq!(data[0].time(), data[1].time());
@@ -335,17 +384,20 @@ mod tests {
         let ray = Ray::new(Point::new(0., 2., -5.), Vector::new(0., 0., 1.));
         let obj = Object::with_shape(Shape::Sphere);
 
-        assert_eq!(IntersecVec::from_ray_and_obj(ray, &obj).count(), 0);
+        assert_eq!(
+            IntersectionCollection::from_ray_and_obj(ray, &obj).count(),
+            0
+        );
     }
     #[test]
     fn intersect_ray_originates_inside_sphere() {
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
         let obj = Object::with_shape(Shape::Sphere);
-        let intersections = IntersecVec::from_ray_and_obj(ray, &obj);
+        let intersections = IntersectionCollection::from_ray_and_obj(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
 
-        let data = intersections.data();
+        let data = intersections.vec();
 
         assert_eq!(data[0].time(), -1.);
         assert_eq!(data[1].time(), 1.);
@@ -354,11 +406,11 @@ mod tests {
     fn intersect_ray_behind_sphere() {
         let ray = Ray::new(Point::new(0., 0., 5.), Vector::new(0., 0., 1.));
         let obj = Object::with_shape(Shape::Sphere);
-        let intersections = IntersecVec::from_ray_and_obj(ray, &obj);
+        let intersections = IntersectionCollection::from_ray_and_obj(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
 
-        let data = intersections.data();
+        let data = intersections.vec();
 
         assert_eq!(data[0].time(), -6.);
         assert_eq!(data[1].time(), -4.);
@@ -370,7 +422,7 @@ mod tests {
         let obj = Object::with_shape(sphere);
         let ray = Ray::new(Point::zero(), Vector::zero());
 
-        let intersections = IntersecVec::from_times_and_obj(ray, vec![1., 2.], &obj);
+        let intersections = IntersectionCollection::from_times_and_obj(ray, vec![1., 2.], &obj);
         let hit = intersections.hit();
 
         assert!(hit.is_some());
@@ -382,7 +434,7 @@ mod tests {
         let obj = Object::with_shape(sphere);
         let ray = Ray::new(Point::zero(), Vector::zero());
 
-        let intersections = IntersecVec::from_times_and_obj(ray, vec![1., -1.], &obj);
+        let intersections = IntersectionCollection::from_times_and_obj(ray, vec![1., -1.], &obj);
         let hit = intersections.hit();
 
         assert!(hit.is_some());
@@ -394,7 +446,7 @@ mod tests {
         let obj = Object::with_shape(sphere);
         let ray = Ray::new(Point::zero(), Vector::zero());
 
-        let intersections = IntersecVec::from_times_and_obj(ray, vec![-2., -1.], &obj);
+        let intersections = IntersectionCollection::from_times_and_obj(ray, vec![-2., -1.], &obj);
         let hit = intersections.hit();
 
         assert!(hit.is_none());
@@ -405,7 +457,8 @@ mod tests {
         let obj = Object::with_shape(sphere);
         let ray = Ray::new(Point::zero(), Vector::zero());
 
-        let intersections = IntersecVec::from_times_and_obj(ray, vec![5., 7., -3., 2.], &obj);
+        let intersections =
+            IntersectionCollection::from_times_and_obj(ray, vec![5., 7., -3., 2.], &obj);
         let hit = intersections.hit();
 
         assert!(hit.is_some());
@@ -416,7 +469,7 @@ mod tests {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let obj = Object::with_shape(Shape::Sphere);
 
-        let inter_vec = IntersecVec::from_ray_and_obj(ray.clone(), &obj);
+        let inter_vec = IntersectionCollection::from_ray_and_obj(ray.clone(), &obj);
         let comps = inter_vec.hit().unwrap().computations(&ray);
         assert!(!comps.inside_obj());
     }
@@ -425,7 +478,7 @@ mod tests {
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
         let obj = Object::with_shape(Shape::Sphere);
 
-        let inter_vec = IntersecVec::from_ray_and_obj(ray.clone(), &obj);
+        let inter_vec = IntersectionCollection::from_ray_and_obj(ray.clone(), &obj);
         let comps = inter_vec.hit().unwrap().computations(&ray);
 
         assert!(comps.inside_obj());
@@ -453,7 +506,7 @@ mod tests {
         let plane = Object::with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., 10., 0.), Vector::new(0., 0., 1.));
 
-        let intersections = IntersecVec::from_ray_and_obj(ray, &plane);
+        let intersections = IntersectionCollection::from_ray_and_obj(ray, &plane);
         assert!(!intersections.has_intersection());
     }
 
@@ -462,7 +515,7 @@ mod tests {
         let plane = Object::with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
 
-        let intersections = IntersecVec::from_ray_and_obj(ray, &plane);
+        let intersections = IntersectionCollection::from_ray_and_obj(ray, &plane);
         assert!(!intersections.has_intersection());
     }
 
@@ -523,11 +576,12 @@ mod tests {
             Intersection::new(6., &sphere_a),
         ];
 
-        let intersections = IntersecVec::new(ray, intersections.to_vec());
+        let intersections =
+            IntersectionCollection::new_with_sorted_vec(ray, intersections.to_vec());
 
         for (i, (from, to)) in expected_reflective.iter().enumerate() {
             let comps =
-                IntersecComputations::from_intersections(&intersections.data()[i], &intersections);
+                IntersecComputations::from_intersections(&intersections.vec()[i], &intersections);
 
             assert_eq!(comps.refractive_from, *from);
             assert_eq!(comps.refractive_to, *to);

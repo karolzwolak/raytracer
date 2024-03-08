@@ -3,7 +3,7 @@ use crate::{
     render::{
         canvas::Canvas,
         color::Color,
-        intersection::IntersecVec,
+        intersection::IntersectionCollection,
         light::{color_of_illuminated_point, PointLightSource},
         material::Material,
         object::Object,
@@ -51,7 +51,7 @@ pub fn run() -> Canvas {
             let direction = (point_on_canvas - origin).normalize();
             let ray = Ray::new(origin, direction);
 
-            let intersections = IntersecVec::from_ray_and_obj(ray, &sphere_obj);
+            let intersections = IntersectionCollection::from_ray_and_obj(ray, &sphere_obj);
 
             let hit_point = match intersections.hit_pos() {
                 None => continue,

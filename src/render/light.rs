@@ -3,7 +3,8 @@ use crate::{
     primitive::{point::Point, vector::Vector},
 };
 
-use super::{color::Color, intersection::IntersecComputations, object::Object};
+use super::intersection::IntersecComputations;
+use super::{color::Color, object::Object};
 
 pub struct PointLightSource {
     position: Point,
@@ -100,7 +101,7 @@ mod tests {
         approx_eq::ApproxEq,
         primitive::{matrix::Matrix, tuple::Tuple},
         render::{
-            intersection::IntersecVec,
+            intersection::IntersectionCollection,
             material::Material,
             object::Shape::{self},
             pattern::Pattern,
@@ -240,8 +241,11 @@ mod tests {
         let sphere = Object::new(Shape::Sphere, Material::glass(), Matrix::identity());
 
         let ray = Ray::new(Point::new(0., 0., FRAC_1_SQRT_2), Vector::new(0., 1., 0.));
-        let intersections =
-            IntersecVec::from_times_and_obj(ray, vec![-FRAC_1_SQRT_2, FRAC_1_SQRT_2], &sphere);
+        let intersections = IntersectionCollection::from_times_and_obj(
+            ray,
+            vec![-FRAC_1_SQRT_2, FRAC_1_SQRT_2],
+            &sphere,
+        );
         let comps = intersections.hit_computations().unwrap();
 
         assert_eq!(schlick_reflectance(&comps), 1.);
@@ -252,7 +256,7 @@ mod tests {
         let sphere = Object::new(Shape::Sphere, Material::glass(), Matrix::identity());
 
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 1., 0.));
-        let intersections = IntersecVec::from_times_and_obj(ray, vec![-1., 1.], &sphere);
+        let intersections = IntersectionCollection::from_times_and_obj(ray, vec![-1., 1.], &sphere);
         let comps = intersections.hit_computations().unwrap();
 
         assert!(schlick_reflectance(&comps).approx_eq(&0.04));
@@ -263,7 +267,7 @@ mod tests {
         let sphere = Object::new(Shape::Sphere, Material::glass(), Matrix::identity());
 
         let ray = Ray::new(Point::new(0., 0.99, -2.), Vector::new(0., 0., 1.));
-        let intersections = IntersecVec::from_times_and_obj(ray, vec![1.8589], &sphere);
+        let intersections = IntersectionCollection::from_times_and_obj(ray, vec![1.8589], &sphere);
         let comps = intersections.hit_computations().unwrap();
 
         assert!(schlick_reflectance(&comps).approx_eq(&0.48873));
