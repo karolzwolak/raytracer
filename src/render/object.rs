@@ -279,7 +279,7 @@ impl Triangle {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct SmoothTriangle {
     p1: Point,
     p2: Point,
@@ -305,6 +305,30 @@ impl SmoothTriangle {
             n2,
             n3,
         }
+    }
+
+    pub fn n1(&self) -> Vector {
+        self.n1
+    }
+
+    pub fn n2(&self) -> Vector {
+        self.n2
+    }
+
+    pub fn n3(&self) -> Vector {
+        self.n3
+    }
+
+    pub fn p1(&self) -> Point {
+        self.p1
+    }
+
+    pub fn p2(&self) -> Point {
+        self.p2
+    }
+
+    pub fn p3(&self) -> Point {
+        self.p3
     }
 }
 
@@ -425,7 +449,13 @@ impl Shape {
                 bounds.add_point(triangle.p3);
                 bounds
             }
-            Shape::SmoothTriangle(_) => todo!(),
+            Shape::SmoothTriangle(ref triangle) => {
+                let mut bounds = Bounds::empty();
+                bounds.add_point(triangle.p1);
+                bounds.add_point(triangle.p2);
+                bounds.add_point(triangle.p3);
+                bounds
+            }
             Shape::Group(ref group) => group.children.iter().fold(Bounds::empty(), |acc, child| {
                 let mut new_bounds = child.bounds();
                 new_bounds.add_bounds(acc);
