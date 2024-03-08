@@ -13,6 +13,8 @@ use super::{
 pub struct Intersection<'a> {
     time: f64,
     intersected_object: &'a Object,
+    u: f64,
+    v: f64,
 }
 
 fn same_obj_ref(a: &Object, b: &Object) -> bool {
@@ -30,6 +32,16 @@ impl<'a> Intersection<'a> {
         Self {
             time,
             intersected_object,
+            u: f64::NEG_INFINITY,
+            v: f64::NEG_INFINITY,
+        }
+    }
+    pub fn new_with_uv(time: f64, intersected_object: &'a Object, u: f64, v: f64) -> Self {
+        Self {
+            time,
+            intersected_object,
+            u,
+            v,
         }
     }
 
@@ -42,6 +54,14 @@ impl<'a> Intersection<'a> {
 
     pub fn computations(&self, ray: &Ray) -> IntersecComputations {
         IntersecComputations::from_intersection(*self, ray)
+    }
+
+    pub fn u(&self) -> f64 {
+        self.u
+    }
+
+    pub fn v(&self) -> f64 {
+        self.v
     }
 }
 

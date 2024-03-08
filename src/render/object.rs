@@ -277,6 +277,29 @@ impl Triangle {
 }
 
 #[derive(Clone, Debug)]
+pub struct SmoothTriangle {
+    p1: Point,
+    p2: Point,
+    p3: Point,
+    n1: Vector,
+    n2: Vector,
+    n3: Vector,
+}
+
+impl SmoothTriangle {
+    pub fn new(p1: Point, p2: Point, p3: Point, n1: Vector, n2: Vector, n3: Vector) -> Self {
+        Self {
+            p1,
+            p2,
+            p3,
+            n1,
+            n2,
+            n3,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum Shape {
     /// Unit sphere at point zero
     Sphere,
@@ -297,6 +320,7 @@ pub enum Shape {
         closed: bool,
     },
     Triangle(Triangle),
+    SmoothTriangle(SmoothTriangle),
     Group(ObjectGroup),
 }
 
@@ -352,6 +376,7 @@ impl Shape {
                 }
             }
             Shape::Triangle(ref triangle) => triangle.normal,
+            Shape::SmoothTriangle(_) => todo!(),
             Shape::Group(_) => {
                 panic!("Internal bug: this function should not be called on a group")
             }
@@ -384,6 +409,7 @@ impl Shape {
                 bounds.add_point(triangle.p3);
                 bounds
             }
+            Shape::SmoothTriangle(_) => todo!(),
             Shape::Group(ref group) => group.children.iter().fold(Bounds::empty(), |acc, child| {
                 let mut new_bounds = child.bounds();
                 new_bounds.add_bounds(acc);
@@ -445,6 +471,17 @@ impl Shape {
 
     pub fn triangle(p1: Point, p2: Point, p3: Point) -> Self {
         Shape::Triangle(Triangle::new(p1, p2, p3))
+    }
+
+    pub fn smooth_triangle(
+        p1: Point,
+        p2: Point,
+        p3: Point,
+        n1: Vector,
+        n2: Vector,
+        n3: Vector,
+    ) -> Self {
+        Shape::SmoothTriangle(SmoothTriangle::new(p1, p2, p3, n1, n2, n3))
     }
 
     pub fn get_group(&self) -> Option<&ObjectGroup> {
@@ -679,6 +716,7 @@ impl Shape {
                 let t = f * triangle.e2.dot(origin_cross_e1);
                 vec![t]
             }
+            Shape::SmoothTriangle(_) => todo!(),
             Shape::Group(_) => {
                 panic!("Internal bug: this function should not be called on a group")
             }
@@ -1382,5 +1420,25 @@ mod tests {
         let xs = t.local_intersection_times(&ray);
         assert_eq!(xs.len(), 1);
         assert!(xs[0].approx_eq(&2.));
+    }
+
+    fn get_smooth_triangle() -> Object {
+        let p1 = Point::new(0., 1., 0.);
+        let p2 = Point::new(-1., 0., 0.);
+        let p3 = Point::new(1., 0., 0.);
+        let n1 = Vector::new(0., 1., 0.);
+        let n2 = Vector::new(-1., 0., 0.);
+        let n3 = Vector::new(1., 0., 0.);
+        Object::with_shape(Shape::smooth_triangle(p1, p2, p3, n1, n2, n3))
+    }
+
+    #[test]
+    fn intersection_with_smooth_triangle_store_u_v() {
+        let ray = Ray::new(Point::new(-0.2, 0.3, -2.), Vector::new(0., 0., 1.));
+        let triangle = get_smooth_triangle();
+        let xs = triangle.intersect(&ray);
+        let i = xs[0];
+        assert_eq!(i.u(), 0.45);
+        assert_eq!(i.v(), 0.25);
     }
 }
