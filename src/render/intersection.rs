@@ -344,7 +344,7 @@ mod tests {
     use crate::primitive::point::Point;
     use crate::primitive::tuple::Tuple;
     use crate::primitive::vector::Vector;
-    use crate::render::object::Shape;
+    use crate::render::object::shape::Shape;
 
     use super::super::{object::Object, ray::Ray};
     use super::*;

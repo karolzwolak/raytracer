@@ -6,7 +6,7 @@ use crate::{
         canvas::Canvas,
         color::Color,
         material::Material,
-        object::{Object, Shape},
+        object::{shape::Shape, Object},
         pattern::Pattern,
         world::World,
     },

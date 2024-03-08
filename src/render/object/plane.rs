@@ -1,0 +1,56 @@
+#[cfg(test)]
+mod tests {
+    use crate::{
+        primitive::{point::Point, tuple::Tuple, vector::Vector},
+        render::{
+            object::{shape::Shape, Object},
+            ray::Ray,
+        },
+    };
+
+    #[test]
+    fn ray_intersecting_plane_from_above() {
+        let plane = Object::with_shape(Shape::Plane);
+        let ray = Ray::new(Point::new(0., 1., 0.), Vector::new(0., -1., 0.));
+
+        assert_eq!(plane.intersection_times(&ray), vec![1.]);
+    }
+
+    #[test]
+    fn ray_intersecting_plane_from_below() {
+        let plane = Object::with_shape(Shape::Plane);
+        let ray = Ray::new(Point::new(0., -1., 0.), Vector::new(0., 1., 0.));
+
+        assert_eq!(plane.intersection_times(&ray), vec![1.]);
+    }
+
+    #[test]
+    fn normal_of_plane_is_const_everywhere() {
+        let plane = Object::with_shape(Shape::Plane);
+
+        let expected = Vector::new(0., 1., 0.);
+
+        assert_eq!(plane.normal_vector_at(Point::new(0., 0., 0.,)), expected);
+        assert_eq!(plane.normal_vector_at(Point::new(10., 0., -10.,)), expected);
+        assert_eq!(plane.normal_vector_at(Point::new(-5., 0., 150.,)), expected);
+    }
+
+    #[test]
+    fn normal_on_surface_of_cube() {
+        let cube = Object::with_shape(Shape::Cube);
+        let examples = vec![
+            (Point::new(1., 0.5, -0.8), Vector::new(1., 0., 0.)),
+            (Point::new(-1., -0.2, 0.9), Vector::new(-1., 0., 0.)),
+            (Point::new(-0.4, 1., -0.1), Vector::new(0., 1., 0.)),
+            (Point::new(0.3, -1., -0.7), Vector::new(0., -1., 0.)),
+            (Point::new(-0.6, 0.3, 1.), Vector::new(0., 0., 1.)),
+            (Point::new(0.4, 0.4, -1.), Vector::new(0., 0., -1.)),
+            (Point::new(1., 1., 1.), Vector::new(1., 0., 0.)),
+            (Point::new(-1., -1., -1.), Vector::new(-1., 0., 0.)),
+        ];
+
+        for (point, expected) in examples {
+            assert_eq!(cube.normal_vector_at(point), expected);
+        }
+    }
+}

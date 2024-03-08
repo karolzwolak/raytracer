@@ -13,7 +13,7 @@ use super::{
     object::Object,
     ray::Ray,
 };
-use super::{object::Shape, pattern::Pattern};
+use super::{object::shape::Shape, pattern::Pattern};
 
 pub struct World {
     objects: Vec<Object>,

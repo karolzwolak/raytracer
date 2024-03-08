@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::primitive::{point::Point, tuple::Tuple, vector::Vector};
 
-use super::object::{Object, ObjectGroup, Shape, Triangle};
+use super::object::{group::ObjectGroup, shape::Shape, Object};
 
 pub struct ObjParser {
     ignored: usize,
@@ -193,7 +193,8 @@ impl Default for ObjParser {
 }
 
 mod tests {
-    use crate::render::object::{Object, Shape, SmoothTriangle};
+
+    use crate::render::object::{smooth_triangle::SmoothTriangle, triangle::Triangle};
 
     use super::*;
 

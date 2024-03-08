@@ -11,7 +11,7 @@ use crate::{
         canvas::Canvas,
         color::Color,
         light::PointLightSource,
-        object::{Object, ObjectGroup, Shape},
+        object::{group::ObjectGroup, shape::Shape, Object},
         world::World,
     },
 };
@@ -31,7 +31,7 @@ fn hexagon() -> Object {
             .transformed(),
     );
     let mut hexagon_group = ObjectGroup::new(vec![cylinder.clone(), corner_sphere.clone()]);
-    hexagon_group.add_bounds_as_obj();
+    hexagon_group.add_bounding_box_as_obj();
     let hexagon_part = Object::with_shape(hexagon_group.into_shape());
 
     let mut hexagon = ObjectGroup::new(vec![hexagon_part.clone()]);
@@ -40,7 +40,7 @@ fn hexagon() -> Object {
         hexagon.apply_transformation(Matrix::rotation_y(consts::FRAC_PI_3));
         hexagon.add_child(hexagon_part.clone());
     }
-    hexagon.add_bounds_as_obj();
+    hexagon.add_bounding_box_as_obj();
     Object::with_shape(hexagon.into_shape())
 }
 

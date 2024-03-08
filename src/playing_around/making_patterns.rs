@@ -5,7 +5,7 @@ use crate::{
         color::Color,
         light::PointLightSource,
         material::Material,
-        object::{Object, Shape},
+        object::{shape::Shape, Object},
         pattern::Pattern,
         world::World,
     },

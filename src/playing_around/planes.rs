@@ -4,7 +4,7 @@ use crate::{
     primitive::matrix::{Matrix, Transform},
     render::{
         canvas::Canvas,
-        object::{Object, Shape},
+        object::{shape::Shape, Object},
         world::World,
     },
 };

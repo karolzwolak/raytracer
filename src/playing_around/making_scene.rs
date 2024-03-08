@@ -9,7 +9,7 @@ use crate::{
     },
     render::{
         camera::Camera, canvas::Canvas, color::Color, light::PointLightSource, material::Material,
-        object::Object, object::Shape, pattern::Pattern, world::World,
+        object::shape::Shape, object::Object, pattern::Pattern, world::World,
     },
 };
 

@@ -136,7 +136,7 @@ impl Pattern {
 
 #[cfg(test)]
 mod tests {
-    use crate::{primitive::tuple::Tuple, render::object::Shape};
+    use crate::{primitive::tuple::Tuple, render::object::shape::Shape};
 
     use super::*;
 

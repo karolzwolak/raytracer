@@ -101,11 +101,8 @@ mod tests {
         approx_eq::ApproxEq,
         primitive::{matrix::Matrix, tuple::Tuple},
         render::{
-            intersection::IntersectionCollection,
-            material::Material,
-            object::Shape::{self},
-            pattern::Pattern,
-            ray::Ray,
+            intersection::IntersectionCollection, material::Material, object::shape::Shape,
+            pattern::Pattern, ray::Ray,
         },
     };
 

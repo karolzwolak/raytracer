@@ -8,7 +8,7 @@ use crate::{
     },
     render::{
         camera::Camera, canvas::Canvas, color::Color, light::PointLightSource, material::Material,
-        object::Object, object::Shape, world::World,
+        object::shape::Shape, object::Object, world::World,
     },
 };
 
