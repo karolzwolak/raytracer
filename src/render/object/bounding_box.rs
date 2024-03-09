@@ -29,10 +29,7 @@ impl BoundingBox {
         }
     }
     pub fn is_empty(&self) -> bool {
-        self.min == self.max
-            || self.min.x() > self.max.x()
-                && self.min.y() > self.max.y()
-                && self.min.z() > self.max.z()
+        self.min.x() > self.max.x() && self.min.y() > self.max.y() && self.min.z() > self.max.z()
     }
     pub fn add_point(&mut self, point: Point) {
         self.min = Point::new(
@@ -207,5 +204,98 @@ impl BoundingBox {
     }
     pub fn distance(&self, other: &BoundingBox) -> f64 {
         (self.center() - other.center()).magnitude()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::primitive::matrix::Matrix;
+
+    #[test]
+    fn test_empty() {
+        let bb = BoundingBox::empty();
+        assert_eq!(
+            bb.min,
+            Point::new(f64::INFINITY, f64::INFINITY, f64::INFINITY)
+        );
+        assert_eq!(
+            bb.max,
+            Point::new(f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY)
+        );
+    }
+
+    #[test]
+    fn test_is_empty() {
+        let mut bb = BoundingBox::empty();
+        assert!(bb.is_empty());
+        bb.add_point(Point::zero());
+        println!("{:?}", bb);
+        assert!(!bb.is_empty());
+    }
+
+    #[test]
+    fn test_add_point() {
+        let mut bb = BoundingBox::empty();
+        bb.add_point(Point::new(1.0, 2.0, 3.0));
+        assert_eq!(bb.min, Point::new(1.0, 2.0, 3.0));
+        assert_eq!(bb.max, Point::new(1.0, 2.0, 3.0));
+    }
+
+    #[test]
+    fn test_add_bounding_box() {
+        let mut bb1 = BoundingBox::empty();
+        bb1.add_point(Point::new(1.0, 2.0, 3.0));
+        let mut bb2 = BoundingBox::empty();
+        bb2.add_point(Point::new(4.0, 5.0, 6.0));
+        bb1.add_bounding_box(bb2);
+        assert_eq!(bb1.min, Point::new(1.0, 2.0, 3.0));
+        assert_eq!(bb1.max, Point::new(4.0, 5.0, 6.0));
+    }
+
+    #[test]
+    fn test_contains_point() {
+        let mut bb = BoundingBox::empty();
+        bb.add_point(Point::new(1.0, 2.0, 3.0));
+        bb.add_point(Point::new(4.0, 5.0, 6.0));
+        assert!(bb.contains_point(&Point::new(2.0, 3.0, 4.0)));
+        assert!(!bb.contains_point(&Point::new(0.0, 0.0, 0.0)));
+    }
+
+    #[test]
+    fn test_transformed() {
+        let mut bb = BoundingBox::empty();
+        bb.add_point(Point::new(1.0, 2.0, 3.0));
+        bb.add_point(Point::new(4.0, 5.0, 6.0));
+
+        let transform_matrix = Matrix::translation(1.0, 1.0, 1.0);
+        let transformed_bb = bb.transformed(transform_matrix);
+
+        assert_eq!(transformed_bb.min, Point::new(2.0, 3.0, 4.0));
+        assert_eq!(transformed_bb.max, Point::new(5.0, 6.0, 7.0));
+    }
+
+    #[test]
+    fn test_contains_other() {
+        let mut bb1 = BoundingBox::empty();
+        bb1.add_point(Point::new(1.0, 2.0, 3.0));
+        bb1.add_point(Point::new(4.0, 5.0, 6.0));
+
+        let mut bb2 = BoundingBox::empty();
+        bb2.add_point(Point::new(2.0, 3.0, 4.0));
+        bb2.add_point(Point::new(3.0, 4.0, 5.0));
+
+        assert!(bb1.contains_other(&bb2));
+    }
+
+    #[test]
+    fn test_distance() {
+        let mut bb1 = BoundingBox::empty();
+        bb1.add_point(Point::new(1.0, 2.0, 3.0));
+
+        let mut bb2 = BoundingBox::empty();
+        bb2.add_point(Point::new(1.0, 2.0, 2.0));
+
+        assert_eq!(bb1.distance(&bb2), 1.0);
     }
 }
