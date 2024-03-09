@@ -23,6 +23,7 @@ impl Camera {
             Matrix::identity(),
         )
     }
+
     pub fn with_transformation(
         target_width: usize,
         target_height: usize,
@@ -55,9 +56,9 @@ impl Camera {
         }
     }
 
-    pub fn ray_for_pixel(&self, x: usize, y: usize) -> Ray {
-        let x_offset_to_center = (x as f64 + 0.5) * self.pixel_size;
-        let y_offset_to_center = (y as f64 + 0.5) * self.pixel_size;
+    pub fn ray_for_pixel(&self, x: f64, y: f64) -> Ray {
+        let x_offset_to_center = (x + 0.5) * self.pixel_size;
+        let y_offset_to_center = (y + 0.5) * self.pixel_size;
 
         let world_x = self.half_width - x_offset_to_center;
         let world_y = self.half_height - y_offset_to_center;
@@ -110,7 +111,7 @@ mod tests {
     fn construct_ray_thru_canvas_center() {
         let camera = Camera::new(201, 101, FRAC_PI_2);
 
-        let ray = camera.ray_for_pixel(100, 50);
+        let ray = camera.ray_for_pixel(100., 50.);
         assert_eq!(ray.origin(), &Point::new(0., 0., 0.));
         assert_eq!(ray.direction(), &Vector::new(0., 0., -1.));
     }
@@ -118,7 +119,7 @@ mod tests {
     fn construct_ray_thru_canvas_corner() {
         let camera = Camera::new(201, 101, FRAC_PI_2);
 
-        let ray = camera.ray_for_pixel(0, 0);
+        let ray = camera.ray_for_pixel(0., 0.);
         assert_eq!(ray.origin(), &Point::new(0., 0., 0.));
         assert_eq!(ray.direction(), &Vector::new(0.66519, 0.33259, -0.66851));
     }
@@ -134,7 +135,7 @@ mod tests {
                 .transformed(),
         );
 
-        let ray = camera.ray_for_pixel(100, 50);
+        let ray = camera.ray_for_pixel(100., 50.);
         assert_eq!(ray.origin(), &Point::new(0., 2., -5.));
         assert_eq!(
             ray.direction(),

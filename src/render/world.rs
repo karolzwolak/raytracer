@@ -21,6 +21,9 @@ pub struct World {
     /// Depth of recursive calls for reflections and refractions
     /// 0 means no reflections or refractions
     max_recursive_depth: usize,
+    /// offset from the center of the pixel
+    /// so it should be in range [-0.5, 0.5]
+    supersampling_offsets: Vec<f64>,
     /// If true, shadows are calculated with intensity,
     /// so that all objects don't cast full shadow
     /// boolean shadows are required for testing purposes,
@@ -30,9 +33,21 @@ pub struct World {
 
 impl World {
     const MAX_RECURSIVE_DEPTH: usize = 5 - 1;
-    pub fn with_shadow_intensity(
+    const DEFAULT_SUPERSAMPLING_LEVEL: usize = 2;
+
+    fn gen_supersampling_offsets(level: usize) -> Vec<f64> {
+        match level {
+            0 | 1 => vec![0.],
+            2 => vec![-0.25, 0.25],
+            3 => vec![-0.25, 0., 0.25],
+            _ => vec![-0.5, -0.25, -0.125, 0., 0.125, 0.25, 0.5],
+        }
+    }
+
+    pub fn with_supersampling_level(
         mut objects: Vec<Object>,
         light_sources: Vec<PointLightSource>,
+        supersampling_level: Option<usize>,
         max_recursive_depth: Option<usize>,
         use_shadow_intensity: bool,
     ) -> Self {
@@ -46,6 +61,9 @@ impl World {
         Self {
             objects,
             light_sources,
+            supersampling_offsets: Self::gen_supersampling_offsets(
+                supersampling_level.unwrap_or(Self::DEFAULT_SUPERSAMPLING_LEVEL),
+            ),
             max_recursive_depth: max_recursive_depth.unwrap_or(Self::MAX_RECURSIVE_DEPTH),
             use_shadow_intensity,
         }
@@ -55,7 +73,7 @@ impl World {
         light_sources: Vec<PointLightSource>,
         max_recursive_depth: Option<usize>,
     ) -> Self {
-        Self::with_shadow_intensity(objects, light_sources, max_recursive_depth, true)
+        Self::with_supersampling_level(objects, light_sources, None, max_recursive_depth, true)
     }
 
     pub fn with_bool_shadows(
@@ -63,7 +81,7 @@ impl World {
         light_sources: Vec<PointLightSource>,
         max_recursive_depth: Option<usize>,
     ) -> Self {
-        Self::with_shadow_intensity(objects, light_sources, max_recursive_depth, false)
+        Self::with_supersampling_level(objects, light_sources, None, max_recursive_depth, false)
     }
 
     pub fn empty() -> Self {
@@ -99,11 +117,26 @@ impl World {
         self.light_sources = light_sources;
     }
 
+    fn color_at_pixel(&self, x: usize, y: usize, camera: &Camera) -> Color {
+        let x = x as f64;
+        let y = y as f64;
+
+        let offsets = &self.supersampling_offsets;
+        let mut color = Color::black();
+
+        for dx in offsets {
+            for dy in offsets {
+                color = color + self.color_at(camera.ray_for_pixel(x + dx, y + dy));
+            }
+        }
+        color / offsets.len().pow(2) as f64
+    }
+
     pub fn render(&self, camera: &Camera) -> Canvas {
         let mut image = camera.canvas();
 
         let now = std::time::Instant::now();
-        image.set_each_pixel(|x: usize, y: usize| self.color_at(camera.ray_for_pixel(x, y)));
+        image.set_each_pixel(|x: usize, y: usize| self.color_at_pixel(x, y, camera));
         println!("Render time: {:?}", now.elapsed());
         image
     }
