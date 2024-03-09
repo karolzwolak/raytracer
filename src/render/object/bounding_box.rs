@@ -150,6 +150,19 @@ impl BoundingBox {
             },
         )
     }
+    pub fn split_n(&self, n: usize) -> Vec<BoundingBox> {
+        let (a, b) = self.split_along_longest_axis();
+        let mut result = vec![a, b];
+        for _ in 1..n {
+            for bb in std::mem::take(&mut result) {
+                let (left, right) = bb.split_along_longest_axis();
+                result.push(left);
+                result.push(right);
+            }
+        }
+        result
+    }
+
     pub fn as_object(&self) -> Object {
         // render slightly bigger box to avoid acne effect
         const LEN_FACTOR: f64 = 0.5 * (1. + approx_eq::EPSILON);

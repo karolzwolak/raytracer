@@ -1,4 +1,5 @@
 use crate::{
+    approx_eq::ApproxEq,
     primitive::matrix::Matrix,
     render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
@@ -15,7 +16,7 @@ pub struct ObjectGroup {
 }
 
 impl ObjectGroup {
-    pub const PARTITION_THRESHOLD: usize = 32;
+    pub const PARTITION_THRESHOLD: usize = 2;
 
     fn with_bounding_box(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
         Self {
@@ -69,32 +70,43 @@ impl ObjectGroup {
             if group.children.len() < Self::PARTITION_THRESHOLD {
                 continue;
             }
-            let (mut left_box, mut right_box) = group.bounding_box.split_along_longest_axis();
+            let mut boxes = group.bounding_box().split_n(7);
+            let mut vectors = vec![vec![]; boxes.len()];
 
-            let (left_vec, right_vec) =
-                std::mem::take(&mut group.children)
-                    .into_iter()
-                    .partition(|child| {
-                        let child_box = child.bounding_box();
+            std::mem::take(&mut group.children)
+                .into_iter()
+                .for_each(|child| {
+                    let child_box = child.bounding_box();
 
-                        let add_to_left =
-                            left_box.distance(&child_box) <= right_box.distance(&child_box);
-                        if add_to_left {
-                            left_box.add_bounding_box(child_box);
-                        } else {
-                            right_box.add_bounding_box(child_box);
+                    let mut min_id = 0;
+                    let mut min_d = f64::INFINITY;
+                    for (id, b) in boxes.iter().enumerate() {
+                        let d = b.distance(&child_box);
+                        if d < min_d {
+                            min_id = id;
+                            min_d = d;
                         }
-                        add_to_left
-                    });
-            let left_group = Self::with_bounding_box(left_vec, left_box);
-            let right_group = Self::with_bounding_box(right_vec, right_box);
+                    }
 
-            if !left_group.children.is_empty() {
-                group.children.push(left_group.into_object());
-            }
-            if !right_group.children.is_empty() {
-                group.children.push(right_group.into_object());
-            }
+                    let dist_to_group = group.bounding_box.distance(&child_box);
+                    if dist_to_group < min_d || dist_to_group.approx_eq(&min_d) {
+                        group.children.push(child);
+                    } else {
+                        boxes[min_id].add_bounding_box(child_box);
+                        vectors[min_id].push(child);
+                    }
+                });
+
+            group.children.extend(
+                vectors
+                    .into_iter()
+                    .zip(boxes.into_iter())
+                    .filter(|(v, _)| !v.is_empty())
+                    .map(|(children, bounding_box)| {
+                        ObjectGroup::with_bounding_box(children, bounding_box).into_object()
+                    }),
+            );
+
             group_stack.extend(
                 group
                     .children
