@@ -1,5 +1,6 @@
 use crate::{
-    primitive::matrix::Matrix,
+    approx_eq::ApproxEq,
+    primitive::{matrix::Matrix, tuple::Tuple},
     render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
 
@@ -87,18 +88,26 @@ impl ObjectGroup {
         if self.children.len() < Self::PARTITION_THRESHOLD {
             return;
         }
-        let old_children = std::mem::take(&mut self.children);
-        let (left_box, right_box) = self.bounding_box.split_along_longest_axis();
+        let self_cost = self.bounding_box().half_area() * self.children.len() as f64;
+        let (axis, pos, cost) = self.determine_partition_axis_pos_cost();
+        if self_cost < cost || self_cost.approx_eq(&cost) {
+            return;
+        }
 
-        let mut left_group = ObjectGroup::from_parts_unchecked(Vec::new(), left_box);
-        let mut right_group = ObjectGroup::from_parts_unchecked(Vec::new(), right_box);
+        let old_children = std::mem::take(&mut self.children);
+        let mut left_group = ObjectGroup::empty();
+        let mut right_group = ObjectGroup::empty();
 
         for child in old_children {
             let child_box = child.bounding_box();
-            let left_dist = left_group.bounding_box().distance(&child_box);
-            let right_dist = right_group.bounding_box().distance(&child_box);
+            let child_pos = match axis {
+                'x' => child_box.center().x(),
+                'y' => child_box.center().y(),
+                'z' => child_box.center().z(),
+                _ => unreachable!(),
+            };
 
-            if left_dist < right_dist {
+            if child_pos < pos {
                 left_group.add_child_no_merge(child);
             } else {
                 right_group.add_child_no_merge(child);
@@ -113,6 +122,59 @@ impl ObjectGroup {
             right_group.partition();
             self.children.push(right_group.into_object());
         }
+    }
+    pub fn determine_partition_axis_pos_cost(&self) -> (char, f64, f64) {
+        let axis = ['x', 'y', 'z'];
+        let mut best_axis = 'x';
+        let mut best_pos = 0.;
+        let mut best_cost = f64::INFINITY;
+
+        for child in self.children.iter() {
+            for axis in axis.iter() {
+                let pos = match axis {
+                    'x' => child.bounding_box().center().x(),
+                    'y' => child.bounding_box().center().y(),
+                    'z' => child.bounding_box().center().z(),
+                    _ => unreachable!(),
+                };
+                let cost = self.evaluate_sah(*axis, pos);
+                if cost < best_cost {
+                    best_axis = *axis;
+                    best_pos = pos;
+                    best_cost = cost;
+                }
+            }
+        }
+
+        (best_axis, best_pos, best_cost)
+    }
+    pub fn evaluate_sah(&self, axis: char, pos: f64) -> f64 {
+        if self.children.is_empty() {
+            return f64::INFINITY;
+        }
+
+        let mut left_box = BoundingBox::empty();
+        let mut right_box = BoundingBox::empty();
+        let mut left_count = 0;
+        let mut right_count = 0;
+
+        for child in self.children.iter() {
+            let child_box = child.bounding_box();
+            let box_pos = match axis {
+                'x' => child_box.center().x(),
+                'y' => child_box.center().y(),
+                'z' => child_box.center().z(),
+                _ => unreachable!(),
+            };
+            if box_pos < pos {
+                left_box.add_bounding_box(child_box);
+                left_count += 1;
+            } else {
+                right_box.add_bounding_box(child_box);
+                right_count += 1;
+            }
+        }
+        left_box.half_area() * left_count as f64 + right_box.half_area() * right_count as f64
     }
     pub fn into_children(self) -> Vec<Object> {
         self.children

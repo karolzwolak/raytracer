@@ -39,11 +39,13 @@ impl World {
         max_recursive_depth: Option<usize>,
         use_shadow_intensity: bool,
     ) -> Self {
+        let now = std::time::Instant::now();
         for obj in &mut objects {
             if let Some(group) = obj.get_group_mut() {
                 group.partition();
             }
         }
+        println!("Partitioning time: {:?}", now.elapsed());
         Self {
             objects,
             light_sources,
