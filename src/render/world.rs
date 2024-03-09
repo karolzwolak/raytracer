@@ -23,6 +23,7 @@ pub struct World {
     max_recursive_depth: usize,
     /// offset from the center of the pixel
     /// so it should be in range [-0.5, 0.5]
+    // TODO: intelligently apply supersampling only if it makes a difference
     supersampling_offsets: Vec<f64>,
     /// If true, shadows are calculated with intensity,
     /// so that all objects don't cast full shadow
@@ -81,7 +82,7 @@ impl World {
         light_sources: Vec<PointLightSource>,
         max_recursive_depth: Option<usize>,
     ) -> Self {
-        Self::with_supersampling_level(objects, light_sources, None, max_recursive_depth, false)
+        Self::with_supersampling_level(objects, light_sources, Some(1), max_recursive_depth, false)
     }
 
     pub fn empty() -> Self {
