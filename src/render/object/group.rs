@@ -16,7 +16,7 @@ pub struct ObjectGroup {
 
 impl ObjectGroup {
     const TARGET_CHILDREN: usize = 5;
-    pub const PARTITION_THRESHOLD: usize = 200;
+    pub const PARTITION_THRESHOLD: usize = 32;
 
     fn from_parts_unchecked(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
         Self {
@@ -84,40 +84,34 @@ impl ObjectGroup {
         self.merge_children()
     }
     pub fn partition(&mut self) {
-        if self.children.len() < 4 {
+        if self.children.len() < Self::PARTITION_THRESHOLD {
             return;
         }
-        let cap = self.children.len() / 2;
-        let old_children = std::mem::replace(&mut self.children, Vec::with_capacity(cap));
-        let mut right_vec = Vec::with_capacity(cap);
-        let mut left_vec = Vec::with_capacity(cap);
-
+        let old_children = std::mem::take(&mut self.children);
         let (left_box, right_box) = self.bounding_box.split_along_longest_axis();
+
+        let mut left_group = ObjectGroup::from_parts_unchecked(Vec::new(), left_box);
+        let mut right_group = ObjectGroup::from_parts_unchecked(Vec::new(), right_box);
 
         for child in old_children {
             let child_box = child.bounding_box();
-            if left_box.contains_other(&child_box) {
-                left_vec.push(child);
-            } else if right_box.contains_other(&child_box) {
-                right_vec.push(child);
+            let left_dist = left_group.bounding_box().distance(&child_box);
+            let right_dist = right_group.bounding_box().distance(&child_box);
+
+            if left_dist < right_dist {
+                left_group.add_child_no_merge(child);
             } else {
-                self.children.push(child);
+                right_group.add_child_no_merge(child);
             }
         }
 
-        if !left_vec.is_empty() {
-            let group = ObjectGroup::from_parts_unchecked(left_vec, left_box).into_object();
-            self.children.push(group);
+        if !left_group.children.is_empty() {
+            left_group.partition();
+            self.children.push(left_group.into_object());
         }
-        if !right_vec.is_empty() {
-            let group = ObjectGroup::from_parts_unchecked(right_vec, right_box).into_object();
-            self.children.push(group);
-        }
-
-        for child in self.children.iter_mut() {
-            if let Some(group) = child.get_group_mut() {
-                group.partition();
-            }
+        if !right_group.children.is_empty() {
+            right_group.partition();
+            self.children.push(right_group.into_object());
         }
     }
     pub fn into_children(self) -> Vec<Object> {

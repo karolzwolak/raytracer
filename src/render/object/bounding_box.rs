@@ -191,4 +191,7 @@ impl BoundingBox {
     pub fn contains_other(&self, other: &BoundingBox) -> bool {
         self.contains_point(&other.min) && self.contains_point(&other.max)
     }
+    pub fn distance(&self, other: &BoundingBox) -> f64 {
+        (self.center() - other.center()).magnitude()
+    }
 }
