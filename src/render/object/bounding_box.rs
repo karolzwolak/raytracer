@@ -164,19 +164,20 @@ impl BoundingBox {
     }
 
     pub fn as_object(&self) -> Object {
-        // render slightly bigger box to avoid acne effect
-        const LEN_FACTOR: f64 = 0.5 * (1. + approx_eq::EPSILON);
+        // render slightly bigger box to avoid z-fighting
+        const LEN_FACTOR: f64 = 0.5 * (1. + approx_eq::LOW_PREC_EPSILON);
 
         let x_len = self.max.x() - self.min.x();
         let y_len = self.max.y() - self.min.y();
         let z_len = self.max.z() - self.min.z();
         let center = self.center();
-        let pattern = Pattern::Const(Color::red());
+        let pattern = Pattern::Const(Color::new(0.5, 0.5, 0.5));
         Object::new(
             Shape::Cube,
             Material {
                 pattern,
-                transparency: 0.9,
+                transparency: 1.,
+                reflectivity: 0.,
                 ambient: 0.1,
                 ..Material::air()
             },

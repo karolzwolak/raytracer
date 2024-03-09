@@ -40,7 +40,6 @@ fn hexagon() -> Object {
         hexagon.apply_transformation(Matrix::rotation_y(consts::FRAC_PI_3));
         hexagon.add_child(hexagon_part.clone());
     }
-    hexagon.add_bounding_box_as_obj();
     Object::with_shape(hexagon.into_shape())
 }
 
