@@ -16,7 +16,14 @@ pub struct ObjectGroup {
 
 impl ObjectGroup {
     const TARGET_CHILDREN: usize = 5;
-    pub const MERGE_THRESHOLD: usize = 200;
+    pub const PARTITION_THRESHOLD: usize = 200;
+
+    fn from_parts_unchecked(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
+        Self {
+            children,
+            bounding_box,
+        }
+    }
 
     pub fn new(children: Vec<Object>) -> Self {
         let mut bounding_box = BoundingBox::empty();
@@ -27,7 +34,7 @@ impl ObjectGroup {
             children,
             bounding_box,
         };
-        res.merge_children_check_threshold();
+        // res.merge_children_check_threshold();
         res
     }
     pub fn with_transformations(children: Vec<Object>, transformation: Matrix) -> Self {
@@ -55,13 +62,13 @@ impl ObjectGroup {
     }
     pub fn add_child(&mut self, child: Object) {
         self.add_child_no_merge(child);
-        self.merge_children_check_threshold()
+        // self.merge_children_check_threshold()
     }
     pub fn add_children(&mut self, children: impl IntoIterator<Item = Object>) {
         for child in children {
             self.add_child_no_merge(child);
         }
-        self.merge_children_check_threshold()
+        // self.merge_children_check_threshold()
     }
     pub fn merge_children(&mut self) {
         let old_children = std::mem::take(&mut self.children);
@@ -71,10 +78,47 @@ impl ObjectGroup {
             .collect();
     }
     pub fn merge_children_check_threshold(&mut self) {
-        if self.children.len() < Self::MERGE_THRESHOLD {
+        if self.children.len() < Self::PARTITION_THRESHOLD {
             return;
         }
         self.merge_children()
+    }
+    pub fn partition(&mut self) {
+        if self.children.len() < 4 {
+            return;
+        }
+        let cap = self.children.len() / 2;
+        let old_children = std::mem::replace(&mut self.children, Vec::with_capacity(cap));
+        let mut right_vec = Vec::with_capacity(cap);
+        let mut left_vec = Vec::with_capacity(cap);
+
+        let (left_box, right_box) = self.bounding_box.split_along_longest_axis();
+
+        for child in old_children {
+            let child_box = child.bounding_box();
+            if left_box.contains_other(&child_box) {
+                left_vec.push(child);
+            } else if right_box.contains_other(&child_box) {
+                right_vec.push(child);
+            } else {
+                self.children.push(child);
+            }
+        }
+
+        if !left_vec.is_empty() {
+            let group = ObjectGroup::from_parts_unchecked(left_vec, left_box).into_object();
+            self.children.push(group);
+        }
+        if !right_vec.is_empty() {
+            let group = ObjectGroup::from_parts_unchecked(right_vec, right_box).into_object();
+            self.children.push(group);
+        }
+
+        for child in self.children.iter_mut() {
+            if let Some(group) = child.get_group_mut() {
+                group.partition();
+            }
+        }
     }
     pub fn into_children(self) -> Vec<Object> {
         self.children

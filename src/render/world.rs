@@ -3,7 +3,6 @@ use crate::{
     primitive::{matrix::Matrix, point::Point, tuple::Tuple},
 };
 
-use super::intersection::{IntersecComputations, IntersectionCollection};
 use super::{
     camera::Camera,
     canvas::Canvas,
@@ -12,6 +11,10 @@ use super::{
     material::Material,
     object::Object,
     ray::Ray,
+};
+use super::{
+    intersection::{IntersecComputations, IntersectionCollection},
+    object::group::ObjectGroup,
 };
 use super::{object::shape::Shape, pattern::Pattern};
 
@@ -31,11 +34,16 @@ pub struct World {
 impl World {
     const MAX_RECURSIVE_DEPTH: usize = 5 - 1;
     pub fn with_shadow_intensity(
-        objects: Vec<Object>,
+        mut objects: Vec<Object>,
         light_sources: Vec<PointLightSource>,
         max_recursive_depth: Option<usize>,
         use_shadow_intensity: bool,
     ) -> Self {
+        for obj in &mut objects {
+            if let Some(group) = obj.get_group_mut() {
+                group.partition();
+            }
+        }
         Self {
             objects,
             light_sources,

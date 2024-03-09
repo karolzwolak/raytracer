@@ -153,6 +153,12 @@ impl Object {
     pub fn get_group(&self) -> Option<&ObjectGroup> {
         self.shape.as_group()
     }
+    pub fn get_group_mut(&mut self) -> Option<&mut ObjectGroup> {
+        match &mut self.shape {
+            Shape::Group(group) => Some(group),
+            _ => None,
+        }
+    }
 }
 
 #[cfg(test)]

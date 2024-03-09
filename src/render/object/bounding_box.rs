@@ -1,5 +1,5 @@
 use crate::{
-    approx_eq,
+    approx_eq::{self, ApproxEq},
     primitive::{
         matrix::{Matrix, Transform},
         point::Point,
@@ -117,6 +117,39 @@ impl BoundingBox {
 
         tmin <= tmax
     }
+    pub fn split_along_longest_axis(&self) -> (BoundingBox, BoundingBox) {
+        let x_len = self.max.x() - self.min.x();
+        let y_len = self.max.y() - self.min.y();
+        let z_len = self.max.z() - self.min.z();
+
+        let longest_axis = x_len.max(y_len).max(z_len);
+
+        let (mut x0, mut y0, mut z0) = (self.min.x(), self.min.y(), self.min.z());
+        let (mut x1, mut y1, mut z1) = (self.max.x(), self.max.y(), self.max.z());
+
+        if longest_axis.approx_eq(&x_len) {
+            x0 += x_len / 2.;
+            x1 = x0;
+        } else if longest_axis.approx_eq(&y_len) {
+            y0 += y_len / 2.;
+            y1 = y0;
+        } else {
+            z0 += z_len / 2.;
+            z1 = z0;
+        }
+        let mid_min = Point::new(x0, y0, z0);
+        let mid_max = Point::new(x1, y1, z1);
+        (
+            BoundingBox {
+                min: self.min,
+                max: mid_max,
+            },
+            BoundingBox {
+                min: mid_min,
+                max: self.max,
+            },
+        )
+    }
     pub fn as_object(&self) -> Object {
         // render slightly bigger box to avoid acne effect
         const LEN_FACTOR: f64 = 0.5 * (1. + approx_eq::EPSILON);
@@ -146,5 +179,16 @@ impl BoundingBox {
             (self.min.y() + self.max.y()) / 2.,
             (self.min.z() + self.max.z()) / 2.,
         )
+    }
+    pub fn contains_point(&self, point: &Point) -> bool {
+        (self.min.x() < point.x() || self.min.x().approx_eq(&point.x()))
+            && (self.min.y() < point.y() || self.min.y().approx_eq(&point.y()))
+            && (self.min.z() < point.z() || self.min.z().approx_eq(&point.z()))
+            && (self.max.x() > point.x() || self.max.x().approx_eq(&point.x()))
+            && (self.max.y() > point.y() || self.max.y().approx_eq(&point.y()))
+            && (self.max.z() > point.z() || self.max.z().approx_eq(&point.z()))
+    }
+    pub fn contains_other(&self, other: &BoundingBox) -> bool {
+        self.contains_point(&other.min) && self.contains_point(&other.max)
     }
 }
