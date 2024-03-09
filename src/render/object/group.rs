@@ -62,36 +62,49 @@ impl ObjectGroup {
             self.add_child(child);
         }
     }
-    pub fn partition(&mut self) {
-        if self.children.len() < Self::PARTITION_THRESHOLD {
-            return;
-        }
-        let old_children = std::mem::take(&mut self.children);
-        let (left_box, right_box) = self.bounding_box.split_along_longest_axis();
+    fn partition_iter(root: &mut ObjectGroup) {
+        let mut group_stack = vec![root];
 
-        let mut left_group = ObjectGroup::with_bounding_box(Vec::new(), left_box);
-        let mut right_group = ObjectGroup::with_bounding_box(Vec::new(), right_box);
-
-        for child in old_children {
-            let child_box = child.bounding_box();
-            let left_dist = left_group.bounding_box().distance(&child_box);
-            let right_dist = right_group.bounding_box().distance(&child_box);
-
-            if left_dist < right_dist {
-                left_group.add_child(child);
-            } else {
-                right_group.add_child(child);
+        while let Some(group) = group_stack.pop() {
+            if group.children.len() < Self::PARTITION_THRESHOLD {
+                continue;
             }
-        }
+            let (mut left_box, mut right_box) = group.bounding_box.split_along_longest_axis();
 
-        if !left_group.children.is_empty() {
-            left_group.partition();
-            self.children.push(left_group.into_object());
+            let (left_vec, right_vec) =
+                std::mem::take(&mut group.children)
+                    .into_iter()
+                    .partition(|child| {
+                        let child_box = child.bounding_box();
+
+                        let add_to_left =
+                            left_box.distance(&child_box) <= right_box.distance(&child_box);
+                        if add_to_left {
+                            left_box.add_bounding_box(child_box);
+                        } else {
+                            right_box.add_bounding_box(child_box);
+                        }
+                        add_to_left
+                    });
+            let left_group = Self::with_bounding_box(left_vec, left_box);
+            let right_group = Self::with_bounding_box(right_vec, right_box);
+
+            if !left_group.children.is_empty() {
+                group.children.push(left_group.into_object());
+            }
+            if !right_group.children.is_empty() {
+                group.children.push(right_group.into_object());
+            }
+            group_stack.extend(
+                group
+                    .children
+                    .iter_mut()
+                    .filter_map(|child| child.get_group_mut().map(|g| g as &mut ObjectGroup)),
+            );
         }
-        if !right_group.children.is_empty() {
-            right_group.partition();
-            self.children.push(right_group.into_object());
-        }
+    }
+    pub fn partition(&mut self) {
+        Self::partition_iter(self);
     }
     pub fn into_children(self) -> Vec<Object> {
         self.children
