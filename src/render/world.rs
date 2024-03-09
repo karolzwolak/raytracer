@@ -3,6 +3,7 @@ use crate::{
     primitive::{matrix::Matrix, point::Point, tuple::Tuple},
 };
 
+use super::intersection::{IntersecComputations, IntersectionCollection};
 use super::{
     camera::Camera,
     canvas::Canvas,
@@ -11,10 +12,6 @@ use super::{
     material::Material,
     object::Object,
     ray::Ray,
-};
-use super::{
-    intersection::{IntersecComputations, IntersectionCollection},
-    object::group::ObjectGroup,
 };
 use super::{object::shape::Shape, pattern::Pattern};
 

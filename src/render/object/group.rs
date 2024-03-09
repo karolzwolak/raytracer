@@ -15,10 +15,9 @@ pub struct ObjectGroup {
 }
 
 impl ObjectGroup {
-    const TARGET_CHILDREN: usize = 5;
     pub const PARTITION_THRESHOLD: usize = 32;
 
-    fn from_parts_unchecked(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
+    fn with_bounding_box(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
         Self {
             children,
             bounding_box,
@@ -30,12 +29,10 @@ impl ObjectGroup {
         for child in children.iter() {
             bounding_box.add_bounding_box(child.bounding_box());
         }
-        let mut res = Self {
+        Self {
             children,
             bounding_box,
-        };
-        // res.merge_children_check_threshold();
-        res
+        }
     }
     pub fn with_transformations(children: Vec<Object>, transformation: Matrix) -> Self {
         let mut group = Self::new(children);
@@ -43,7 +40,7 @@ impl ObjectGroup {
         group
     }
     pub fn empty() -> Self {
-        Self::new(Vec::with_capacity(Self::TARGET_CHILDREN))
+        Self::new(Vec::new())
     }
     pub fn apply_transformation(&mut self, matrix: Matrix) {
         for child in self.children.iter_mut() {
@@ -56,32 +53,14 @@ impl ObjectGroup {
             child.set_material(material.clone());
         }
     }
-    fn add_child_no_merge(&mut self, child: Object) {
+    pub fn add_child(&mut self, child: Object) {
         self.bounding_box.add_bounding_box(child.bounding_box());
         self.children.push(child);
     }
-    pub fn add_child(&mut self, child: Object) {
-        self.add_child_no_merge(child);
-        // self.merge_children_check_threshold()
-    }
     pub fn add_children(&mut self, children: impl IntoIterator<Item = Object>) {
         for child in children {
-            self.add_child_no_merge(child);
+            self.add_child(child);
         }
-        // self.merge_children_check_threshold()
-    }
-    pub fn merge_children(&mut self) {
-        let old_children = std::mem::take(&mut self.children);
-        self.children = old_children
-            .chunks(Self::TARGET_CHILDREN)
-            .map(|chunk| Object::group(chunk.to_vec(), Matrix::identity()))
-            .collect();
-    }
-    pub fn merge_children_check_threshold(&mut self) {
-        if self.children.len() < Self::PARTITION_THRESHOLD {
-            return;
-        }
-        self.merge_children()
     }
     pub fn partition(&mut self) {
         if self.children.len() < Self::PARTITION_THRESHOLD {
@@ -90,8 +69,8 @@ impl ObjectGroup {
         let old_children = std::mem::take(&mut self.children);
         let (left_box, right_box) = self.bounding_box.split_along_longest_axis();
 
-        let mut left_group = ObjectGroup::from_parts_unchecked(Vec::new(), left_box);
-        let mut right_group = ObjectGroup::from_parts_unchecked(Vec::new(), right_box);
+        let mut left_group = ObjectGroup::with_bounding_box(Vec::new(), left_box);
+        let mut right_group = ObjectGroup::with_bounding_box(Vec::new(), right_box);
 
         for child in old_children {
             let child_box = child.bounding_box();
@@ -99,9 +78,9 @@ impl ObjectGroup {
             let right_dist = right_group.bounding_box().distance(&child_box);
 
             if left_dist < right_dist {
-                left_group.add_child_no_merge(child);
+                left_group.add_child(child);
             } else {
-                right_group.add_child_no_merge(child);
+                right_group.add_child(child);
             }
         }
 
