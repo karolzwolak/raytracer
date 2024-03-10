@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::matrix::Matrix,
+    primitive::matrix::{Matrix, Transform},
     render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
 
@@ -49,11 +49,11 @@ impl ObjectGroup {
         }
         self.bounding_box.transform(matrix);
     }
-    pub fn set_material(&mut self, material: Material) {
-        for child in self.children.iter_mut() {
-            child.set_material(material.clone());
-        }
-    }
+    // pub fn set_material(&mut self, material: Material) {
+    //     for child in self.children.iter_mut() {
+    //         child.set_material(material.clone());
+    //     }
+    // }
     pub fn add_child(&mut self, child: Object) {
         self.bounding_box.add_bounding_box(child.bounding_box());
         self.children.push(child);
@@ -144,6 +144,19 @@ impl ObjectGroup {
     }
     pub fn add_bounding_box_as_obj(&mut self) {
         self.children.push(self.bounding_box.as_object())
+    }
+}
+
+impl Transform for ObjectGroup {
+    fn transformed(self) -> Self {
+        todo!()
+    }
+
+    fn transform_borrowed(&mut self, matrix: &Matrix) {
+        for child in self.children.iter_mut() {
+            child.transform_borrowed(matrix);
+        }
+        self.bounding_box.transform(*matrix);
     }
 }
 

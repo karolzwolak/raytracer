@@ -43,7 +43,7 @@ impl BoundingBox {
             self.max.z().max(point.z()),
         );
     }
-    pub fn add_bounding_box(&mut self, other: BoundingBox) {
+    pub fn add_bounding_box(&mut self, other: &BoundingBox) {
         if other.is_empty() {
             return;
         }
@@ -169,7 +169,7 @@ impl BoundingBox {
         let z_len = self.max.z() - self.min.z();
         let center = self.center();
         let pattern = Pattern::Const(Color::new(0.5, 0.5, 0.5));
-        Object::new(
+        Object::primitive(
             Shape::Cube,
             Material {
                 pattern,
@@ -248,7 +248,7 @@ mod tests {
         bb1.add_point(Point::new(1.0, 2.0, 3.0));
         let mut bb2 = BoundingBox::empty();
         bb2.add_point(Point::new(4.0, 5.0, 6.0));
-        bb1.add_bounding_box(bb2);
+        bb1.add_bounding_box(&bb2);
         assert_eq!(bb1.min, Point::new(1.0, 2.0, 3.0));
         assert_eq!(bb1.max, Point::new(4.0, 5.0, 6.0));
     }

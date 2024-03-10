@@ -20,13 +20,13 @@ use crate::{
 };
 
 pub fn run(width: usize, height: usize) -> Canvas {
-    let skybox = Object::new(
+    let skybox = Object::primitive(
         Shape::Cube,
         Material::with_pattern(Pattern::Const(Color::new(0.2, 0.35, 0.78))),
         Matrix::scaling_uniform(10.),
     );
 
-    let floor = Object::new(
+    let floor = Object::primitive(
         Shape::Plane,
         Material {
             pattern: Pattern::checkers(
@@ -53,31 +53,31 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let leg_scaling = Matrix::identity().scale(0.08, 1., 0.08).transformed();
 
-    let leg1 = Object::new(
+    let leg1 = Object::primitive(
         Shape::Cube,
         wood_material.clone(),
         leg_scaling.clone().translate(1., 0.5, 1.).transformed(),
     );
 
-    let leg2 = Object::new(
+    let leg2 = Object::primitive(
         Shape::Cube,
         wood_material.clone(),
         leg_scaling.clone().translate(-1., 0.5, 1.).transformed(),
     );
 
-    let leg3 = Object::new(
+    let leg3 = Object::primitive(
         Shape::Cube,
         wood_material.clone(),
         leg_scaling.clone().translate(1., 0.5, -1.).transformed(),
     );
 
-    let leg4 = Object::new(
+    let leg4 = Object::primitive(
         Shape::Cube,
         wood_material.clone(),
         leg_scaling.clone().translate(-1., 0.5, -1.).transformed(),
     );
 
-    let table_top = Object::new(
+    let table_top = Object::primitive(
         Shape::Cube,
         Material {
             reflectivity: 0.05,
@@ -91,7 +91,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let walls_width = 5.;
 
-    let walls = Object::new(
+    let walls = Object::primitive(
         Shape::Cube,
         Material::with_pattern(Pattern::stripe(
             Color::new(0.42, 0.55, 0.42),
@@ -113,7 +113,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let mirror_scale = Matrix::scaling(2.5, 1.5, 0.01);
     let mirror_translate = Matrix::translation(0., 2.25, -walls_width).transformed();
 
-    let mirror_frame1 = Object::new(
+    let mirror_frame1 = Object::primitive(
         Shape::Cube,
         wood_material.clone(),
         frame_scaling_ver
@@ -123,7 +123,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let mirror_frame2 = Object::new(
+    let mirror_frame2 = Object::primitive(
         Shape::Cube,
         wood_material.clone(),
         frame_scaling_ver
@@ -133,7 +133,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let mirror_frame3 = Object::new(
+    let mirror_frame3 = Object::primitive(
         Shape::Cube,
         wood_material.clone(),
         frame_scaling_hor
@@ -144,7 +144,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let mirror_frame4 = Object::new(
+    let mirror_frame4 = Object::primitive(
         Shape::Cube,
         wood_material,
         frame_scaling_hor
@@ -155,7 +155,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let mirror = Object::new(
+    let mirror = Object::primitive(
         Shape::Cube,
         Material::mirror(),
         Matrix::identity()
@@ -165,7 +165,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let glass_cube = Object::new(
+    let glass_cube = Object::primitive(
         Shape::Cube,
         Material::glass(),
         Matrix::identity()
@@ -174,7 +174,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let tinted_cube = Object::new(
+    let tinted_cube = Object::primitive(
         Shape::Cube,
         Material {
             pattern: Pattern::Const(Color::new(0.4, 0.2, 0.3)),
@@ -190,7 +190,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let c1 = Color::new(0.4, 0.2, 0.3);
     let c2 = Color::new(0.2, 0.3, 0.4);
 
-    let pattern_cube = Object::new(
+    let pattern_cube = Object::primitive(
         Shape::Cube,
         Material::with_pattern(Pattern::checkers(
             c1,
@@ -204,7 +204,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let mirror_cube = Object::new(
+    let mirror_cube = Object::primitive(
         Shape::Cube,
         Material::mirror(),
         Matrix::identity()

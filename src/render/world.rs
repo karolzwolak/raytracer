@@ -405,7 +405,7 @@ mod tests {
     #[test]
     fn shade_hit_with_reflective_material() {
         let mut w = World::default_testing();
-        let plane = Object::new(
+        let plane = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 0.5,
@@ -436,7 +436,7 @@ mod tests {
             Color::white(),
         ));
 
-        let lower = Object::new(
+        let lower = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 1.,
@@ -444,7 +444,7 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        let upper = Object::new(
+        let upper = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 1.,
@@ -463,7 +463,7 @@ mod tests {
     #[test]
     fn reflected_color_at_max_recursive_depth() {
         let mut world = World::default_testing();
-        let plane = Object::new(
+        let plane = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 0.5,
@@ -561,7 +561,7 @@ mod tests {
     #[test]
     fn shading_transparent_material() {
         let mut world = World::default_testing();
-        let floor = Object::new(
+        let floor = Object::primitive(
             Shape::Plane,
             Material {
                 transparency: 0.5,
@@ -570,7 +570,7 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        let ball = Object::new(
+        let ball = Object::primitive(
             Shape::Sphere,
             Material {
                 pattern: Pattern::Const(Color::red()),
@@ -598,7 +598,7 @@ mod tests {
     #[test]
     fn shading_reflective_transparent_material() {
         let mut world = World::default_testing();
-        let floor = Object::new(
+        let floor = Object::primitive(
             Shape::Plane,
             Material {
                 transparency: 0.5,
@@ -608,7 +608,7 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        let ball = Object::new(
+        let ball = Object::primitive(
             Shape::Sphere,
             Material {
                 pattern: Pattern::Const(Color::red()),
