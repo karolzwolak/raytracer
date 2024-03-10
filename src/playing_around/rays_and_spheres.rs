@@ -7,7 +7,10 @@ use crate::{
         tuple::Tuple,
         vector::Vector,
     },
-    render::{canvas::Canvas, color::Color, intersection::IntersectionCollection, object::Object, ray::Ray},
+    render::{
+        canvas::Canvas, color::Color, intersection::IntersectionCollection, object::Object,
+        ray::Ray,
+    },
 };
 
 const SPHERE_RADIUS: usize = 200;
@@ -21,12 +24,11 @@ pub fn run() -> Canvas {
 
     let mut sphere_obj = Object::sphere(Point::new(canvas_center, canvas_center, 0.), radius);
 
-    sphere_obj.apply_transformation(
+    sphere_obj.transform(
         Matrix::identity()
             .scale(0.5, 0.75, 1.)
             .rotate_z(FRAC_PI_3)
-            .sheare(1., 0., 0., 0., 0., 0.)
-            .transformed(),
+            .sheare(1., 0., 0., 0., 0., 0.),
     );
     let ray_direction = Vector::new(0., 0., 1.);
 

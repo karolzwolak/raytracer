@@ -33,7 +33,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
         Shape::unit_cylinder(),
         arrow_material.clone(),
         Matrix::scaling(0.1, 1., 0.1)
-            .transform(arrow_rotation)
+            .transform_chain(&arrow_rotation)
             .transformed(),
     );
     let arrow_head = Object::new(
@@ -41,7 +41,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
         arrow_material,
         Matrix::scaling(0.2, 0.5, 0.2)
             .translate(0., 1., 0.)
-            .transform(arrow_rotation)
+            .transform_chain(&arrow_rotation)
             .transformed(),
     );
 

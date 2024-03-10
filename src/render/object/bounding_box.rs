@@ -21,6 +21,30 @@ pub struct BoundingBox {
     pub max: Point,
 }
 
+impl Transform for BoundingBox {
+    fn transform(&mut self, matrix: &Matrix) {
+        *self = self.transform_new(matrix);
+    }
+
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        let mut new_bounds = BoundingBox::empty();
+        let corners = vec![
+            self.min,
+            Point::new(self.min.x(), self.min.y(), self.max.z()),
+            Point::new(self.min.x(), self.max.y(), self.min.z()),
+            Point::new(self.min.x(), self.max.y(), self.max.z()),
+            Point::new(self.max.x(), self.min.y(), self.min.z()),
+            Point::new(self.max.x(), self.min.y(), self.max.z()),
+            Point::new(self.max.x(), self.max.y(), self.min.z()),
+            self.max,
+        ];
+        for corner in corners {
+            new_bounds.add_point(matrix * corner);
+        }
+        new_bounds
+    }
+}
+
 impl BoundingBox {
     pub fn empty() -> Self {
         Self {
@@ -49,26 +73,6 @@ impl BoundingBox {
         }
         self.add_point(other.min);
         self.add_point(other.max);
-    }
-    pub fn transformed(&self, matrix: Matrix) -> Self {
-        let mut new_bounds = BoundingBox::empty();
-        let corners = vec![
-            self.min,
-            Point::new(self.min.x(), self.min.y(), self.max.z()),
-            Point::new(self.min.x(), self.max.y(), self.min.z()),
-            Point::new(self.min.x(), self.max.y(), self.max.z()),
-            Point::new(self.max.x(), self.min.y(), self.min.z()),
-            Point::new(self.max.x(), self.min.y(), self.max.z()),
-            Point::new(self.max.x(), self.max.y(), self.min.z()),
-            self.max,
-        ];
-        for corner in corners {
-            new_bounds.add_point(matrix * corner);
-        }
-        new_bounds
-    }
-    pub fn transform(&mut self, matrix: Matrix) {
-        *self = self.transformed(matrix);
     }
     fn axis_intersection_times(&self, origin: f64, dir_inv: f64, min: f64, max: f64) -> (f64, f64) {
         let tmin_numerator = min - origin;
@@ -269,10 +273,10 @@ mod tests {
         bb.add_point(Point::new(4.0, 5.0, 6.0));
 
         let transform_matrix = Matrix::translation(1.0, 1.0, 1.0);
-        let transformed_bb = bb.transformed(transform_matrix);
+        bb.transform(&transform_matrix);
 
-        assert_eq!(transformed_bb.min, Point::new(2.0, 3.0, 4.0));
-        assert_eq!(transformed_bb.max, Point::new(5.0, 6.0, 7.0));
+        assert_eq!(bb.min, Point::new(2.0, 3.0, 4.0));
+        assert_eq!(bb.max, Point::new(5.0, 6.0, 7.0));
     }
 
     #[test]

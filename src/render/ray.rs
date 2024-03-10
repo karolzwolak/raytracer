@@ -1,4 +1,9 @@
-use crate::primitive::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector};
+use crate::primitive::{
+    matrix::{Matrix, Transform},
+    point::Point,
+    tuple::Tuple,
+    vector::Vector,
+};
 
 #[derive(Clone)]
 pub struct Ray {
@@ -7,6 +12,16 @@ pub struct Ray {
     /// Precomputed inverse of the direction vector
     /// to avoid division in the intersection calculations
     dir_inv: Vector,
+}
+
+impl Transform for Ray {
+    fn transform(&mut self, matrix: &Matrix) {
+        *self = self.transform_new(matrix);
+    }
+
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        Self::new(matrix * self.origin, matrix * self.direction)
+    }
 }
 
 impl Ray {
@@ -30,10 +45,6 @@ impl Ray {
     }
     pub fn dir_inv(&self) -> &Vector {
         &self.dir_inv
-    }
-
-    pub fn transform(&self, matrix: Matrix) -> Self {
-        Self::new(matrix * self.origin, matrix * self.direction)
     }
 }
 

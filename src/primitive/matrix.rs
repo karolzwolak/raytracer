@@ -10,12 +10,12 @@ pub struct Matrix {
 }
 
 impl Transform for Matrix {
-    fn transformed(self) -> Self {
-        self
+    fn transform(&mut self, matrix: &Matrix) {
+        *self = self.transform_new(matrix);
     }
 
-    fn transform_borrowed(&mut self, transformation_matrix: &Matrix) {
-        *self = (*transformation_matrix) * (*self);
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        matrix * (self as &Matrix)
     }
 }
 
@@ -249,7 +249,14 @@ impl ops::IndexMut<(usize, usize)> for Matrix {
 impl ops::Mul<Matrix> for Matrix {
     type Output = Self;
     fn mul(self, rhs: Matrix) -> Self::Output {
-        let mut output = Self::empty();
+        &self * &rhs
+    }
+}
+
+impl ops::Mul<&Matrix> for &Matrix {
+    type Output = Matrix;
+    fn mul(self, rhs: &Matrix) -> Self::Output {
+        let mut output = Self::Output::empty();
         for row in 0..4 {
             for col in 0..4 {
                 output[(row, col)] = self[(row, 0)] * rhs[(0, col)]
@@ -262,7 +269,19 @@ impl ops::Mul<Matrix> for Matrix {
     }
 }
 
-impl<T> ops::Mul<T> for Matrix
+impl ops::MulAssign<Matrix> for Matrix {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self *= &rhs;
+    }
+}
+
+impl ops::MulAssign<&Matrix> for Matrix {
+    fn mul_assign(&mut self, rhs: &Matrix) {
+        *self = (self as &Matrix) * rhs;
+    }
+}
+
+impl<T> ops::Mul<T> for &Matrix
 where
     T: Tuple,
 {
@@ -284,38 +303,51 @@ where
         )
     }
 }
+impl<T> ops::Mul<T> for Matrix
+where
+    T: Tuple,
+{
+    type Output = T;
+    fn mul(self, rhs: T) -> Self::Output {
+        &self * rhs
+    }
+}
 
-pub trait Transform {
-    fn transformed(self) -> Self;
-    fn transform_borrowed(&mut self, transformation: &Matrix);
+pub trait Transform: Sized {
+    fn transform(&mut self, matrix: &Matrix);
+    fn transform_new(&self, matrix: &Matrix) -> Self;
 
-    fn transform(&mut self, transformation: Matrix) -> &mut Self {
-        self.transform_borrowed(&transformation);
+    fn transformed(self) -> Self {
+        self
+    }
+
+    fn transform_chain(&mut self, transformation: &Matrix) -> &mut Self {
+        self.transform(transformation);
         self
     }
 
     fn translate(&mut self, x: f64, y: f64, z: f64) -> &mut Self {
-        self.transform(Matrix::translation(x, y, z))
+        self.transform_chain(&Matrix::translation(x, y, z))
     }
 
     fn scale(&mut self, x: f64, y: f64, z: f64) -> &mut Self {
-        self.transform(Matrix::scaling(x, y, z))
+        self.transform_chain(&Matrix::scaling(x, y, z))
     }
 
     fn scale_uniform(&mut self, factor: f64) -> &mut Self {
-        self.transform(Matrix::scaling_uniform(factor))
+        self.transform_chain(&Matrix::scaling_uniform(factor))
     }
 
     fn rotate_x(&mut self, radians: f64) -> &mut Self {
-        self.transform(Matrix::rotation_x(radians))
+        self.transform_chain(&Matrix::rotation_x(radians))
     }
 
     fn rotate_y(&mut self, radians: f64) -> &mut Self {
-        self.transform(Matrix::rotation_y(radians))
+        self.transform_chain(&Matrix::rotation_y(radians))
     }
 
     fn rotate_z(&mut self, radians: f64) -> &mut Self {
-        self.transform(Matrix::rotation_z(radians))
+        self.transform_chain(&Matrix::rotation_z(radians))
     }
 
     fn sheare(
@@ -327,7 +359,7 @@ pub trait Transform {
         z_prop_x: f64,
         z_prop_y: f64,
     ) -> &mut Self {
-        self.transform(Matrix::shearing(
+        self.transform_chain(&Matrix::shearing(
             x_prop_y, x_prop_z, y_prop_x, y_prop_z, z_prop_x, z_prop_y,
         ))
     }
@@ -411,6 +443,33 @@ mod tests {
         ]);
 
         assert_eq!(m1 * m2, expected);
+    }
+    #[test]
+    fn mul_assign() {
+        #[rustfmt::skip]
+        let mut m1 = Matrix::new([
+            1., 2., 3., 4.,
+            5., 6., 7., 8.,
+            9., 8., 7., 6.,
+            5., 4., 3., 2.,
+        ]);
+        #[rustfmt::skip]
+        let m2 = Matrix::new([
+            -2., 1., 2., 3.,
+            3., 2., 1., -1.,
+            4., 3., 6., 5.,
+            1., 2., 7., 8.,
+        ]);
+        #[rustfmt::skip]
+        let expected = Matrix::new([
+            20., 22., 50., 48.,
+            44., 54., 114., 108.,
+            40., 58., 110., 102.,
+            16., 26., 46., 42.,
+        ]);
+
+        m1 *= m2;
+        assert_eq!(m1, expected);
     }
     #[test]
     fn mul_with_tuple() {

@@ -20,11 +20,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let source = fs::read_to_string(FILENAME).unwrap();
 
     let mut model = ObjParser::parse_to_object(source).unwrap();
-    model.apply_transformation(
-        Matrix::rotation_y(-std::f64::consts::FRAC_PI_6)
-            .translate(-2., 0., -15.)
-            .transformed(),
-    );
+    model.transform(Matrix::rotation_y(-std::f64::consts::FRAC_PI_6).translate(-2., 0., -15.));
     let objects = vec![model];
 
     let world = World::new(objects, vec![light], None);

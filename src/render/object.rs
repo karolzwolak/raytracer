@@ -32,6 +32,26 @@ pub struct Object {
     transformation_inverse: Matrix,
 }
 
+impl Transform for Object {
+    fn transform(&mut self, matrix: &Matrix) {
+        match &mut self.shape {
+            Shape::Group(group) => {
+                group.transform(matrix);
+            }
+            _ => {
+                self.transformation = matrix * &self.transformation;
+                self.transformation_inverse = self.transformation.inverse().unwrap();
+            }
+        }
+    }
+
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        let mut new_obj = self.clone();
+        new_obj.transform(matrix);
+        new_obj
+    }
+}
+
 impl Object {
     pub fn new(shape: Shape, material: Material, transformation: Matrix) -> Self {
         Self {
@@ -52,7 +72,9 @@ impl Object {
     }
 
     pub fn bounding_box(&self) -> BoundingBox {
-        self.shape.bounding_box().transformed(self.transformation)
+        self.shape
+            .bounding_box()
+            .transform_new(&self.transformation)
     }
 
     pub fn with_shape(shape: Shape) -> Self {
@@ -79,15 +101,6 @@ impl Object {
     pub fn transformation_inverse(&self) -> Matrix {
         self.transformation_inverse
     }
-    pub fn apply_transformation(&mut self, matrix: Matrix) {
-        match &mut self.shape {
-            Shape::Group(group) => group.apply_transformation(matrix),
-            _ => {
-                self.transformation = matrix * self.transformation;
-                self.transformation_inverse = self.transformation.inverse().unwrap();
-            }
-        }
-    }
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
         self.normal_vector_at_with_intersection(world_point, None)
     }
@@ -113,8 +126,10 @@ impl Object {
             Shape::Group(ref group) => group.intersect(world_ray, collector),
             _ => {
                 collector.set_next_object(self);
-                self.shape
-                    .local_intersect(&world_ray.transform(self.transformation_inverse), collector);
+                self.shape.local_intersect(
+                    &world_ray.transform_new(&self.transformation_inverse),
+                    collector,
+                );
             }
         }
     }

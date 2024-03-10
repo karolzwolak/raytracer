@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::matrix::Matrix,
+    primitive::matrix::{Matrix, Transform},
     render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
 
@@ -37,18 +37,13 @@ impl ObjectGroup {
     }
     pub fn with_transformations(children: Vec<Object>, transformation: Matrix) -> Self {
         let mut group = Self::new(children);
-        group.apply_transformation(transformation);
+        group.transform(&transformation);
         group
     }
     pub fn empty() -> Self {
         Self::new(Vec::new())
     }
-    pub fn apply_transformation(&mut self, matrix: Matrix) {
-        for child in self.children.iter_mut() {
-            child.apply_transformation(matrix);
-        }
-        self.bounding_box.transform(matrix);
-    }
+    /// Recursively applies the transformation to all children.
     pub fn set_material(&mut self, material: Material) {
         for child in self.children.iter_mut() {
             child.set_material(material.clone());
@@ -150,6 +145,21 @@ impl ObjectGroup {
 impl Default for ObjectGroup {
     fn default() -> Self {
         Self::empty()
+    }
+}
+
+impl Transform for ObjectGroup {
+    fn transform(&mut self, matrix: &Matrix) {
+        for child in self.children.iter_mut() {
+            child.transform(matrix);
+        }
+        self.bounding_box.transform(matrix);
+    }
+
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        let mut new = self.clone();
+        new.transform(matrix);
+        new
     }
 }
 

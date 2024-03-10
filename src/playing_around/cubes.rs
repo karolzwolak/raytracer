@@ -118,7 +118,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
         wood_material.clone(),
         frame_scaling_ver
             .clone()
-            .transform(mirror_translate)
+            .transform_chain(&mirror_translate)
             .translate(2.5, 0., 0.)
             .transformed(),
     );
@@ -128,7 +128,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
         wood_material.clone(),
         frame_scaling_ver
             .clone()
-            .transform(mirror_translate)
+            .transform_chain(&mirror_translate)
             .translate(-2.5, 0., 0.)
             .transformed(),
     );
@@ -139,7 +139,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
         frame_scaling_hor
             .clone()
             .rotate_z(std::f64::consts::PI / 2.)
-            .transform(mirror_translate)
+            .transform_chain(&mirror_translate)
             .translate(0., 1.5, 0.)
             .transformed(),
     );
@@ -150,7 +150,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
         frame_scaling_hor
             .clone()
             .rotate_z(std::f64::consts::PI / 2.)
-            .transform(mirror_translate)
+            .transform_chain(&mirror_translate)
             .translate(0., -1.5, 0.)
             .transformed(),
     );
@@ -159,8 +159,8 @@ pub fn run(width: usize, height: usize) -> Canvas {
         Shape::Cube,
         Material::mirror(),
         Matrix::identity()
-            .transform(mirror_scale)
-            .transform(mirror_translate)
+            .transform_chain(&mirror_scale)
+            .transform_chain(&mirror_translate)
             .translate(0., 0., 0.005)
             .transformed(),
     );

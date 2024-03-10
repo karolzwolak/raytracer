@@ -41,7 +41,12 @@ mod tests {
     use std::{f64::consts::FRAC_1_SQRT_2, f64::consts::PI};
 
     use crate::{
-        primitive::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
+        primitive::{
+            matrix::{Matrix, Transform},
+            point::Point,
+            tuple::Tuple,
+            vector::Vector,
+        },
         render::{
             object::{shape::Shape, Object},
             ray::Ray,
@@ -121,7 +126,7 @@ mod tests {
     #[test]
     fn compute_normal_on_translated_sphere() {
         let mut sphere_obj = Object::with_shape(Shape::Sphere);
-        sphere_obj.apply_transformation(Matrix::translation(0., 1., 0.));
+        sphere_obj.transform(&Matrix::translation(0., 1., 0.));
         assert_eq!(
             sphere_obj.normal_vector_at(Point::new(0., 1. + FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
             Vector::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)
@@ -130,7 +135,7 @@ mod tests {
     #[test]
     fn compute_normal_on_transformed_sphere() {
         let mut sphere_obj = Object::with_shape(Shape::Sphere);
-        sphere_obj.apply_transformation(Matrix::scaling(1., 0.5, 1.) * Matrix::rotation_z(PI / 5.));
+        sphere_obj.transform(&(Matrix::scaling(1., 0.5, 1.) * Matrix::rotation_z(PI / 5.)));
         assert_eq!(
             sphere_obj.normal_vector_at(Point::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
             Vector::new(0., 0.97014, -0.24254)

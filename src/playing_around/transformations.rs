@@ -35,7 +35,7 @@ pub fn run() -> Canvas {
     put_on_canvas(&mut canvas, SIZE, point.x(), point.y(), color);
 
     for _ in 0..11 {
-        point.transform_borrowed(&transformation);
+        point.transform(&transformation);
         put_on_canvas(&mut canvas, SIZE, point.x(), point.y(), color);
     }
 

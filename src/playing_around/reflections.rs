@@ -45,10 +45,10 @@ pub fn get_walls() -> Vec<Object> {
     );
 
     let mut l_wall_mirror = left_wall.clone();
-    l_wall_mirror.apply_transformation(Matrix::translation(0., -2. * dist, 0.));
+    l_wall_mirror.transform(&Matrix::translation(0., -2. * dist, 0.));
 
     let mut r_wall_mirror = right_wall.clone();
-    r_wall_mirror.apply_transformation(Matrix::translation(0., -2. * dist, 0.));
+    r_wall_mirror.transform(&Matrix::translation(0., -2. * dist, 0.));
 
     vec![floor, left_wall, right_wall, l_wall_mirror, r_wall_mirror]
 }

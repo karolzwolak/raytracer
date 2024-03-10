@@ -140,7 +140,7 @@ mod tests {
         let mut base = Point::new(1., 2., 3.);
         let transformation = Matrix::scaling(0., -1., 2.);
         let p1 = base.clone().scale(0., -1., 2.).transformed();
-        base.transform_borrowed(&transformation);
+        base.transform(&transformation);
 
         let expected = Point::new(0., -2., 6.);
         assert_eq!(base, expected);

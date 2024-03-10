@@ -37,7 +37,7 @@ fn hexagon() -> Object {
     let mut hexagon = ObjectGroup::new(vec![hexagon_part.clone()]);
 
     for _ in 0..6 {
-        hexagon.apply_transformation(Matrix::rotation_y(consts::FRAC_PI_3));
+        hexagon.transform(&Matrix::rotation_y(consts::FRAC_PI_3));
         hexagon.add_child(hexagon_part.clone());
     }
     Object::with_shape(hexagon.into_shape())
@@ -47,11 +47,10 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let light = PointLightSource::new(Point::new(-10., 10., 10.), Color::new(1., 1., 1.));
 
     let mut hexagon = hexagon();
-    hexagon.apply_transformation(
+    hexagon.transform(
         Matrix::rotation_x(consts::FRAC_PI_3)
             .rotate_z(-consts::FRAC_PI_6)
-            .translate(0., 0., -3.)
-            .transformed(),
+            .translate(0., 0., -3.),
     );
 
     let objects = vec![hexagon];

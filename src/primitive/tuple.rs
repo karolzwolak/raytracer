@@ -26,11 +26,11 @@ impl<T> Transform for T
 where
     T: Tuple + Copy,
 {
-    fn transform_borrowed(&mut self, transformation_matrix: &Matrix) {
-        *self = (*transformation_matrix) * (*self);
+    fn transform(&mut self, matrix: &Matrix) {
+        *self = self.transform_new(matrix);
     }
 
-    fn transformed(self) -> Self {
-        self
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        matrix * (*self)
     }
 }
