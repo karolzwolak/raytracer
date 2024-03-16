@@ -13,36 +13,45 @@ use super::{bounding_box::BoundingBox, Object};
 pub struct ObjectGroup {
     children: Vec<Object>,
     bounding_box: BoundingBox,
+    primitive_count: usize,
 }
 
 impl ObjectGroup {
     pub const PARTITION_THRESHOLD: usize = 2;
 
     fn with_bounding_box(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
+        let count = children
+            .iter()
+            .fold(0, |acc, child| acc + child.primitive_count());
         Self {
             children,
             bounding_box,
+            primitive_count: count,
         }
     }
 
     pub fn new(children: Vec<Object>) -> Self {
-        let mut bounding_box = BoundingBox::empty();
-        for child in children.iter() {
-            bounding_box.add_bounding_box(&child.bounding_box());
+        let mut res = Self::empty();
+        for child in children {
+            res.add_child(child);
         }
-        Self {
-            children,
-            bounding_box,
-        }
+        res
     }
+
     pub fn with_transformations(children: Vec<Object>, transformation: Matrix) -> Self {
         let mut group = Self::new(children);
         group.transform(&transformation);
         group
     }
+
     pub fn empty() -> Self {
-        Self::new(Vec::new())
+        Self {
+            children: Vec::new(),
+            bounding_box: BoundingBox::empty(),
+            primitive_count: 0,
+        }
     }
+
     /// Recursively applies the transformation to all children.
     pub fn set_material(&mut self, material: Material) {
         for child in self.children.iter_mut() {
@@ -51,6 +60,7 @@ impl ObjectGroup {
     }
     pub fn add_child(&mut self, child: Object) {
         self.bounding_box.add_bounding_box(&child.bounding_box());
+        self.primitive_count += child.primitive_count();
         self.children.push(child);
     }
     pub fn add_children(&mut self, children: impl IntoIterator<Item = Object>) {
@@ -62,7 +72,7 @@ impl ObjectGroup {
         let mut group_stack = vec![root];
 
         while let Some(group) = group_stack.pop() {
-            if group.children.len() < Self::PARTITION_THRESHOLD {
+            if group.primitive_count < Self::PARTITION_THRESHOLD {
                 continue;
             }
             let mut boxes = group.bounding_box().split_n(7);
@@ -133,6 +143,10 @@ impl ObjectGroup {
     }
     pub fn add_bounding_box_as_obj(&mut self) {
         self.children.push(self.bounding_box.as_object())
+    }
+
+    pub fn primitive_count(&self) -> usize {
+        self.primitive_count
     }
 }
 

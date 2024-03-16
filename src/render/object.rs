@@ -141,6 +141,13 @@ impl Object {
         self.material().expect("Object has no material")
     }
 
+    pub fn primitive_count(&self) -> usize {
+        match self {
+            Self::Primitive(_) => 1,
+            Self::Group(group) => group.primitive_count(),
+        }
+    }
+
     pub fn normalize_and_center(&mut self) {
         let bb = self.bounding_box();
         let center = bb.center();
