@@ -68,6 +68,7 @@ impl ObjectGroup {
             self.add_child(child);
         }
     }
+    // TODO: avoid infinite recursion when trying to partition infinititely large objects
     fn partition_iter(root: &mut ObjectGroup) {
         let mut group_stack = vec![root];
 
@@ -140,6 +141,9 @@ impl ObjectGroup {
 
     pub fn children(&self) -> &[Object] {
         self.children.as_ref()
+    }
+    pub fn children_mut(&mut self) -> &mut [Object] {
+        self.children.as_mut()
     }
     pub fn add_bounding_box_as_obj(&mut self) {
         self.children.push(self.bounding_box.as_object())

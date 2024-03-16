@@ -1,6 +1,7 @@
 use crate::{
     approx_eq::ApproxEq,
     primitive::{matrix::Matrix, point::Point, tuple::Tuple},
+    render::object::group::ObjectGroup,
 };
 
 use super::{
@@ -19,7 +20,7 @@ use super::{
 use super::{object::shape::Shape, pattern::Pattern};
 
 pub struct World {
-    objects: Vec<Object>,
+    objects: Object,
     light_sources: Vec<PointLightSource>,
     /// Depth of recursive calls for reflections and refractions
     /// 0 means no reflections or refractions
@@ -49,21 +50,20 @@ impl World {
     }
 
     pub fn with_supersampling_level(
-        mut objects: Vec<Object>,
+        objects: Vec<Object>,
         light_sources: Vec<PointLightSource>,
         supersampling_level: Option<usize>,
         max_recursive_depth: Option<usize>,
         use_shadow_intensity: bool,
     ) -> Self {
+        let mut objects = ObjectGroup::new(objects);
+
         let now = std::time::Instant::now();
-        for obj in &mut objects {
-            if let Some(group) = obj.as_group_mut() {
-                group.partition();
-            }
-        }
+        objects.partition();
         println!("partitioning time: {:?}", now.elapsed());
+
         Self {
-            objects,
+            objects: objects.into(),
             light_sources,
             supersampling_offsets: Self::gen_supersampling_offsets(
                 supersampling_level.unwrap_or(Self::DEFAULT_SUPERSAMPLING_LEVEL),
@@ -88,11 +88,29 @@ impl World {
         Self::with_supersampling_level(objects, light_sources, Some(1), max_recursive_depth, false)
     }
 
+    pub fn testing(objects: Vec<Object>, light_sources: Vec<PointLightSource>) -> Self {
+        Self {
+            objects: Object::group_with_children(objects),
+            light_sources,
+            supersampling_offsets: Self::gen_supersampling_offsets(0),
+            max_recursive_depth: Self::MAX_RECURSIVE_DEPTH,
+            use_shadow_intensity: false,
+        }
+    }
     pub fn empty() -> Self {
         Self::new(Vec::new(), Vec::new(), None)
     }
+
+    pub fn objects(&self) -> &[Object] {
+        self.objects.as_group().unwrap().children()
+    }
+
+    pub fn objects_mut(&mut self) -> &mut [Object] {
+        self.objects.as_group_mut().unwrap().children_mut()
+    }
+
     pub fn intersect(&self, ray: Ray) -> IntersectionCollection {
-        IntersectionCollection::from_ray_and_mult_objects(ray, &self.objects)
+        IntersectionCollection::from_ray_and_obj(ray, &self.objects)
     }
 
     fn color_at_depth(&self, ray: Ray, depth: usize) -> Color {
@@ -106,16 +124,16 @@ impl World {
     }
 
     pub fn add_obj(&mut self, obj: Object) {
-        self.objects.push(obj);
+        self.objects.as_group_mut().unwrap().add_child(obj);
     }
 
     pub fn add_light(&mut self, light_source: PointLightSource) {
         self.light_sources.push(light_source);
     }
 
-    pub fn set_objects(&mut self, objects: Vec<Object>) {
-        self.objects = objects;
-    }
+    // pub fn set_objects(&mut self, objects: Vec<Object>) {
+    //     self.objects = objects;
+    // }
 
     pub fn set_light_sources(&mut self, light_sources: Vec<PointLightSource>) {
         self.light_sources = light_sources;
@@ -139,11 +157,7 @@ impl World {
     pub fn render(&self, camera: &Camera) -> Canvas {
         let mut image = camera.canvas();
 
-        let primitive_count = self
-            .objects
-            .iter()
-            .map(|obj| obj.primitive_count())
-            .sum::<usize>();
+        let primitive_count = self.objects.primitive_count();
 
         let ray_count = image.width() * image.height() * self.supersampling_offsets.len().pow(2);
 
@@ -306,7 +320,7 @@ impl World {
             Point::new(-10., 10., -10.),
             Color::white(),
         )];
-        Self::with_bool_shadows(objects, lights, None)
+        Self::testing(objects, lights)
     }
 }
 
@@ -411,7 +425,7 @@ mod tests {
         ));
 
         let ray = Ray::new(Point::new(0., 0., 5.), Vector::new(0., 0., 1.));
-        let inter = Intersection::new(4., &world.objects[1]);
+        let inter = Intersection::new(4., &world.objects()[1]);
         let comps = inter.computations(&ray);
 
         assert_eq!(world.shade_hit(comps, 0), Color::new(0.1, 0.1, 0.1));
@@ -421,10 +435,10 @@ mod tests {
     fn reflected_color_for_non_reflective_material() {
         let mut w = World::default_testing();
         let r = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
-        let shape = &mut w.objects[1];
+        let shape = &mut w.objects_mut()[1];
         shape.material_mut().unwrap().ambient = 1.;
 
-        let i = Intersection::new(1., &w.objects[1]);
+        let i = Intersection::new(1., &w.objects()[1]);
         let comps = i.computations(&r);
 
         assert_eq!(w.reflected_color(&comps, 0), Color::black());
@@ -447,7 +461,7 @@ mod tests {
             Point::new(0., 0., -3.),
             Vector::new(0., -FRAC_1_SQRT_2, FRAC_1_SQRT_2),
         );
-        let i = Intersection::new(SQRT_2, w.objects.last().unwrap());
+        let i = Intersection::new(SQRT_2, w.objects().last().unwrap());
         let comps = i.computations(&r);
 
         assert!(w
@@ -505,7 +519,7 @@ mod tests {
             Point::new(0., 0., -3.),
             Vector::new(0., -FRAC_1_SQRT_2, FRAC_1_SQRT_2),
         );
-        let i = Intersection::new(SQRT_2, world.objects.last().unwrap());
+        let i = Intersection::new(SQRT_2, world.objects().last().unwrap());
         let comps = i.computations(&r);
 
         assert_eq!(
@@ -517,7 +531,7 @@ mod tests {
     #[test]
     fn refraced_colr_with_opaque_surface() {
         let world = World::default_testing();
-        let shape = &world.objects[0];
+        let shape = &world.objects()[0];
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![4., 6.], shape);
         let comps = intersections.hit_computations().unwrap();
@@ -528,10 +542,10 @@ mod tests {
     #[test]
     fn refracted_color_at_max_recursive_depth() {
         let mut world = World::default_testing();
-        let shape = &mut world.objects[0];
+        let shape = &mut world.objects_mut()[0];
         shape.material_mut().unwrap().transparency = 1.;
         shape.material_mut().unwrap().refractive_index = 1.5;
-        let shape = &world.objects[0];
+        let shape = &world.objects()[0];
 
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![4., 6.], shape);
@@ -546,10 +560,10 @@ mod tests {
     #[test]
     fn refracted_color_under_total_internal_reflection() {
         let mut world = World::default_testing();
-        let shape = &mut world.objects[0];
+        let shape = &mut world.objects_mut()[0];
         shape.material_mut().unwrap().transparency = 1.;
         shape.material_mut().unwrap().refractive_index = 1.5;
-        let shape = &world.objects[0];
+        let shape = &world.objects()[0];
 
         let ray = Ray::new(Point::new(0., 0., SQRT_2 / 2.), Vector::new(0., 1., 0.));
         let intersections =
@@ -564,18 +578,18 @@ mod tests {
     fn refracted_color_with_refracted_ray() {
         let mut world = World::default_testing();
 
-        let a = &mut world.objects[0];
+        let a = &mut world.objects_mut()[0];
         a.material_mut().unwrap().ambient = 1.;
         a.material_mut().unwrap().pattern = Pattern::test_pattern(None);
 
-        let b = &mut world.objects[1];
+        let b = &mut world.objects_mut()[1];
         b.material_mut().unwrap().transparency = 1.;
         b.material_mut().unwrap().refractive_index = 1.5;
 
         let ray = Ray::new(Point::new(0., 0., 0.1), Vector::new(0., 1., 0.));
 
-        let a = &world.objects[0];
-        let b = &world.objects[1];
+        let a = &world.objects()[0];
+        let b = &world.objects()[1];
         let objects = vec![a.clone(), b.clone()];
 
         let intersections = IntersectionCollection::from_ray_and_mult_objects(ray, &objects);
