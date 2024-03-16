@@ -114,7 +114,7 @@ mod tests {
     }
 
     fn get_triangle() -> Object {
-        Object::with_shape(Shape::triangle(
+        Object::primitive_with_shape(Shape::triangle(
             Point::new(0., 1., 0.),
             Point::new(-1., 0., 0.),
             Point::new(1., 0., 0.),
@@ -124,7 +124,7 @@ mod tests {
     #[test]
     fn finding_normal_on_triangle() {
         let t = get_triangle();
-        let t_shape = match t.shape() {
+        let t_shape = match t.as_primitive().unwrap().shape() {
             Shape::Triangle(ref triangle) => triangle.clone(),
             _ => unreachable!(),
         };

@@ -8,7 +8,10 @@ use crate::{
         vector::Vector,
     },
     render::{
-        canvas::Canvas, color::Color, intersection::IntersectionCollection, object::Object,
+        canvas::Canvas,
+        color::Color,
+        intersection::IntersectionCollection,
+        object::{Object, PrimitiveObject},
         ray::Ray,
     },
 };
@@ -22,7 +25,10 @@ pub fn run() -> Canvas {
     let radius = SPHERE_RADIUS as f64;
     let canvas_center = CANVAS_SIZE as f64 / 2.0;
 
-    let mut sphere_obj = Object::sphere(Point::new(canvas_center, canvas_center, 0.), radius);
+    let mut sphere_obj = Object::from(PrimitiveObject::sphere(
+        Point::new(canvas_center, canvas_center, 0.),
+        radius,
+    ));
 
     sphere_obj.transform(
         Matrix::identity()

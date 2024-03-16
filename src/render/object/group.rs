@@ -4,7 +4,7 @@ use crate::{
     render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
 
-use super::{bounding_box::BoundingBox, shape::Shape, Object};
+use super::{bounding_box::BoundingBox, Object};
 
 #[derive(Clone, Debug)]
 /// A group of objects that can be transformed simultaneously.
@@ -28,7 +28,7 @@ impl ObjectGroup {
     pub fn new(children: Vec<Object>) -> Self {
         let mut bounding_box = BoundingBox::empty();
         for child in children.iter() {
-            bounding_box.add_bounding_box(child.bounding_box());
+            bounding_box.add_bounding_box(&child.bounding_box());
         }
         Self {
             children,
@@ -50,7 +50,7 @@ impl ObjectGroup {
         }
     }
     pub fn add_child(&mut self, child: Object) {
-        self.bounding_box.add_bounding_box(child.bounding_box());
+        self.bounding_box.add_bounding_box(&child.bounding_box());
         self.children.push(child);
     }
     pub fn add_children(&mut self, children: impl IntoIterator<Item = Object>) {
@@ -87,7 +87,7 @@ impl ObjectGroup {
                     if dist_to_group < min_d || dist_to_group.approx_eq(&min_d) {
                         group.children.push(child);
                     } else {
-                        boxes[min_id].add_bounding_box(child_box);
+                        boxes[min_id].add_bounding_box(&child_box);
                         vectors[min_id].push(child);
                     }
                 });
@@ -98,7 +98,7 @@ impl ObjectGroup {
                     .zip(boxes.into_iter())
                     .filter(|(v, _)| !v.is_empty())
                     .map(|(children, bounding_box)| {
-                        ObjectGroup::with_bounding_box(children, bounding_box).into_object()
+                        ObjectGroup::with_bounding_box(children, bounding_box).into()
                     }),
             );
 
@@ -106,7 +106,7 @@ impl ObjectGroup {
                 group
                     .children
                     .iter_mut()
-                    .filter_map(|child| child.get_group_mut().map(|g| g as &mut ObjectGroup)),
+                    .filter_map(|child| child.as_group_mut().map(|g| g as &mut ObjectGroup)),
             );
         }
     }
@@ -116,18 +116,12 @@ impl ObjectGroup {
     pub fn into_children(self) -> Vec<Object> {
         self.children
     }
-    pub fn into_shape(self) -> Shape {
-        Shape::Group(self)
-    }
-    pub fn into_object(self) -> Object {
-        Object::with_shape(self.into_shape())
-    }
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
         if !self.bounding_box.is_intersected(world_ray) {
             return;
         }
         for child in self.children.iter() {
-            child.intersect_with_collector(world_ray, collector)
+            child.intersect(world_ray, collector)
         }
     }
     pub fn bounding_box(&self) -> &BoundingBox {
@@ -170,50 +164,46 @@ mod tests {
         primitive::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
         render::{
             intersection::IntersectionCollection,
-            object::{group::ObjectGroup, shape::Shape, Object},
+            object::{group::ObjectGroup, shape::Shape, Object, PrimitiveObject},
             ray::Ray,
         },
     };
 
     #[test]
     fn intersecting_ray_with_empty_group() {
-        let group = ObjectGroup::empty();
-        let object = Object::with_shape(group.into_shape());
+        let object = Object::group_with_children(Vec::new());
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
         assert!(object.intersect_to_vec(&ray).is_empty());
     }
 
     #[test]
     fn intersecting_ray_with_nonempty_group() {
-        let s1 = Object::with_shape(Shape::Sphere);
-        let s2 = Object::sphere(Point::new(0., 0., -3.), 1.);
-        let s3 = Object::sphere(Point::new(5., 0., 0.), 1.);
+        let s1 = Object::primitive_with_shape(Shape::Sphere);
+        let s2 = PrimitiveObject::sphere(Point::new(0., 0., -3.), 1.).into();
+        let s3 = PrimitiveObject::sphere(Point::new(5., 0., 0.), 1.).into();
 
-        let group = ObjectGroup::new(vec![s1, s2, s3]);
-        let object = Object::with_shape(group.into_shape());
+        let object = Object::group_with_children(vec![s1, s2, s3]);
 
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let xs = IntersectionCollection::from_ray_and_obj(ray, &object);
         let data = xs.vec();
+        let group = object.as_group().unwrap();
 
-        match object.shape() {
-            Shape::Group(group) => {
-                assert_eq!(data.len(), 4);
+        assert_eq!(data.len(), 4);
 
-                assert!(std::ptr::eq(data[0].object(), &group.children[1]));
-                assert!(std::ptr::eq(data[1].object(), &group.children[1]));
-                assert!(std::ptr::eq(data[2].object(), &group.children[0]));
-                assert!(std::ptr::eq(data[3].object(), &group.children[0]));
-            }
-            _ => panic!("expected Shape::Group"),
-        }
+        assert!(std::ptr::eq(data[0].object(), &group.children[1]));
+        assert!(std::ptr::eq(data[1].object(), &group.children[1]));
+        assert!(std::ptr::eq(data[2].object(), &group.children[0]));
+        assert!(std::ptr::eq(data[3].object(), &group.children[0]));
     }
 
     #[test]
     fn intersecting_transformed_group() {
-        let sphere = Object::sphere(Point::new(5., 0., 0.), 1.);
-        let group = ObjectGroup::with_transformations(vec![sphere], Matrix::scaling_uniform(2.));
-        let object = Object::with_shape(group.into_shape());
+        let sphere = PrimitiveObject::sphere(Point::new(5., 0., 0.), 1.).into();
+        let object = Object::from_group(ObjectGroup::with_transformations(
+            vec![sphere],
+            Matrix::scaling_uniform(2.),
+        ));
 
         let ray = Ray::new(Point::new(10., 0., -10.), Vector::new(0., 0., 1.));
         assert_eq!(object.intersect_to_vec(&ray).len(), 2);
@@ -221,12 +211,18 @@ mod tests {
 
     #[test]
     fn normal_on_group_child() {
-        let sphere = Object::with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
-        let g2 = Object::group(vec![sphere], Matrix::scaling(1., 2., 3.));
-        let g1 = Object::group(vec![g2], Matrix::rotation_y(std::f64::consts::FRAC_PI_2));
+        let sphere =
+            Object::primitive_with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
+        let g2 =
+            ObjectGroup::with_transformations(vec![sphere], Matrix::scaling(1., 2., 3.)).into();
+        let g1: Object = ObjectGroup::with_transformations(
+            vec![g2],
+            Matrix::rotation_y(std::f64::consts::FRAC_PI_2),
+        )
+        .into();
 
-        let sphere = &g1.get_group().unwrap().children[0]
-            .get_group()
+        let sphere = &g1.as_group().unwrap().children[0]
+            .as_group()
             .unwrap()
             .children[0];
         let normal = sphere.normal_vector_at(Point::new(1.7321, 1.1547, -5.5774));

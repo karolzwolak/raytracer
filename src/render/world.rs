@@ -3,7 +3,6 @@ use crate::{
     primitive::{matrix::Matrix, point::Point, tuple::Tuple},
 };
 
-use super::intersection::{IntersecComputations, IntersectionCollection};
 use super::{
     camera::Camera,
     canvas::Canvas,
@@ -12,6 +11,10 @@ use super::{
     material::Material,
     object::Object,
     ray::Ray,
+};
+use super::{
+    intersection::{IntersecComputations, IntersectionCollection},
+    object::PrimitiveObject,
 };
 use super::{object::shape::Shape, pattern::Pattern};
 
@@ -54,7 +57,7 @@ impl World {
     ) -> Self {
         let now = std::time::Instant::now();
         for obj in &mut objects {
-            if let Some(group) = obj.get_group_mut() {
+            if let Some(group) = obj.as_group_mut() {
                 group.partition();
             }
         }
@@ -180,7 +183,7 @@ impl World {
             if inter.time().approx_eq(&distance) || inter.time() > distance {
                 break;
             }
-            intensity += 1. - inter.object().material().transparency;
+            intensity += 1. - inter.object().material_unwrapped().transparency;
             if intensity >= 1. {
                 return 1.;
             }
@@ -190,19 +193,27 @@ impl World {
 
     fn reflected_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
         if depth >= self.max_recursive_depth
-            || hit_comps.object().material().reflectivity.approx_eq(&0.)
+            || hit_comps
+                .object()
+                .material_unwrapped()
+                .reflectivity
+                .approx_eq(&0.)
         {
             return Color::black();
         }
         let reflected_ray = Ray::new(hit_comps.over_point(), hit_comps.reflect_v());
         let color = self.color_at_depth(reflected_ray, depth + 1);
 
-        color * hit_comps.object().material().reflectivity
+        color * hit_comps.object().material_unwrapped().reflectivity
     }
 
     fn refracted_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
         if depth >= self.max_recursive_depth
-            || hit_comps.object().material().transparency.approx_eq(&0.)
+            || hit_comps
+                .object()
+                .material_unwrapped()
+                .transparency
+                .approx_eq(&0.)
         {
             return Color::black();
         }
@@ -222,7 +233,7 @@ impl World {
         let refracted_ray = Ray::new(hit_comps.under_point(), direction);
 
         let color = self.color_at_depth(refracted_ray, depth + 1);
-        color * hit_comps.object().material().transparency
+        color * hit_comps.object().material_unwrapped().transparency
     }
 
     pub fn shade_hit(&self, hit_comps: IntersecComputations, depth: usize) -> Color {
@@ -240,7 +251,7 @@ impl World {
                 let reflected = self.reflected_color(&hit_comps, depth);
                 let refracted = self.refracted_color(&hit_comps, depth);
 
-                let material = hit_comps.object().material();
+                let material = hit_comps.object().material_unwrapped();
 
                 let use_schlick = material.reflectivity > 0.
                     && material.transparency > 0.
@@ -261,7 +272,7 @@ impl World {
 // Default testing world with bool shadows
 impl World {
     pub fn default_testing() -> Self {
-        let sphere1 = Object::with_shape_material(
+        let sphere1 = Object::primitive(
             Shape::Sphere,
             Material {
                 pattern: Pattern::Const(Color::new(0.8, 1.0, 0.6)),
@@ -270,8 +281,11 @@ impl World {
                 specular: 0.2,
                 ..Default::default()
             },
+            Matrix::identity(),
         );
-        let sphere2 = Object::with_transformation(Shape::Sphere, Matrix::scaling(0.5, 0.5, 0.5));
+        let sphere2 =
+            PrimitiveObject::with_transformation(Shape::Sphere, Matrix::scaling(0.5, 0.5, 0.5))
+                .into();
 
         let objects = vec![sphere1, sphere2];
         let lights = vec![PointLightSource::new(
@@ -376,8 +390,8 @@ mod tests {
             Color::white(),
         ));
 
-        world.add_obj(Object::with_shape(Shape::Sphere));
-        world.add_obj(Object::with_transformation(
+        world.add_obj(Object::primitive_with_shape(Shape::Sphere));
+        world.add_obj(Object::primitive_with_transformation(
             Shape::Sphere,
             Matrix::translation(0., 0., 10.),
         ));
@@ -394,7 +408,7 @@ mod tests {
         let mut w = World::default_testing();
         let r = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
         let shape = &mut w.objects[1];
-        shape.material_mut().ambient = 1.;
+        shape.material_mut().unwrap().ambient = 1.;
 
         let i = Intersection::new(1., &w.objects[1]);
         let comps = i.computations(&r);
@@ -405,7 +419,7 @@ mod tests {
     #[test]
     fn shade_hit_with_reflective_material() {
         let mut w = World::default_testing();
-        let plane = Object::new(
+        let plane = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 0.5,
@@ -436,7 +450,7 @@ mod tests {
             Color::white(),
         ));
 
-        let lower = Object::new(
+        let lower = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 1.,
@@ -444,7 +458,7 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        let upper = Object::new(
+        let upper = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 1.,
@@ -463,7 +477,7 @@ mod tests {
     #[test]
     fn reflected_color_at_max_recursive_depth() {
         let mut world = World::default_testing();
-        let plane = Object::new(
+        let plane = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 0.5,
@@ -501,8 +515,8 @@ mod tests {
     fn refracted_color_at_max_recursive_depth() {
         let mut world = World::default_testing();
         let shape = &mut world.objects[0];
-        shape.material_mut().transparency = 1.;
-        shape.material_mut().refractive_index = 1.5;
+        shape.material_mut().unwrap().transparency = 1.;
+        shape.material_mut().unwrap().refractive_index = 1.5;
         let shape = &world.objects[0];
 
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
@@ -519,8 +533,8 @@ mod tests {
     fn refracted_color_under_total_internal_reflection() {
         let mut world = World::default_testing();
         let shape = &mut world.objects[0];
-        shape.material_mut().transparency = 1.;
-        shape.material_mut().refractive_index = 1.5;
+        shape.material_mut().unwrap().transparency = 1.;
+        shape.material_mut().unwrap().refractive_index = 1.5;
         let shape = &world.objects[0];
 
         let ray = Ray::new(Point::new(0., 0., SQRT_2 / 2.), Vector::new(0., 1., 0.));
@@ -537,12 +551,12 @@ mod tests {
         let mut world = World::default_testing();
 
         let a = &mut world.objects[0];
-        a.material_mut().ambient = 1.;
-        a.material_mut().pattern = Pattern::test_pattern(None);
+        a.material_mut().unwrap().ambient = 1.;
+        a.material_mut().unwrap().pattern = Pattern::test_pattern(None);
 
         let b = &mut world.objects[1];
-        b.material_mut().transparency = 1.;
-        b.material_mut().refractive_index = 1.5;
+        b.material_mut().unwrap().transparency = 1.;
+        b.material_mut().unwrap().refractive_index = 1.5;
 
         let ray = Ray::new(Point::new(0., 0., 0.1), Vector::new(0., 1., 0.));
 
@@ -561,7 +575,7 @@ mod tests {
     #[test]
     fn shading_transparent_material() {
         let mut world = World::default_testing();
-        let floor = Object::new(
+        let floor = Object::primitive(
             Shape::Plane,
             Material {
                 transparency: 0.5,
@@ -570,7 +584,7 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        let ball = Object::new(
+        let ball = Object::primitive(
             Shape::Sphere,
             Material {
                 pattern: Pattern::Const(Color::red()),
@@ -598,7 +612,7 @@ mod tests {
     #[test]
     fn shading_reflective_transparent_material() {
         let mut world = World::default_testing();
-        let floor = Object::new(
+        let floor = Object::primitive(
             Shape::Plane,
             Material {
                 transparency: 0.5,
@@ -608,7 +622,7 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        let ball = Object::new(
+        let ball = Object::primitive(
             Shape::Sphere,
             Material {
                 pattern: Pattern::Const(Color::red()),

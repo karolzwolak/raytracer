@@ -37,7 +37,7 @@ pub fn color_of_illuminated_point(
     normal_v: Vector,
     shadow_intensity: f64,
 ) -> Color {
-    let material = object.material();
+    let material = object.material_unwrapped();
     // combine surface color with lights's intensity (color)
     let effetive_color = material.color_at_object(object, point) * light_source.intensity;
 
@@ -101,8 +101,11 @@ mod tests {
         approx_eq::ApproxEq,
         primitive::{matrix::Matrix, tuple::Tuple},
         render::{
-            intersection::IntersectionCollection, material::Material, object::shape::Shape,
-            pattern::Pattern, ray::Ray,
+            intersection::IntersectionCollection,
+            material::Material,
+            object::{shape::Shape, PrimitiveObject},
+            pattern::Pattern,
+            ray::Ray,
         },
     };
 
@@ -111,7 +114,7 @@ mod tests {
     #[test]
     fn lighting_with_surface_in_shadow() {
         let point = Point::zero();
-        let obj = Object::with_shape(Shape::Sphere);
+        let obj = PrimitiveObject::with_shape(Shape::Sphere).into();
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
@@ -125,7 +128,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_between_light_and_surface() {
         let point = Point::zero();
-        let obj = Object::with_shape(Shape::Sphere);
+        let obj = PrimitiveObject::with_shape(Shape::Sphere).into();
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
@@ -139,7 +142,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_between_light_and_surface_eye_offset_45() {
         let point = Point::zero();
-        let obj = Object::with_shape(Shape::Sphere);
+        let obj = PrimitiveObject::with_shape(Shape::Sphere).into();
 
         let eye_v = Vector::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2);
         let normal_v = Vector::new(0., 0., -1.);
@@ -153,7 +156,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_opposite_surface_light_offset_45() {
         let point = Point::zero();
-        let obj = Object::with_shape(Shape::Sphere);
+        let obj = PrimitiveObject::with_shape(Shape::Sphere).into();
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
@@ -168,7 +171,7 @@ mod tests {
     #[test]
     fn lighting_with_eye_in_path_of_reflection() {
         let point = Point::zero();
-        let obj = Object::with_shape(Shape::Sphere);
+        let obj = PrimitiveObject::with_shape(Shape::Sphere).into();
 
         let eye_v = Vector::new(0., -FRAC_1_SQRT_2, -FRAC_1_SQRT_2);
         let normal_v = Vector::new(0., 0., -1.);
@@ -183,7 +186,7 @@ mod tests {
     #[test]
     fn lighting_with_light_behind_surface() {
         let point = Point::zero();
-        let obj = Object::with_shape(Shape::Sphere);
+        let obj = PrimitiveObject::with_shape(Shape::Sphere).into();
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
@@ -203,7 +206,7 @@ mod tests {
             specular: 0.,
             ..Default::default()
         };
-        let obj = Object::with_shape_material(Shape::Sphere, material);
+        let obj = PrimitiveObject::with_shape_material(Shape::Sphere, material).into();
 
         let eye_v = Vector::new(0., 0., -1.);
         let normal_v = Vector::new(0., 0., -1.);
@@ -235,7 +238,7 @@ mod tests {
 
     #[test]
     fn schlick_reflectance_under_total_internal_reflection() {
-        let sphere = Object::new(Shape::Sphere, Material::glass(), Matrix::identity());
+        let sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
 
         let ray = Ray::new(Point::new(0., 0., FRAC_1_SQRT_2), Vector::new(0., 1., 0.));
         let intersections = IntersectionCollection::from_times_and_obj(
@@ -250,7 +253,7 @@ mod tests {
 
     #[test]
     fn schlick_reflectance_with_perpendicular_viewing_angle() {
-        let sphere = Object::new(Shape::Sphere, Material::glass(), Matrix::identity());
+        let sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
 
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 1., 0.));
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![-1., 1.], &sphere);
@@ -261,7 +264,7 @@ mod tests {
 
     #[test]
     fn schlick_reflectance_with_small_angle_and_n1_greater_than_n2() {
-        let sphere = Object::new(Shape::Sphere, Material::glass(), Matrix::identity());
+        let sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
 
         let ray = Ray::new(Point::new(0., 0.99, -2.), Vector::new(0., 0., 1.));
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![1.8589], &sphere);

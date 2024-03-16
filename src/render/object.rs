@@ -25,56 +25,120 @@ use super::{
 };
 
 #[derive(Clone, Debug)]
-pub struct Object {
-    shape: Shape,
-    material: Material,
-    transformation: Matrix,
-    transformation_inverse: Matrix,
+pub enum Object {
+    Primitive(Box<PrimitiveObject>),
+    Group(ObjectGroup),
+}
+
+impl From<PrimitiveObject> for Object {
+    fn from(obj: PrimitiveObject) -> Self {
+        Self::from_primitive(obj)
+    }
+}
+
+impl From<ObjectGroup> for Object {
+    fn from(group: ObjectGroup) -> Self {
+        Self::from_group(group)
+    }
 }
 
 impl Transform for Object {
     fn transform(&mut self, matrix: &Matrix) {
-        match &mut self.shape {
-            Shape::Group(group) => {
-                group.transform(matrix);
-            }
-            _ => {
-                self.transformation = matrix * &self.transformation;
-                self.transformation_inverse = self.transformation.inverse().unwrap();
-            }
+        match self {
+            Self::Primitive(obj) => obj.transform(matrix),
+            Self::Group(group) => group.transform(matrix),
         }
     }
 
     fn transform_new(&self, matrix: &Matrix) -> Self {
-        let mut new_obj = self.clone();
-        new_obj.transform(matrix);
-        new_obj
+        let mut new = self.clone();
+        new.transform(matrix);
+        new
     }
 }
 
 impl Object {
-    pub fn new(shape: Shape, material: Material, transformation: Matrix) -> Self {
-        Self {
-            shape,
-            material,
-            transformation,
-            transformation_inverse: transformation
-                .inverse()
-                .expect("Object with singular tranfromation matrix cannot be rendered"),
+    pub fn group_with_children(children: Vec<Object>) -> Self {
+        Self::from_group(ObjectGroup::new(children))
+    }
+
+    pub fn from_group(group: ObjectGroup) -> Self {
+        Self::Group(group)
+    }
+
+    pub fn from_primitive(obj: PrimitiveObject) -> Self {
+        Self::Primitive(Box::new(obj))
+    }
+
+    pub fn primitive(shape: Shape, material: Material, transformation: Matrix) -> Self {
+        Self::from_primitive(PrimitiveObject::new(shape, material, transformation))
+    }
+
+    pub fn primitive_with_shape(shape: Shape) -> Self {
+        Self::from_primitive(PrimitiveObject::with_shape(shape))
+    }
+
+    pub fn primitive_with_transformation(shape: Shape, transformation: Matrix) -> Self {
+        Self::from_primitive(PrimitiveObject::with_transformation(shape, transformation))
+    }
+
+    pub fn normal_vector_at(&self, world_point: Point) -> Vector {
+        self.normal_vector_at_with_intersection(world_point, None)
+    }
+
+    pub fn normal_vector_at_with_intersection<'a>(
+        &self,
+        world_point: Point,
+        i: Option<&'a Intersection<'a>>,
+    ) -> Vector {
+        match self {
+            Self::Primitive(obj) => obj.normal_vector_at_with_intersection(world_point, i),
+            Self::Group(_) => todo!(),
         }
     }
 
-    pub fn group(children: Vec<Object>, transformation: Matrix) -> Self {
-        Self::with_shape(Shape::Group(ObjectGroup::with_transformations(
-            children,
-            transformation,
-        )))
+    pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
+        collector.set_next_object(self);
+        match self {
+            Self::Primitive(obj) => obj.intersect_with_collector(world_ray, collector),
+            Self::Group(group) => group.intersect(world_ray, collector),
+        }
     }
 
-    pub fn bounding_box(&self) -> BoundingBox {
-        self.shape
-            .bounding_box()
-            .transform_new(&self.transformation)
+    pub fn intersect_to_vec<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
+        let mut collector = IntersectionCollector::with_next_object(self);
+        self.intersect(world_ray, &mut collector);
+        collector.collect_sorted()
+    }
+
+    pub fn intersection_times(&self, world_ray: &Ray) -> Vec<f64> {
+        self.intersect_to_vec(world_ray)
+            .iter_mut()
+            .map(|i| i.time())
+            .collect()
+    }
+
+    pub fn is_intersected_by_ray(&self, ray: &Ray) -> bool {
+        !self.intersect_to_vec(ray).is_empty()
+    }
+
+    pub fn material(&self) -> Option<&Material> {
+        self.as_primitive().map(|p| p.material())
+    }
+
+    pub fn material_mut(&mut self) -> Option<&mut Material> {
+        self.as_primitive_mut().map(|p| p.material_mut())
+    }
+
+    pub fn set_material(&mut self, material: Material) {
+        match self {
+            Self::Primitive(obj) => obj.set_material(material),
+            Self::Group(group) => group.set_material(material),
+        }
+    }
+
+    pub fn material_unwrapped(&self) -> &Material {
+        self.material().expect("Object has no material")
     }
 
     pub fn normalize_and_center(&mut self) {
@@ -88,6 +152,78 @@ impl Object {
                 .translate(-center.x(), -center.y(), -center.z())
                 .scale_uniform(2. / length),
         );
+    }
+
+    pub fn transformation(&self) -> Matrix {
+        match self {
+            Self::Primitive(obj) => obj.transformation,
+            Self::Group(_) => Matrix::identity(),
+        }
+    }
+
+    pub fn transformation_inverse(&self) -> Matrix {
+        match self {
+            Self::Primitive(obj) => obj.transformation_inverse(),
+            Self::Group(_) => Matrix::identity(),
+        }
+    }
+
+    pub fn bounding_box(&self) -> BoundingBox {
+        match self {
+            Self::Primitive(obj) => obj.bounding_box(),
+            Self::Group(group) => group.bounding_box().clone(),
+        }
+    }
+    pub fn as_group(&self) -> Option<&ObjectGroup> {
+        match self {
+            Self::Group(group) => Some(group),
+            _ => None,
+        }
+    }
+    pub fn as_group_mut(&mut self) -> Option<&mut ObjectGroup> {
+        match self {
+            Self::Group(group) => Some(group),
+            _ => None,
+        }
+    }
+    pub fn as_primitive(&self) -> Option<&PrimitiveObject> {
+        match self {
+            Self::Primitive(obj) => Some(obj),
+            _ => None,
+        }
+    }
+    pub fn as_primitive_mut(&mut self) -> Option<&mut PrimitiveObject> {
+        match self {
+            Self::Primitive(obj) => Some(obj),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct PrimitiveObject {
+    shape: Shape,
+    material: Material,
+    transformation: Matrix,
+    transformation_inverse: Matrix,
+}
+
+impl PrimitiveObject {
+    pub fn new(shape: Shape, material: Material, transformation: Matrix) -> Self {
+        Self {
+            shape,
+            material,
+            transformation,
+            transformation_inverse: transformation
+                .inverse()
+                .expect("Object with singular tranfromation matrix cannot be rendered"),
+        }
+    }
+
+    pub fn bounding_box(&self) -> BoundingBox {
+        self.shape
+            .bounding_box()
+            .transform_new(&self.transformation)
     }
 
     pub fn with_shape(shape: Shape) -> Self {
@@ -135,57 +271,38 @@ impl Object {
         world_ray: &Ray,
         collector: &mut IntersectionCollector<'a>,
     ) {
-        match &self.shape {
-            Shape::Group(ref group) => group.intersect(world_ray, collector),
-            _ => {
-                collector.set_next_object(self);
-                self.shape.local_intersect(
-                    &world_ray.transform_new(&self.transformation_inverse),
-                    collector,
-                );
-            }
-        }
+        self.shape.local_intersect(
+            &world_ray.transform_new(&self.transformation_inverse),
+            collector,
+        );
     }
 
-    pub fn intersect_to_vec<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
-        let mut collector = IntersectionCollector::with_next_object(self);
-        self.intersect_with_collector(world_ray, &mut collector);
-        collector.collect_sorted()
-    }
-
-    pub fn intersection_times(&self, world_ray: &Ray) -> Vec<f64> {
-        self.intersect_to_vec(world_ray)
-            .iter_mut()
-            .map(|i| i.time())
-            .collect()
-    }
-
-    pub fn is_intersected_by_ray(&self, ray: &Ray) -> bool {
-        !self.intersect_to_vec(ray).is_empty()
-    }
     pub fn material(&self) -> &Material {
         &self.material
     }
 
     pub fn set_material(&mut self, material: Material) {
-        if let Shape::Group(group) = &mut self.shape {
-            group.set_material(material.clone())
-        }
         self.material = material;
     }
 
     pub fn material_mut(&mut self) -> &mut Material {
         &mut self.material
     }
+}
 
-    pub fn get_group(&self) -> Option<&ObjectGroup> {
-        self.shape.as_group()
+impl Transform for PrimitiveObject {
+    fn transform(&mut self, matrix: &Matrix) {
+        self.transformation.transform(matrix);
+        self.transformation_inverse = self
+            .transformation
+            .inverse()
+            .expect("Object with singular tranfromation matrix cannot be rendered");
     }
-    pub fn get_group_mut(&mut self) -> Option<&mut ObjectGroup> {
-        match &mut self.shape {
-            Shape::Group(group) => Some(group),
-            _ => None,
-        }
+
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        let mut new = self.clone();
+        new.transform(matrix);
+        new
     }
 }
 
@@ -197,14 +314,14 @@ mod tests {
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {
         assert_eq!(
-            Object::with_shape(Shape::Sphere).transformation_inverse(),
+            Object::primitive_with_shape(Shape::Sphere).transformation_inverse(),
             Matrix::identity()
         );
     }
 
     #[test]
     fn normal_is_normalized() {
-        let sphere_obj = Object::with_shape(Shape::Sphere);
+        let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
 
         let frac_sqrt_3_3 = 3_f64.sqrt() / 3.;
         let normal =

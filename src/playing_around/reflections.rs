@@ -23,10 +23,16 @@ pub fn get_walls() -> Vec<Object> {
 
     let dist = 12.;
 
-    let mut floor = Object::new(Shape::Plane, material.clone(), Matrix::identity());
-    floor.material_mut().reflectivity = 0.4;
+    let floor = Object::primitive(
+        Shape::Plane,
+        Material {
+            reflectivity: 0.4,
+            ..material.clone()
+        },
+        Matrix::identity(),
+    );
 
-    let left_wall = Object::new(
+    let left_wall = Object::primitive(
         Shape::Plane,
         material.clone(),
         Matrix::rotation_x(FRAC_PI_2)
@@ -35,7 +41,7 @@ pub fn get_walls() -> Vec<Object> {
             .transformed(),
     );
 
-    let right_wall = Object::new(
+    let right_wall = Object::primitive(
         Shape::Plane,
         material,
         Matrix::rotation_x(FRAC_PI_2)
@@ -70,7 +76,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let mirror_dist = 3.;
 
-    let mirror_wall = Object::new(
+    let mirror_wall = Object::primitive(
         Shape::Plane,
         mirror.clone(),
         Matrix::rotation_x(FRAC_PI_2)
@@ -79,7 +85,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let mirror_wall2 = Object::new(
+    let mirror_wall2 = Object::primitive(
         Shape::Plane,
         mirror,
         Matrix::rotation_x(FRAC_PI_2)

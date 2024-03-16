@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn ray_misses_cylinder() {
-        let cyl = Object::with_shape(Shape::default_cylinder());
+        let cyl = Object::primitive_with_shape(Shape::default_cylinder());
         let examples = vec![
             Ray::new(Point::new(1., 0., 0.), Vector::new(0., 1., 0.)),
             Ray::new(Point::new(0., 0., 0.), Vector::new(0., 1., 0.)),
@@ -156,7 +156,7 @@ mod tests {
 
     #[test]
     fn ray_intersects_cylinder() {
-        let cyl = Object::with_shape(Shape::default_cylinder());
+        let cyl = Object::primitive_with_shape(Shape::default_cylinder());
 
         let examples = vec![
             (
@@ -189,7 +189,7 @@ mod tests {
 
     #[test]
     fn normal_of_cylinder() {
-        let cyl = Object::with_shape(Shape::default_cylinder());
+        let cyl = Object::primitive_with_shape(Shape::default_cylinder());
 
         let examples = vec![
             (Point::new(1., 0., 0.), Vector::new(1., 0., 0.)),
@@ -204,7 +204,7 @@ mod tests {
     }
 
     fn get_cylinder() -> Object {
-        Object::with_shape(Shape::Cylinder(Cylinder {
+        Object::primitive_with_shape(Shape::Cylinder(Cylinder {
             y_min: 1.,
             y_max: 2.,
             closed: false,
@@ -241,7 +241,7 @@ mod tests {
 
     #[test]
     fn intersecting_cylinder_end_caps() {
-        let cyl = Object::with_shape(Shape::Cylinder(Cylinder {
+        let cyl = Object::primitive_with_shape(Shape::Cylinder(Cylinder {
             y_min: 1.,
             y_max: 2.,
             closed: true,

@@ -31,9 +31,9 @@ pub fn run(width: usize, height: usize) -> Canvas {
         ),
     ));
 
-    let floor = Object::new(Shape::Plane, material.clone(), Matrix::identity());
+    let floor = Object::primitive(Shape::Plane, material.clone(), Matrix::identity());
 
-    let wall = Object::new(
+    let wall = Object::primitive(
         Shape::Plane,
         material,
         Matrix::rotation_x(FRAC_PI_2)
@@ -41,7 +41,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let small_sphere = Object::new(
+    let small_sphere = Object::primitive(
         Shape::Sphere,
         Material {
             pattern: Pattern::Const(glass_color),
@@ -52,13 +52,13 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let mid_sphere = Object::new(
+    let mid_sphere = Object::primitive(
         Shape::Sphere,
         Material::glass(),
         Matrix::translation(0., 1., -1.5).transformed(),
     );
 
-    let mid_sphere_air_pocket = Object::new(
+    let mid_sphere_air_pocket = Object::primitive(
         Shape::Sphere,
         Material::air(),
         Matrix::scaling_uniform(0.6)

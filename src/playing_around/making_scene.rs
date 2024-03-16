@@ -8,56 +8,69 @@ use crate::{
         vector::Vector,
     },
     render::{
-        camera::Camera, canvas::Canvas, color::Color, light::PointLightSource, material::Material,
-        object::shape::Shape, object::Object, pattern::Pattern, world::World,
+        camera::Camera,
+        canvas::Canvas,
+        color::Color,
+        light::PointLightSource,
+        material::Material,
+        object::{shape::Shape, Object},
+        pattern::Pattern,
+        world::World,
     },
 };
 
 pub fn scene_objects() -> Vec<Object> {
-    let mut middle_sphere =
-        Object::with_transformation(Shape::Sphere, Matrix::translation(-0.5, 1., 0.5));
-
-    middle_sphere.set_material(Material {
-        pattern: Pattern::Const(Color::new(0.1, 1., 0.5)),
-        diffuse: 0.7,
-        specular: 0.3,
-        ..Default::default()
-    });
-
-    let mut right_sphere = Object::new(
+    let middle_sphere = Object::primitive(
         Shape::Sphere,
-        middle_sphere.material().clone(),
+        Material {
+            pattern: Pattern::Const(Color::new(0.1, 1., 0.5)),
+            diffuse: 0.7,
+            specular: 0.3,
+            ..Default::default()
+        },
+        Matrix::translation(-0.5, 1., 0.5),
+    );
+
+    let right_sphere = Object::primitive(
+        Shape::Sphere,
+        Material {
+            pattern: Pattern::Const(Color::new(0.5, 1., 0.1)),
+            ..middle_sphere.material_unwrapped().clone()
+        },
         Matrix::scaling_uniform(0.5)
             .translate(1.5, 0.5, -0.5)
             .transformed(),
     );
-    right_sphere.material_mut().pattern = Pattern::Const(Color::new(0.5, 1., 0.1));
 
-    let mut left_sphere = Object::with_transformation(
+    let left_sphere = Object::primitive(
         Shape::Sphere,
+        Material {
+            pattern: Pattern::Const(Color::new(1., 0.8, 0.1)),
+            diffuse: 0.7,
+            specular: 0.3,
+            ..Default::default()
+        },
         Matrix::scaling_uniform(0.33)
             .translate(-1.5, 0.33, -0.75)
             .transformed(),
     );
-
-    left_sphere.set_material(Material {
-        pattern: Pattern::Const(Color::new(1., 0.8, 0.1)),
-        diffuse: 0.7,
-        specular: 0.3,
-        ..Default::default()
-    });
-
     vec![middle_sphere, right_sphere, left_sphere]
 }
 
 pub fn scene_walls() -> Vec<Object> {
-    let mut floor = Object::with_transformation(Shape::Sphere, Matrix::scaling(10., 0.01, 10.));
-    floor.material_mut().specular = 0.;
-    floor.material_mut().pattern = Pattern::Const(Color::new(1., 0.9, 0.9));
-
-    let left_wall = Object::new(
+    let floor = Object::primitive(
         Shape::Sphere,
-        floor.material().clone(),
+        Material {
+            specular: 0.,
+            pattern: Pattern::Const(Color::new(1., 0.9, 0.9)),
+            ..Default::default()
+        },
+        Matrix::scaling(10., 0.01, 10.),
+    );
+
+    let left_wall = Object::primitive(
+        Shape::Sphere,
+        floor.material_unwrapped().clone(),
         Matrix::scaling(10., 0.01, 10.)
             .rotate_x(FRAC_PI_2)
             .rotate_y(-FRAC_PI_4)
@@ -65,9 +78,9 @@ pub fn scene_walls() -> Vec<Object> {
             .transformed(),
     );
 
-    let right_wall = Object::new(
+    let right_wall = Object::primitive(
         Shape::Sphere,
-        floor.material().clone(),
+        floor.material_unwrapped().clone(),
         Matrix::scaling(10., 0.01, 10.)
             .rotate_x(FRAC_PI_2)
             .rotate_y(FRAC_PI_4)

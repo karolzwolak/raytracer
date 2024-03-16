@@ -8,8 +8,8 @@ use crate::{
 };
 
 use super::{
-    bounding_box::BoundingBox, cone::Cone, cube::UnitCube, cylinder::Cylinder, group::ObjectGroup,
-    plane::PlaneXZ, smooth_triangle::SmoothTriangle, sphere::UnitSphere,
+    bounding_box::BoundingBox, cone::Cone, cube::UnitCube, cylinder::Cylinder, plane::PlaneXZ,
+    smooth_triangle::SmoothTriangle, sphere::UnitSphere,
 };
 
 #[derive(Clone, Debug)]
@@ -26,7 +26,6 @@ pub enum Shape {
     Cone(Cone),
     Triangle(Triangle),
     SmoothTriangle(SmoothTriangle),
-    Group(ObjectGroup),
 }
 
 impl Shape {
@@ -43,9 +42,6 @@ impl Shape {
             Shape::Cone(cone) => cone.local_normal_at(object_point),
             Shape::Triangle(triangle) => triangle.normal(),
             Shape::SmoothTriangle(triangle) => triangle.local_normal_at(i),
-            Shape::Group(_) => {
-                unimplemented!("Internal bug: this function should not be called on a group")
-            }
         }
     }
     pub fn local_intersect(&self, object_ray: &Ray, collector: &mut IntersectionCollector) {
@@ -57,9 +53,6 @@ impl Shape {
             Shape::Cone(cone) => cone.local_intersect(object_ray, collector),
             Shape::Triangle(triangle) => triangle.local_intersect(object_ray, collector),
             Shape::SmoothTriangle(triangle) => triangle.local_intersect(object_ray, collector),
-            Shape::Group(_) => {
-                unimplemented!("Internal bug: this function should not be called on a group")
-            }
         }
     }
     pub fn bounding_box(&self) -> BoundingBox {
@@ -71,7 +64,6 @@ impl Shape {
             Shape::Cone(cone) => cone.bounding_box(),
             Shape::Triangle(triangle) => triangle.bounding_box(),
             Shape::SmoothTriangle(triangle) => triangle.bounding_box(),
-            Shape::Group(group) => group.bounding_box().clone(),
         }
     }
     pub fn cylinder(height: f64, closed: bool) -> Self {
@@ -111,12 +103,5 @@ impl Shape {
         n3: Vector,
     ) -> Self {
         Shape::SmoothTriangle(SmoothTriangle::new(p1, p2, p3, n1, n2, n3))
-    }
-
-    pub fn as_group(&self) -> Option<&ObjectGroup> {
-        match self {
-            Shape::Group(group) => Some(group),
-            _ => None,
-        }
     }
 }

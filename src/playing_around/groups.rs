@@ -11,14 +11,14 @@ use crate::{
         canvas::Canvas,
         color::Color,
         light::PointLightSource,
-        object::{cylinder::Cylinder, group::ObjectGroup, shape::Shape, Object},
+        object::{cylinder::Cylinder, group::ObjectGroup, shape::Shape, Object, PrimitiveObject},
         world::World,
     },
 };
 
 fn hexagon() -> Object {
-    let corner_sphere = Object::sphere(Point::new(0., 0., -1.), 0.25);
-    let cylinder = Object::with_transformation(
+    let corner_sphere = Object::from(PrimitiveObject::sphere(Point::new(0., 0., -1.), 0.25));
+    let cylinder = Object::primitive_with_transformation(
         Shape::Cylinder(Cylinder {
             y_min: 0.,
             y_max: 1.,
@@ -32,7 +32,7 @@ fn hexagon() -> Object {
     );
     let mut hexagon_group = ObjectGroup::new(vec![cylinder.clone(), corner_sphere.clone()]);
     hexagon_group.add_bounding_box_as_obj();
-    let hexagon_part = Object::with_shape(hexagon_group.into_shape());
+    let hexagon_part = Object::from_group(hexagon_group);
 
     let mut hexagon = ObjectGroup::new(vec![hexagon_part.clone()]);
 
@@ -40,7 +40,7 @@ fn hexagon() -> Object {
         hexagon.transform(&Matrix::rotation_y(consts::FRAC_PI_3));
         hexagon.add_child(hexagon_part.clone());
     }
-    Object::with_shape(hexagon.into_shape())
+    Object::from_group(hexagon)
 }
 
 pub fn run(width: usize, height: usize) -> Canvas {

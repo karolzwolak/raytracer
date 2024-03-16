@@ -6,7 +6,7 @@ use crate::{
         intersection::IntersectionCollection,
         light::{color_of_illuminated_point, PointLightSource},
         material::Material,
-        object::Object,
+        object::{Object, PrimitiveObject},
         pattern::Pattern,
         ray::Ray,
     },
@@ -35,7 +35,7 @@ pub fn run() -> Canvas {
         ..Default::default()
     };
 
-    let mut sphere_obj = Object::sphere(Point::new(0., 0., 0.), radius);
+    let mut sphere_obj = Object::from(PrimitiveObject::sphere(Point::new(0., 0., 0.), radius));
     sphere_obj.set_material(material);
 
     let light = PointLightSource::new(

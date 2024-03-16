@@ -51,7 +51,7 @@ impl ObjParser {
                 .windows(2)
                 .skip(1)
                 .map(|slice| match slice {
-                    [id1, id2] => Object::with_shape(Shape::triangle(
+                    [id1, id2] => Object::primitive_with_shape(Shape::triangle(
                         v,
                         self.vertices[*id1],
                         self.vertices[*id2],
@@ -75,7 +75,7 @@ impl ObjParser {
                         let v2 = *pair.0;
                         let n2 = *pair.1;
 
-                        Object::with_shape(Shape::smooth_triangle(
+                        Object::primitive_with_shape(Shape::smooth_triangle(
                             v,
                             self.vertices[v1],
                             self.vertices[v2],
@@ -174,15 +174,13 @@ impl ObjParser {
 
     pub fn into_group(mut self) -> ObjectGroup {
         self.groups.into_iter().for_each(|(_, group)| {
-            self.main_group.add_child(group.into_object());
+            self.main_group.add_child(group.into());
         });
         self.main_group.clone()
     }
 
     pub fn parse_to_object(source: String) -> Result<Object, String> {
-        Self::default()
-            .parse(source)
-            .map(|group| group.into_object())
+        Self::default().parse(source).map(|group| group.into())
     }
 }
 
@@ -231,8 +229,8 @@ mod tests {
     }
 
     fn _obj_as_triangle(object: &Object) -> Option<Triangle> {
-        match object.shape() {
-            Shape::Triangle(t) => Some(t.clone()),
+        match object.as_primitive().map(|p| p.shape()) {
+            Some(Shape::Triangle(t)) => Some(t.clone()),
             _ => None,
         }
     }
@@ -331,8 +329,8 @@ mod tests {
         let children = group.children();
 
         assert_eq!(children.len(), 2);
-        assert!(matches!(children[0].shape(), &Shape::Group(_)));
-        assert!(matches!(children[1].shape(), &Shape::Group(_)));
+        assert!(children[0].as_group().is_some());
+        assert!(children[1].as_group().is_some());
     }
 
     #[test]
@@ -353,8 +351,8 @@ mod tests {
     }
 
     fn _obj_as_smooth_triangle(object: &Object) -> SmoothTriangle {
-        match object.shape() {
-            Shape::SmoothTriangle(t) => t.clone(),
+        match object.as_primitive().map(|p| p.shape()) {
+            Some(Shape::SmoothTriangle(t)) => t.clone(),
             _ => unreachable!(),
         }
     }

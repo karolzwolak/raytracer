@@ -18,7 +18,7 @@ use crate::{
 };
 
 pub fn run(width: usize, height: usize) -> Canvas {
-    let skybox = Object::new(
+    let skybox = Object::primitive(
         Shape::Cube,
         Material::with_pattern(Pattern::Const(Color::new(0.2, 0.35, 0.78))),
         Matrix::scaling_uniform(10.),
@@ -29,14 +29,14 @@ pub fn run(width: usize, height: usize) -> Canvas {
         .translate(-0.5, 0., 0.)
         .transformed();
 
-    let arrow_body = Object::new(
+    let arrow_body = Object::primitive(
         Shape::unit_cylinder(),
         arrow_material.clone(),
         Matrix::scaling(0.1, 1., 0.1)
             .transform_chain(&arrow_rotation)
             .transformed(),
     );
-    let arrow_head = Object::new(
+    let arrow_head = Object::primitive(
         Shape::unit_cone(),
         arrow_material,
         Matrix::scaling(0.2, 0.5, 0.2)
@@ -45,7 +45,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let ice_cream_cone = Object::new(
+    let ice_cream_cone = Object::primitive(
         Shape::cone(1., 0.5, false),
         Material::with_pattern(Pattern::Const(Color::new(0.67, 0.57, 0.38))),
         Matrix::scaling(0.5, 1., 0.5)
@@ -53,7 +53,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let vanilla_scoop = Object::new(
+    let vanilla_scoop = Object::primitive(
         Shape::Sphere,
         Material::with_pattern(Pattern::Const(Color::new(0.95, 0.89, 0.67))),
         Matrix::scaling(0.5, 0.5, 0.5)
@@ -61,7 +61,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
             .transformed(),
     );
 
-    let choc_scoop = Object::new(
+    let choc_scoop = Object::primitive(
         Shape::Sphere,
         Material::with_pattern(Pattern::Const(Color::new(0.48, 0.24, 0.))),
         Matrix::scaling(0.5, 0.5, 0.5)

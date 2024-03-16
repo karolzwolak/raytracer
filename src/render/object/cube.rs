@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn ray_intersects_cube() {
-        let cube = Object::with_shape(Shape::Cube);
+        let cube = Object::primitive_with_shape(Shape::Cube);
         let examples = vec![
             Ray::new(Point::new(5., 0.5, 0.), Vector::new(-1., 0., 0.)),
             Ray::new(Point::new(-5., 0.5, 0.), Vector::new(1., 0., 0.)),
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn ray_misses_cube() {
-        let cube = Object::with_shape(Shape::Cube);
+        let cube = Object::primitive_with_shape(Shape::Cube);
 
         let rays = vec![
             Ray::new(Point::new(-2., 0., 0.), Vector::new(0.2673, 0.5345, 0.8018)),
