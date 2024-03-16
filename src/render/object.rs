@@ -77,6 +77,19 @@ impl Object {
             .transform_new(&self.transformation)
     }
 
+    pub fn normalize_and_center(&mut self) {
+        let bb = self.bounding_box();
+        let center = bb.center();
+        let diff = bb.max - bb.min;
+        let length = diff.x().max(diff.y()).max(diff.z());
+
+        self.transform(
+            Matrix::identity()
+                .translate(-center.x(), -center.y(), -center.z())
+                .scale_uniform(2. / length),
+        );
+    }
+
     pub fn with_shape(shape: Shape) -> Self {
         Self::with_transformation(shape, Matrix::identity())
     }
