@@ -151,6 +151,10 @@ impl BoundingBox {
             },
         )
     }
+    pub fn is_infinitely_large(&self) -> bool {
+        let len = self.max - self.min;
+        len.magnitude() == f64::INFINITY
+    }
     pub fn split_n(&self, n: usize) -> Vec<BoundingBox> {
         let (a, b) = self.split_along_longest_axis();
         let mut result = vec![a, b];

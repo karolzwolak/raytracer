@@ -68,12 +68,13 @@ impl ObjectGroup {
             self.add_child(child);
         }
     }
-    // TODO: avoid infinite recursion when trying to partition infinititely large objects
     fn partition_iter(root: &mut ObjectGroup) {
         let mut group_stack = vec![root];
 
         while let Some(group) = group_stack.pop() {
-            if group.primitive_count < Self::PARTITION_THRESHOLD {
+            if group.primitive_count < Self::PARTITION_THRESHOLD
+                || group.bounding_box().is_infinitely_large()
+            {
                 continue;
             }
             let mut boxes = group.bounding_box().split_n(7);
