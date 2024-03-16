@@ -61,7 +61,7 @@ impl World {
                 group.partition();
             }
         }
-        println!("Partitioning time: {:?}", now.elapsed());
+        println!("partitioning time: {:?}", now.elapsed());
         Self {
             objects,
             light_sources,
@@ -139,9 +139,23 @@ impl World {
     pub fn render(&self, camera: &Camera) -> Canvas {
         let mut image = camera.canvas();
 
+        let primitive_count = self
+            .objects
+            .iter()
+            .map(|obj| obj.primitive_count())
+            .sum::<usize>();
+
+        let ray_count = image.width() * image.height() * self.supersampling_offsets.len().pow(2);
+
+        println!("rendering {} objects", primitive_count);
+        println!("with {} rays", ray_count);
+
         let now = std::time::Instant::now();
+
         image.set_each_pixel(|x: usize, y: usize| self.color_at_pixel(x, y, camera));
-        println!("Render time: {:?}", now.elapsed());
+        println!("render time: {:?}", now.elapsed());
+        let rays_per_sec = ray_count as f64 / now.elapsed().as_secs_f64();
+        println!("rays per second: {}", rays_per_sec.round());
         image
     }
 
