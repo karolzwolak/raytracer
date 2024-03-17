@@ -91,9 +91,12 @@ impl Cone {
         }
     }
     pub fn bounding_box(&self) -> BoundingBox {
+        let min = self.y_min.abs();
+        let max = self.y_max.abs();
+        let max_radius = min.max(max);
         BoundingBox {
-            min: Point::new(self.y_min, self.y_min, self.y_min),
-            max: Point::new(self.y_max, self.y_max, self.y_max),
+            min: Point::new(-max_radius, self.y_min, -max_radius),
+            max: Point::new(max_radius, self.y_max, max_radius),
         }
     }
 
