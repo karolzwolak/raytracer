@@ -1,30 +1,51 @@
 use std::{f64::consts, fs};
 
 use crate::{
-    primitive::{matrix::Transform, point::Point, tuple::Tuple},
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+        tuple::Tuple,
+    },
     render::{
-        camera::Camera, canvas::Canvas, color::Color, light::PointLightSource,
-        obj_parser::ObjParser, world::World,
+        camera::Camera,
+        canvas::Canvas,
+        color::Color,
+        light::PointLightSource,
+        material::Material,
+        obj_parser::ObjParser,
+        object::{shape::Shape, Object},
+        pattern::Pattern,
+        world::World,
     },
 };
 
 const FILENAME: &str = "samples/dragon.obj";
 
 pub fn run(width: usize, height: usize) -> Canvas {
-    let light = PointLightSource::new(Point::new(-10., 10., 10.), Color::new(1., 1., 1.));
+    let light = PointLightSource::new(Point::new(1., 3., 1.), Color::new(1., 1., 1.));
 
     let source = fs::read_to_string(FILENAME).unwrap();
     let mut model = ObjParser::parse_to_object(source).unwrap();
     model.normalize_to_longest_dim();
     model.center_above_oy();
+    model.translate(0., -1., -3.);
 
-    model.translate(0., 0., -1.);
-
-    let objects = vec![model];
+    let background = Object::primitive(
+        Shape::Cube,
+        Material::with_pattern(Pattern::checkers(
+            Color::with_uniform_intensity(0.62),
+            Color::with_uniform_intensity(0.7),
+            Some(Matrix::scaling_uniform(0.125)),
+        )),
+        Matrix::scaling_uniform(5.)
+            .translate(0., 4., -4.)
+            .transformed(),
+    );
+    let objects = vec![model, background];
 
     let world = World::new(objects, vec![light], None);
 
-    let camera = Camera::new(width, height, 2. * consts::FRAC_PI_3);
+    let camera = Camera::new(width, height, consts::FRAC_PI_3);
 
     world.render(&camera)
 }
