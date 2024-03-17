@@ -18,6 +18,15 @@ impl Color {
     pub fn with_uniform_intensity(intensity: f64) -> Self {
         Self::new(intensity, intensity, intensity)
     }
+    pub fn with_hex(mut hex: &str) -> Self {
+        if hex.starts_with('#') {
+            hex = &hex[1..];
+        }
+        let r = u8::from_str_radix(&hex[0..2], 16).unwrap() as f64 / 255.;
+        let g = u8::from_str_radix(&hex[2..4], 16).unwrap() as f64 / 255.;
+        let b = u8::from_str_radix(&hex[4..6], 16).unwrap() as f64 / 255.;
+        Self::new(r, g, b)
+    }
     pub fn black() -> Self {
         Self::new(0., 0., 0.)
     }
