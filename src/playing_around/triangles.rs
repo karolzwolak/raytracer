@@ -15,8 +15,9 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let source = fs::read_to_string(FILENAME).unwrap();
     let mut model = ObjParser::parse_to_object(source).unwrap();
+    model.normalize_to_longest_dim();
+    model.center_above_oy();
 
-    model.normalize_and_center();
     model.translate(0., 0., -1.);
 
     let objects = vec![model];

@@ -148,17 +148,25 @@ impl Object {
         }
     }
 
-    pub fn normalize_and_center(&mut self) {
+    pub fn normalize_to_longest_dim(&mut self) {
         let bb = self.bounding_box();
-        let center = bb.center();
         let diff = bb.max - bb.min;
         let length = diff.x().max(diff.y()).max(diff.z());
 
-        self.transform(
-            Matrix::identity()
-                .translate(-center.x(), -center.y(), -center.z())
-                .scale_uniform(2. / length),
-        );
+        self.transform(&Matrix::scaling_uniform(2. / length));
+    }
+
+    pub fn center(&mut self) {
+        let bb = self.bounding_box();
+        let center = bb.center();
+
+        self.transform(&Matrix::translation(-center.x(), -center.y(), -center.z()));
+    }
+
+    pub fn center_above_oy(&mut self) {
+        let bb = self.bounding_box();
+        let center = bb.center();
+        self.transform(&Matrix::translation(-center.x(), -bb.min.y(), -center.z()));
     }
 
     pub fn transformation(&self) -> Matrix {
