@@ -20,7 +20,7 @@ use super::{
 use super::{object::shape::Shape, pattern::Pattern};
 
 pub struct World {
-    objects: Object,
+    objects: ObjectGroup,
     light_sources: Vec<PointLightSource>,
     /// Depth of recursive calls for reflections and refractions
     /// 0 means no reflections or refractions
@@ -63,7 +63,7 @@ impl World {
         println!("partitioning time: {:?}", now.elapsed());
 
         Self {
-            objects: objects.into(),
+            objects,
             light_sources,
             supersampling_offsets: Self::gen_supersampling_offsets(
                 supersampling_level.unwrap_or(Self::DEFAULT_SUPERSAMPLING_LEVEL),
@@ -90,7 +90,7 @@ impl World {
 
     pub fn testing(objects: Vec<Object>, light_sources: Vec<PointLightSource>) -> Self {
         Self {
-            objects: Object::group_with_children(objects),
+            objects: ObjectGroup::new(objects),
             light_sources,
             supersampling_offsets: Self::gen_supersampling_offsets(0),
             max_recursive_depth: Self::MAX_RECURSIVE_DEPTH,
@@ -102,15 +102,15 @@ impl World {
     }
 
     pub fn objects(&self) -> &[Object] {
-        self.objects.as_group().unwrap().children()
+        self.objects.children()
     }
 
     pub fn objects_mut(&mut self) -> &mut [Object] {
-        self.objects.as_group_mut().unwrap().children_mut()
+        self.objects.children_mut()
     }
 
     pub fn intersect(&self, ray: Ray) -> IntersectionCollection {
-        IntersectionCollection::from_ray_and_obj(ray, &self.objects)
+        IntersectionCollection::from_group(ray, &self.objects)
     }
 
     fn color_at_depth(&self, ray: Ray, depth: usize) -> Color {
@@ -124,16 +124,12 @@ impl World {
     }
 
     pub fn add_obj(&mut self, obj: Object) {
-        self.objects.as_group_mut().unwrap().add_child(obj);
+        self.objects.add_child(obj);
     }
 
     pub fn add_light(&mut self, light_source: PointLightSource) {
         self.light_sources.push(light_source);
     }
-
-    // pub fn set_objects(&mut self, objects: Vec<Object>) {
-    //     self.objects = objects;
-    // }
 
     pub fn set_light_sources(&mut self, light_sources: Vec<PointLightSource>) {
         self.light_sources = light_sources;

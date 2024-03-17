@@ -5,7 +5,7 @@ use crate::{
 
 use super::{
     material::{Material, AIR_REFRACTIVE_INDEX},
-    object::Object,
+    object::{group::ObjectGroup, Object},
     ray::Ray,
 };
 
@@ -290,6 +290,12 @@ impl<'a> IntersectionCollection<'a> {
                 .map(|time| Intersection::new(time, object))
                 .collect(),
         )
+    }
+    pub fn from_group(ray: Ray, group: &'a ObjectGroup) -> Self {
+        let mut collector = IntersectionCollector::new();
+        group.intersect(&ray, &mut collector);
+
+        Self::new_with_sorted_vec(ray, collector.collect_sorted())
     }
     pub fn from_ray_and_mult_objects(ray: Ray, objects: &'a [Object]) -> Self {
         let mut collector = IntersectionCollector::new();
