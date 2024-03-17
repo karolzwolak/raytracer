@@ -39,6 +39,7 @@ pub struct World {
 impl World {
     const MAX_RECURSIVE_DEPTH: usize = 5 - 1;
     const DEFAULT_SUPERSAMPLING_LEVEL: usize = 2;
+    pub const MAX_DIM: f64 = 10.0e6;
 
     fn gen_supersampling_offsets(level: usize) -> Vec<f64> {
         match level {

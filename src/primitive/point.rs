@@ -55,6 +55,16 @@ impl Point {
             self.z.round() as usize,
         ))
     }
+    pub fn limit_upper(&mut self, limit: f64) {
+        self.x = self.x.min(limit);
+        self.y = self.y.min(limit);
+        self.z = self.z.min(limit);
+    }
+    pub fn limit_lower(&mut self, limit: f64) {
+        self.x = self.x.max(limit);
+        self.y = self.y.max(limit);
+        self.z = self.z.max(limit);
+    }
 }
 
 impl PartialEq for Point {

@@ -11,6 +11,7 @@ use crate::{
         object::{shape::Shape, Object},
         pattern::Pattern,
         ray::Ray,
+        world::World,
     },
 };
 
@@ -46,6 +47,7 @@ impl Transform for BoundingBox {
 }
 
 impl BoundingBox {
+    const MAX_DIM: f64 = World::MAX_DIM;
     pub fn empty() -> Self {
         Self {
             min: Point::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
@@ -53,7 +55,12 @@ impl BoundingBox {
         }
     }
     pub fn is_empty(&self) -> bool {
-        self.min.x() > self.max.x() && self.min.y() > self.max.y() && self.min.z() > self.max.z()
+        self.min.x() == f64::INFINITY
+            && self.min.y() == f64::INFINITY
+            && self.min.z() == f64::INFINITY
+            && self.max.x() == f64::NEG_INFINITY
+            && self.max.y() == f64::NEG_INFINITY
+            && self.max.z() == f64::NEG_INFINITY
     }
     pub fn add_point(&mut self, point: Point) {
         self.min = Point::new(
@@ -86,6 +93,18 @@ impl BoundingBox {
         } else {
             (tmax, tmin)
         }
+    }
+    pub fn limit_dimensions(&mut self) {
+        self.max.limit_upper(Self::MAX_DIM);
+        self.min.limit_lower(-Self::MAX_DIM);
+        let inf = self.is_infinitely_large();
+        if inf {
+            println!("{:?}", self);
+        }
+        assert!(!self.is_infinitely_large());
+    }
+    pub fn is_infinitely_large(&self) -> bool {
+        !self.is_empty() && (self.max - self.min).magnitude() == f64::INFINITY
     }
     pub fn is_intersected(&self, ray: &Ray) -> bool {
         let (xtmin, xtmax) = self.axis_intersection_times(
@@ -150,10 +169,6 @@ impl BoundingBox {
                 max: self.max,
             },
         )
-    }
-    pub fn is_infinitely_large(&self) -> bool {
-        let len = self.max - self.min;
-        len.magnitude() == f64::INFINITY
     }
     pub fn split_n(&self, n: usize) -> Vec<BoundingBox> {
         let (a, b) = self.split_along_longest_axis();

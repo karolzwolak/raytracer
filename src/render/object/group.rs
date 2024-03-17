@@ -72,41 +72,45 @@ impl ObjectGroup {
             self.add_child(child);
         }
     }
+    fn divide(&mut self) -> (Vec<BoundingBox>, Vec<Vec<Object>>) {
+        let mut boxes = self.bounding_box().split_n(7);
+        let mut vectors = vec![vec![]; boxes.len()];
+
+        std::mem::take(&mut self.children)
+            .into_iter()
+            .for_each(|child| {
+                let mut child_box = child.bounding_box();
+                child_box.limit_dimensions();
+
+                let mut min_id = 0;
+                let mut min_d = f64::INFINITY;
+                for (id, b) in boxes.iter().enumerate() {
+                    let d = b.distance(&child_box);
+                    if d < min_d {
+                        min_id = id;
+                        min_d = d;
+                    }
+                }
+
+                let dist_to_group = self.bounding_box.distance(&child_box);
+                if dist_to_group < min_d || dist_to_group.approx_eq(&min_d) {
+                    self.children.push(child);
+                } else {
+                    boxes[min_id].add_bounding_box(&child_box);
+                    vectors[min_id].push(child);
+                }
+            });
+        (boxes, vectors)
+    }
     fn partition_iter(root: &mut ObjectGroup) {
         let mut group_stack = vec![root];
 
         while let Some(group) = group_stack.pop() {
-            if group.primitive_count < Self::PARTITION_THRESHOLD
-                || group.bounding_box().is_infinitely_large()
-            {
+            group.bounding_box.limit_dimensions();
+            if group.primitive_count < Self::PARTITION_THRESHOLD {
                 continue;
             }
-            let mut boxes = group.bounding_box().split_n(7);
-            let mut vectors = vec![vec![]; boxes.len()];
-
-            std::mem::take(&mut group.children)
-                .into_iter()
-                .for_each(|child| {
-                    let child_box = child.bounding_box();
-
-                    let mut min_id = 0;
-                    let mut min_d = f64::INFINITY;
-                    for (id, b) in boxes.iter().enumerate() {
-                        let d = b.distance(&child_box);
-                        if d < min_d {
-                            min_id = id;
-                            min_d = d;
-                        }
-                    }
-
-                    let dist_to_group = group.bounding_box.distance(&child_box);
-                    if dist_to_group < min_d || dist_to_group.approx_eq(&min_d) {
-                        group.children.push(child);
-                    } else {
-                        boxes[min_id].add_bounding_box(&child_box);
-                        vectors[min_id].push(child);
-                    }
-                });
+            let (boxes, vectors) = group.divide();
 
             group.children.extend(
                 vectors

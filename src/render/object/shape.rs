@@ -56,7 +56,7 @@ impl Shape {
         }
     }
     pub fn bounding_box(&self) -> BoundingBox {
-        match self {
+        let mut bbox = match self {
             Shape::Sphere => UnitSphere::bounding_box(),
             Shape::Plane => PlaneXZ::bounding_box(),
             Shape::Cube => UnitCube::bounding_box(),
@@ -64,7 +64,9 @@ impl Shape {
             Shape::Cone(cone) => cone.bounding_box(),
             Shape::Triangle(triangle) => triangle.bounding_box(),
             Shape::SmoothTriangle(triangle) => triangle.bounding_box(),
-        }
+        };
+        bbox.limit_dimensions();
+        bbox
     }
     pub fn cylinder(height: f64, closed: bool) -> Self {
         Shape::Cylinder(Cylinder::with_height(height, closed))
