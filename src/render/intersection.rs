@@ -294,8 +294,8 @@ impl<'a> IntersectionCollection<'a> {
     pub fn from_group(ray: Ray, group: &'a ObjectGroup) -> Self {
         let mut collector = IntersectionCollector::new();
         group.intersect(&ray, &mut collector);
-
-        Self::new_with_sorted_vec(ray, collector.collect_sorted())
+        let xs = collector.collect_sorted();
+        Self::new_with_sorted_vec(ray, xs)
     }
     pub fn from_ray_and_mult_objects(ray: Ray, objects: &'a [Object]) -> Self {
         let mut collector = IntersectionCollector::new();
