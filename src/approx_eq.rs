@@ -1,5 +1,5 @@
-pub const EPSILON: f64 = 1.0e-5;
-pub const LOW_PREC_EPSILON: f64 = EPSILON * 10.;
+pub const EPSILON: f64 = 1.0e-8;
+pub const LOW_PREC_EPSILON: f64 = 1.0e-4;
 
 pub trait ApproxEq<Rhs = Self> {
     fn approx_eq_epsilon(&self, rhs: &Rhs, epsilon: f64) -> bool;
@@ -17,6 +17,22 @@ impl ApproxEq for f64 {
     fn approx_eq_epsilon(&self, rhs: &Self, epsilon: f64) -> bool {
         self == rhs || (*self - *rhs).abs() < epsilon
     }
+}
+
+#[macro_export]
+macro_rules! assert_approx_eq_low_prec {
+    ($left:expr, $right:expr) => {
+        match (&$left, &$right) {
+            (left, right) => {
+                if !left.approx_eq_low_prec(right) {
+                    panic!(
+                        "assertion failed: `(left ≈ right)`\n  left: `{:?}`,\n right: `{:?}`",
+                        left, right
+                    );
+                }
+            }
+        }
+    };
 }
 
 #[cfg(test)]
