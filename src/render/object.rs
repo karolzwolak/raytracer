@@ -9,11 +9,14 @@ pub mod smooth_triangle;
 pub mod sphere;
 pub mod triangle;
 
-use crate::primitive::{
-    matrix::{Matrix, Transform},
-    point::Point,
-    tuple::Tuple,
-    vector::Vector,
+use crate::{
+    approx_eq::ApproxEq,
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+        tuple::Tuple,
+        vector::Vector,
+    },
 };
 
 use self::{bounding_box::BoundingBox, group::ObjectGroup, shape::Shape};
@@ -173,7 +176,7 @@ impl Object {
 
     pub fn transformation(&self) -> Matrix {
         match self {
-            Self::Primitive(obj) => obj.transformation,
+            Self::Primitive(obj) => obj.transformation.unwrap_or_default(),
             Self::Group(_) => Matrix::identity(),
         }
     }
@@ -221,8 +224,8 @@ impl Object {
 pub struct PrimitiveObject {
     shape: Shape,
     material: Material,
-    transformation: Matrix,
-    transformation_inverse: Matrix,
+    transformation: Option<Matrix>,
+    transformation_inverse: Option<Matrix>,
 }
 
 impl PrimitiveObject {
@@ -230,17 +233,21 @@ impl PrimitiveObject {
         let mut res = PrimitiveObject {
             shape,
             material,
-            transformation: Matrix::identity(),
-            transformation_inverse: Matrix::identity(),
+            transformation: None,
+            transformation_inverse: None,
         };
-        res.transform(&transformation);
+        if !transformation.approx_eq(&Matrix::identity()) {
+            res.transform(&transformation);
+        }
         res
     }
 
     pub fn bounding_box(&self) -> BoundingBox {
-        self.shape
-            .bounding_box()
-            .transform_new(&self.transformation)
+        let mut bbox = self.shape.bounding_box();
+        if let Some(transformation) = self.transformation {
+            bbox = bbox.transform_new(&transformation);
+        }
+        bbox
     }
 
     pub fn with_shape(shape: Shape) -> Self {
@@ -265,7 +272,7 @@ impl PrimitiveObject {
         &self.shape
     }
     pub fn transformation_inverse(&self) -> Matrix {
-        self.transformation_inverse
+        self.transformation_inverse.unwrap_or_default()
     }
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
         self.normal_vector_at_with_intersection(world_point, None)
@@ -291,14 +298,11 @@ impl PrimitiveObject {
     }
 
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
-        match self.shape {
-            Shape::Triangle(_) | Shape::SmoothTriangle(_) => {
-                self.shape.local_intersect(world_ray, collector)
-            }
-            _ => self.shape.local_intersect(
-                &world_ray.transform_new(&self.transformation_inverse),
-                collector,
-            ),
+        match self.transformation_inverse {
+            None => self.shape.local_intersect(world_ray, collector),
+            Some(transformation_inv) => self
+                .shape
+                .local_intersect(&world_ray.transform_new(&transformation_inv), collector),
         };
     }
 
@@ -317,16 +321,21 @@ impl PrimitiveObject {
 
 impl Transform for PrimitiveObject {
     fn transform(&mut self, matrix: &Matrix) {
-        match &mut self.shape {
-            Shape::Triangle(t) => t.transform(matrix),
-            Shape::SmoothTriangle(t) => t.transform(matrix),
-            _ => {
-                self.transformation.transform(matrix);
-                self.transformation_inverse = self
-                    .transformation
-                    .inverse()
-                    .expect("Object with singular tranfromation matrix cannot be rendered");
+        match (&mut self.shape, &mut self.transformation) {
+            (Shape::Triangle(t), _) => t.transform(matrix),
+            (Shape::SmoothTriangle(t), _) => t.transform(matrix),
+            (_, Some(transformation)) => {
+                transformation.transform(matrix);
             }
+            (_, None) => {
+                self.transformation = Some(*matrix);
+            }
+        }
+        if let Some(t) = self.transformation {
+            self.transformation_inverse = Some(
+                t.inverse()
+                    .expect("Object with singular tranfromation matrix cannot be rendered"),
+            );
         }
     }
 
