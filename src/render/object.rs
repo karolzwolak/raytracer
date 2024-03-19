@@ -176,7 +176,7 @@ impl Object {
 
     pub fn transformation(&self) -> Matrix {
         match self {
-            Self::Primitive(obj) => obj.transformation.unwrap_or_default(),
+            Self::Primitive(obj) => obj.transformation(),
             Self::Group(_) => Matrix::identity(),
         }
     }
@@ -221,12 +221,38 @@ impl Object {
 }
 
 #[derive(Clone, Debug)]
+struct TranspformationMatrices {
+    matrix: Matrix,
+    inverse: Matrix,
+}
+
+impl TranspformationMatrices {
+    fn new(transformation: Matrix) -> Self {
+        let transformation_inverse = transformation.inverse().unwrap();
+        Self {
+            matrix: transformation,
+            inverse: transformation_inverse,
+        }
+    }
+}
+
+impl Transform for TranspformationMatrices {
+    fn transform(&mut self, matrix: &Matrix) {
+        self.matrix.transform(matrix);
+        self.inverse = self.matrix.inverse().unwrap();
+    }
+
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        let new_matrix = self.matrix.transform_new(matrix);
+        Self::new(new_matrix)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct PrimitiveObject {
     shape: Shape,
     material: Material,
-    transformation: Option<Matrix>,
-    transformation_inverse: Option<Matrix>,
-    transformation_inv_transpose: Option<Matrix>,
+    transformations: Option<TranspformationMatrices>,
 }
 
 impl PrimitiveObject {
@@ -234,9 +260,7 @@ impl PrimitiveObject {
         let mut res = PrimitiveObject {
             shape,
             material,
-            transformation: None,
-            transformation_inverse: None,
-            transformation_inv_transpose: None,
+            transformations: None,
         };
         if !transformation.approx_eq(&Matrix::identity()) {
             res.transform(&transformation);
@@ -246,8 +270,8 @@ impl PrimitiveObject {
 
     pub fn bounding_box(&self) -> BoundingBox {
         let mut bbox = self.shape.bounding_box();
-        if let Some(transformation) = self.transformation {
-            bbox = bbox.transform_new(&transformation);
+        if let Some(t) = &self.transformations {
+            bbox = bbox.transform_new(&t.matrix);
         }
         bbox
     }
@@ -274,7 +298,16 @@ impl PrimitiveObject {
         &self.shape
     }
     pub fn transformation_inverse(&self) -> Matrix {
-        self.transformation_inverse.unwrap_or_default()
+        match &self.transformations {
+            None => Matrix::identity(),
+            Some(t) => t.inverse,
+        }
+    }
+    pub fn transformation(&self) -> Matrix {
+        match &self.transformations {
+            None => Matrix::identity(),
+            Some(t) => t.matrix,
+        }
     }
     pub fn normal_vector_at(&self, world_point: Point) -> Vector {
         self.normal_vector_at_with_intersection(world_point, None)
@@ -284,24 +317,24 @@ impl PrimitiveObject {
         world_point: Point,
         i: Option<&'a Intersection<'a>>,
     ) -> Vector {
-        let world_normal = match self.transformation_inverse {
+        let world_normal = match &self.transformations {
             None => self.shape.local_normal_at(world_point, i),
-            Some(t_inverse) => {
-                let object_point = t_inverse * world_point;
+            Some(t) => {
+                let object_point = t.inverse * world_point;
 
                 let object_normal = self.shape.local_normal_at(object_point, i);
-                self.transformation_inv_transpose.unwrap() * object_normal
+                t.inverse.mul_transposed(object_normal)
             }
         };
         world_normal.normalize()
     }
 
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
-        match self.transformation_inverse {
+        match &self.transformations {
             None => self.shape.local_intersect(world_ray, collector),
-            Some(transformation_inv) => self
+            Some(t) => self
                 .shape
-                .local_intersect(&world_ray.transform_new(&transformation_inv), collector),
+                .local_intersect(&world_ray.transform_new(&t.inverse), collector),
         };
     }
 
@@ -320,22 +353,15 @@ impl PrimitiveObject {
 
 impl Transform for PrimitiveObject {
     fn transform(&mut self, matrix: &Matrix) {
-        match (&mut self.shape, &mut self.transformation) {
+        match (&mut self.shape, &mut self.transformations) {
             (Shape::Triangle(t), _) => t.transform(matrix),
             (Shape::SmoothTriangle(t), _) => t.transform(matrix),
-            (_, Some(transformation)) => {
-                transformation.transform(matrix);
+            (_, Some(t)) => {
+                t.transform(matrix);
             }
             (_, None) => {
-                self.transformation = Some(*matrix);
+                self.transformations = Some(TranspformationMatrices::new(*matrix));
             }
-        }
-        if let Some(t) = self.transformation {
-            self.transformation_inverse = Some(
-                t.inverse()
-                    .expect("Object with singular tranfromation matrix cannot be rendered"),
-            );
-            self.transformation_inv_transpose = Some(t.inverse().unwrap().transpose());
         }
     }
 
