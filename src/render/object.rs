@@ -226,6 +226,7 @@ pub struct PrimitiveObject {
     material: Material,
     transformation: Option<Matrix>,
     transformation_inverse: Option<Matrix>,
+    transformation_inv_transpose: Option<Matrix>,
 }
 
 impl PrimitiveObject {
@@ -235,6 +236,7 @@ impl PrimitiveObject {
             material,
             transformation: None,
             transformation_inverse: None,
+            transformation_inv_transpose: None,
         };
         if !transformation.approx_eq(&Matrix::identity()) {
             res.transform(&transformation);
@@ -282,16 +284,13 @@ impl PrimitiveObject {
         world_point: Point,
         i: Option<&'a Intersection<'a>>,
     ) -> Vector {
-        let world_normal = match self.shape {
-            Shape::Triangle(_) | Shape::SmoothTriangle(_) => {
-                self.shape.local_normal_at(world_point, i)
-            }
-            _ => {
-                let inverse = self.transformation_inverse();
-                let object_point = inverse * world_point;
+        let world_normal = match self.transformation_inverse {
+            None => self.shape.local_normal_at(world_point, i),
+            Some(t_inverse) => {
+                let object_point = t_inverse * world_point;
 
                 let object_normal = self.shape.local_normal_at(object_point, i);
-                inverse.transpose() * object_normal
+                self.transformation_inv_transpose.unwrap() * object_normal
             }
         };
         world_normal.normalize()
@@ -336,6 +335,7 @@ impl Transform for PrimitiveObject {
                 t.inverse()
                     .expect("Object with singular tranfromation matrix cannot be rendered"),
             );
+            self.transformation_inv_transpose = Some(t.inverse().unwrap().transpose());
         }
     }
 
