@@ -190,8 +190,8 @@ impl Default for ObjParser {
     }
 }
 
+#[cfg(test)]
 mod tests {
-
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
