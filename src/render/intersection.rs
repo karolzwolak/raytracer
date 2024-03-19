@@ -354,6 +354,7 @@ mod tests {
     use std::f64::consts;
 
     use crate::approx_eq::{self, ApproxEq};
+    use crate::assert_approx_eq_low_prec;
     use crate::primitive::matrix::Matrix;
     use crate::primitive::point::Point;
     use crate::primitive::tuple::Tuple;
@@ -373,8 +374,8 @@ mod tests {
 
         let data = intersections.vec();
 
-        assert_eq!(data[0].time(), 4.);
-        assert_eq!(data[1].time(), 6.);
+        assert_approx_eq_low_prec!(data[0].time(), 4.);
+        assert_approx_eq_low_prec!(data[1].time(), 6.);
     }
     #[test]
     fn ray_intersects_sphere_at_tangent() {
@@ -386,8 +387,8 @@ mod tests {
 
         let data = intersections.vec();
 
-        assert_eq!(data[0].time(), 5.);
-        assert_eq!(data[0].time(), data[1].time());
+        assert_approx_eq_low_prec!(data[0].time(), 5.);
+        assert_approx_eq_low_prec!(data[0].time(), data[1].time());
     }
     #[test]
     fn ray_misses_sphere() {
@@ -409,8 +410,8 @@ mod tests {
 
         let data = intersections.vec();
 
-        assert_eq!(data[0].time(), -1.);
-        assert_eq!(data[1].time(), 1.);
+        assert_approx_eq_low_prec!(data[0].time(), -1.);
+        assert_approx_eq_low_prec!(data[1].time(), 1.);
     }
     #[test]
     fn intersect_ray_behind_sphere() {
@@ -422,8 +423,8 @@ mod tests {
 
         let data = intersections.vec();
 
-        assert_eq!(data[0].time(), -6.);
-        assert_eq!(data[1].time(), -4.);
+        assert_approx_eq_low_prec!(data[0].time(), -6.);
+        assert_approx_eq_low_prec!(data[1].time(), -4.);
     }
 
     #[test]
@@ -436,7 +437,7 @@ mod tests {
         let hit = intersections.hit();
 
         assert!(hit.is_some());
-        assert_eq!(hit.unwrap().time(), 1.);
+        assert_approx_eq_low_prec!(hit.unwrap().time(), 1.);
     }
     #[test]
     fn intersection_hit_with_negative_time() {
@@ -448,7 +449,7 @@ mod tests {
         let hit = intersections.hit();
 
         assert!(hit.is_some());
-        assert_eq!(hit.unwrap().time(), 1.);
+        assert_approx_eq_low_prec!(hit.unwrap().time(), 1.);
     }
     #[test]
     fn intersection_hit_all_times_negative() {
@@ -472,7 +473,7 @@ mod tests {
         let hit = intersections.hit();
 
         assert!(hit.is_some());
-        assert_eq!(hit.unwrap().time(), 2.);
+        assert_approx_eq_low_prec!(hit.unwrap().time(), 2.);
     }
     #[test]
     fn intersec_comps_outside_obj() {
@@ -492,11 +493,11 @@ mod tests {
         let comps = inter_vec.hit().unwrap().computations(&ray);
 
         assert!(comps.inside_obj());
-        assert_eq!(comps.world_point(), Point::new(0., 0., 1.));
-        assert_eq!(comps.eye_v(), Vector::new(0., 0., -1.));
+        assert_approx_eq_low_prec!(comps.world_point(), Point::new(0., 0., 1.));
+        assert_approx_eq_low_prec!(comps.eye_v(), Vector::new(0., 0., -1.));
 
         // normal is inverted
-        assert_eq!(comps.normal_v(), Vector::new(0., 0., -1.));
+        assert_approx_eq_low_prec!(comps.normal_v(), Vector::new(0., 0., -1.));
     }
 
     #[test]
@@ -541,7 +542,7 @@ mod tests {
         let i = Intersection::new(2. * half_sqrt, &plane);
         let comps = i.computations(&r);
 
-        assert_eq!(comps.reflect_v(), Vector::new(0., half_sqrt, half_sqrt));
+        assert_approx_eq_low_prec!(comps.reflect_v(), Vector::new(0., half_sqrt, half_sqrt));
     }
 
     #[test]
@@ -594,8 +595,8 @@ mod tests {
             let comps =
                 IntersecComputations::from_intersections(&intersections.vec()[i], &intersections);
 
-            assert_eq!(comps.refractive_from, *from);
-            assert_eq!(comps.refractive_to, *to);
+            assert_approx_eq_low_prec!(comps.refractive_from, *from);
+            assert_approx_eq_low_prec!(comps.refractive_to, *to);
         }
     }
 

@@ -385,7 +385,10 @@ pub trait Transform: Sized {
 mod tests {
     use std::f64::consts;
 
-    use crate::primitive::{point::Point, vector::Vector};
+    use crate::{
+        assert_approx_eq_low_prec,
+        primitive::{point::Point, vector::Vector},
+    };
 
     use super::*;
 
@@ -399,13 +402,13 @@ mod tests {
             13.5, 14.5, 15.5, 16.5,
         ]);
 
-        assert_eq!(matrix[(0, 0)], 1.0);
-        assert_eq!(matrix[(0, 3)], 4.0);
-        assert_eq!(matrix[(1, 0)], 5.5);
-        assert_eq!(matrix[(1, 2)], 7.5);
-        assert_eq!(matrix[(2, 2)], 11.0);
-        assert_eq!(matrix[(3, 0)], 13.5);
-        assert_eq!(matrix[(3, 2)], 15.5);
+        assert_approx_eq_low_prec!(matrix[(0, 0)], 1.0);
+        assert_approx_eq_low_prec!(matrix[(0, 3)], 4.0);
+        assert_approx_eq_low_prec!(matrix[(1, 0)], 5.5);
+        assert_approx_eq_low_prec!(matrix[(1, 2)], 7.5);
+        assert_approx_eq_low_prec!(matrix[(2, 2)], 11.0);
+        assert_approx_eq_low_prec!(matrix[(3, 0)], 13.5);
+        assert_approx_eq_low_prec!(matrix[(3, 2)], 15.5);
     }
     #[test]
     fn equality() {
@@ -431,7 +434,7 @@ mod tests {
             5., 6., 7., 8.,
         ]);
 
-        assert_eq!(m1, m2);
+        assert_approx_eq_low_prec!(m1, m2);
         assert_ne!(m1, other);
     }
     #[test]
@@ -458,7 +461,7 @@ mod tests {
             16., 26., 46., 42.,
         ]);
 
-        assert_eq!(m1 * m2, expected);
+        assert_approx_eq_low_prec!(m1 * m2, expected);
     }
     #[test]
     fn mul_assign() {
@@ -485,7 +488,7 @@ mod tests {
         ]);
 
         m1 *= m2;
-        assert_eq!(m1, expected);
+        assert_approx_eq_low_prec!(m1, expected);
     }
     #[test]
     fn mul_with_tuple() {
@@ -498,7 +501,7 @@ mod tests {
         ]);
 
         let p = Point::new(1., 2., 3.);
-        assert_eq!(m * p, Point::new(18., 24., 33.));
+        assert_approx_eq_low_prec!(m * p, Point::new(18., 24., 33.));
     }
     #[test]
     fn identity_matrix() {
@@ -510,8 +513,8 @@ mod tests {
             4., 8., 16., 32.,
         ]);
 
-        assert_eq!(m * Matrix::identity(), m);
-        assert_eq!(Matrix::identity() * m, m);
+        assert_approx_eq_low_prec!(m * Matrix::identity(), m);
+        assert_approx_eq_low_prec!(Matrix::identity() * m, m);
     }
     #[test]
     fn transpose() {
@@ -529,8 +532,8 @@ mod tests {
             3., 0., 5., 5.,
             0., 8., 3., 8.,
         ]);
-        assert_eq!(m.transpose(), expected);
-        assert_eq!(Matrix::identity().transpose(), Matrix::identity());
+        assert_approx_eq_low_prec!(m.transpose(), expected);
+        assert_approx_eq_low_prec!(Matrix::identity().transpose(), Matrix::identity());
     }
     #[test]
     fn mul_transposed() {
@@ -550,8 +553,8 @@ mod tests {
         ]);
 
         let v = Vector::new(1., -2., 0.5);
-        assert_eq!(m.transpose(), transposed);
-        assert_eq!(m.mul_transposed(v), transposed * v);
+        assert_approx_eq_low_prec!(m.transpose(), transposed);
+        assert_approx_eq_low_prec!(m.mul_transposed(v), transposed * v);
     }
     #[test]
     fn inverse() {
@@ -585,8 +588,8 @@ mod tests {
             0.17778 , 0.06667 , -0.26667 , 0.33333 ,
         ]);
 
-        assert_eq!(m1.inverse(), Some(i1));
-        assert_eq!(m2.inverse(), Some(i2));
+        assert_approx_eq_low_prec!(m1.inverse().unwrap(), i1);
+        assert_approx_eq_low_prec!(m2.inverse().unwrap(), i2);
     }
 
     #[test]
@@ -607,7 +610,7 @@ mod tests {
             1., -1., 0., 0.,
         ]);
 
-        assert_eq!(m.inverse(), Some(i));
+        assert_approx_eq_low_prec!(m.inverse().unwrap(), i);
     }
 
     #[test]
@@ -628,13 +631,13 @@ mod tests {
         ]);
 
         let b_inverse = b.inverse().unwrap();
-        assert_eq!(a * b * b_inverse, a);
-        assert_eq!(b * b_inverse, Matrix::identity());
+        assert_approx_eq_low_prec!(a * b * b_inverse, a);
+        assert_approx_eq_low_prec!(b * b_inverse, Matrix::identity());
     }
 
     #[test]
     fn translate_point() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::translation(5., -3., 2.) * Point::new(-3., 4., 5.),
             Point::new(2., 1., 7.)
         );
@@ -642,7 +645,7 @@ mod tests {
 
     #[test]
     fn inverse_translate_point() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::translation(5., -3., 2.).inverse().unwrap() * Point::new(-3., 4., 5.),
             Point::new(-8., 7., 3.)
         );
@@ -650,33 +653,33 @@ mod tests {
     #[test]
     fn translate_vector() {
         let v = Vector::new(-3., 4., 5.);
-        assert_eq!(Matrix::translation(5., -3., 2.) * v, v);
+        assert_approx_eq_low_prec!(Matrix::translation(5., -3., 2.) * v, v);
     }
 
     #[test]
     fn scale_point() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::scaling(2., 3., 4.) * Point::new(-4., 6., 8.),
             Point::new(-8., 18., 32.)
         );
     }
     #[test]
     fn scale_vector() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::scaling(2., 3., 4.) * Vector::new(-4., 6., 8.),
             Vector::new(-8., 18., 32.)
         );
     }
     #[test]
     fn inverse_scale_vector() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::scaling(2., 3., 4.).inverse().unwrap() * Vector::new(-4., 6., 8.),
             Vector::new(-2., 2., 2.)
         );
     }
     #[test]
     fn reflect_by_scale() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::scaling(-1., 1., 1.) * Point::new(2., 3., 4.),
             Point::new(-2., 3., 4.)
         );
@@ -687,23 +690,23 @@ mod tests {
         let full_quarter = Matrix::rotation_x(consts::FRAC_PI_2);
         let p = Point::new(0., 1., 0.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             half_quarter * p,
             Point::new(0., consts::SQRT_2 / 2., consts::SQRT_2 / 2.)
         );
 
-        assert_eq!(full_quarter * p, Point::new(0., 0., 1.));
+        assert_approx_eq_low_prec!(full_quarter * p, Point::new(0., 0., 1.));
     }
     #[test]
     fn inverse_rotate_around_x() {
         let half_quarter = Matrix::rotation_x(consts::FRAC_PI_4);
         let p = Point::new(0., 1., 0.);
 
-        assert_eq!(
-            half_quarter.inverse(),
-            Some(Matrix::rotation_x(-consts::FRAC_PI_4))
+        assert_approx_eq_low_prec!(
+            half_quarter.inverse().unwrap(),
+            Matrix::rotation_x(-consts::FRAC_PI_4)
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             half_quarter.inverse().unwrap() * p,
             Point::new(0., consts::SQRT_2 / 2., -consts::SQRT_2 / 2.)
         );
@@ -714,12 +717,12 @@ mod tests {
         let full_quarter = Matrix::rotation_y(consts::FRAC_PI_2);
         let p = Point::new(0., 0., 1.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             half_quarter * p,
             Point::new(consts::SQRT_2 / 2., 0., consts::SQRT_2 / 2.)
         );
 
-        assert_eq!(full_quarter * p, Point::new(1., 0., 0.));
+        assert_approx_eq_low_prec!(full_quarter * p, Point::new(1., 0., 0.));
     }
     #[test]
     fn rotate_around_z() {
@@ -727,39 +730,39 @@ mod tests {
         let full_quarter = Matrix::rotation_z(consts::FRAC_PI_2);
         let p = Point::new(0., 1., 0.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             half_quarter * p,
             Point::new(-consts::SQRT_2 / 2., consts::SQRT_2 / 2., 0.)
         );
 
-        assert_eq!(full_quarter * p, Point::new(-1., 0., 0.));
+        assert_approx_eq_low_prec!(full_quarter * p, Point::new(-1., 0., 0.));
     }
 
     #[test]
     fn sheare() {
         let p = Point::new(2., 3., 4.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::shearing(1., 0., 0., 0., 0., 0.) * p,
             Point::new(5., 3., 4.)
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::shearing(0., 1., 0., 0., 0., 0.) * p,
             Point::new(6., 3., 4.)
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::shearing(0., 0., 1., 0., 0., 0.) * p,
             Point::new(2., 5., 4.)
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::shearing(0., 0., 0., 1., 0., 0.) * p,
             Point::new(2., 7., 4.)
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::shearing(0., 0., 0., 0., 1., 0.) * p,
             Point::new(2., 3., 6.)
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::shearing(0., 0., 0., 0., 0., 1.) * p,
             Point::new(2., 3., 7.)
         );
@@ -767,7 +770,7 @@ mod tests {
 
     #[test]
     fn transform_matrix() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::identity()
                 .scale(1., 0., -1.,)
                 .translate(2., 10., -0.5)
@@ -782,7 +785,7 @@ mod tests {
         let to = Point::new(0., 0., -1.);
         let up_v = Vector::new(0., 1., 0.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::view_tranformation(from, to, up_v),
             Matrix::identity()
         )
@@ -793,7 +796,7 @@ mod tests {
         let to = Point::new(0., 0., 1.);
         let up_v = Vector::new(0., 1., 0.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::view_tranformation(from, to, up_v),
             Matrix::scaling(-1., 1., -1.)
         )
@@ -804,7 +807,7 @@ mod tests {
         let to = Point::zero();
         let up_v = Vector::new(0., 1., 0.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Matrix::view_tranformation(from, to, up_v),
             Matrix::translation(0., 0., -8.)
         )
@@ -823,11 +826,11 @@ mod tests {
             0.00000, 0.00000, 0.00000, 1.00000,
         ]);
 
-        assert_eq!(Matrix::view_tranformation(from, to, up_v), expected);
+        assert_approx_eq_low_prec!(Matrix::view_tranformation(from, to, up_v), expected);
     }
 
     #[test]
     fn scaling_uniform_scales_by_same_factor_on_all_dimentions() {
-        assert_eq!(Matrix::scaling_uniform(2.), Matrix::scaling(2., 2., 2.));
+        assert_approx_eq_low_prec!(Matrix::scaling_uniform(2.), Matrix::scaling(2., 2., 2.));
     }
 }

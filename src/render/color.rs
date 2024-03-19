@@ -147,11 +147,13 @@ impl ops::Div<f64> for Color {
 
 #[cfg(test)]
 mod tests {
+    use crate::assert_approx_eq_low_prec;
+
     use super::*;
 
     #[test]
     fn add() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Color::new(0.9, 0.6, 0.75) + Color::new(0.7, 0.1, 0.25),
             Color::new(1.6, 0.7, 1.0)
         );
@@ -159,7 +161,7 @@ mod tests {
 
     #[test]
     fn sub() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Color::new(0.9, 0.6, 0.75) - Color::new(0.7, 0.1, 0.25),
             Color::new(0.2, 0.5, 0.5)
         );
@@ -167,15 +169,15 @@ mod tests {
 
     #[test]
     fn mul_f64() {
-        assert_eq!(Color::new(0.2, 0.3, 0.4) * 2., Color::new(0.4, 0.6, 0.8));
+        assert_approx_eq_low_prec!(Color::new(0.2, 0.3, 0.4) * 2., Color::new(0.4, 0.6, 0.8));
     }
     #[test]
     fn div_f64() {
-        assert_eq!(Color::new(0.2, 0.3, 0.4) / 2., Color::new(0.1, 0.15, 0.2));
+        assert_approx_eq_low_prec!(Color::new(0.2, 0.3, 0.4) / 2., Color::new(0.1, 0.15, 0.2));
     }
     #[test]
     fn mul() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Color::new(1., 0.2, 0.4) * Color::new(0.9, 1., 0.1),
             Color::new(0.9, 0.2, 0.04)
         );

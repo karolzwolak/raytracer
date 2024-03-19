@@ -30,6 +30,8 @@ impl PlaneXZ {
 #[cfg(test)]
 mod tests {
     use crate::{
+        assert_approx_eq_low_prec,
+        approx_eq::ApproxEq,
         primitive::{point::Point, tuple::Tuple, vector::Vector},
         render::{
             object::{shape::Shape, Object},
@@ -59,9 +61,9 @@ mod tests {
 
         let expected = Vector::new(0., 1., 0.);
 
-        assert_eq!(plane.normal_vector_at(Point::new(0., 0., 0.,)), expected);
-        assert_eq!(plane.normal_vector_at(Point::new(10., 0., -10.,)), expected);
-        assert_eq!(plane.normal_vector_at(Point::new(-5., 0., 150.,)), expected);
+        assert_approx_eq_low_prec!(plane.normal_vector_at(Point::new(0., 0., 0.,)), expected);
+        assert_approx_eq_low_prec!(plane.normal_vector_at(Point::new(10., 0., -10.,)), expected);
+        assert_approx_eq_low_prec!(plane.normal_vector_at(Point::new(-5., 0., 150.,)), expected);
     }
 
     #[test]
@@ -79,7 +81,7 @@ mod tests {
         ];
 
         for (point, expected) in examples {
-            assert_eq!(cube.normal_vector_at(point), expected);
+            assert_approx_eq_low_prec!(cube.normal_vector_at(point), expected);
         }
     }
 }

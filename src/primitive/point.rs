@@ -107,7 +107,7 @@ impl ops::Sub<Vector> for Point {
 
 #[cfg(test)]
 mod tests {
-
+    use crate::assert_approx_eq_low_prec;
     use crate::primitive::matrix::{Matrix, Transform};
 
     use super::*;
@@ -116,23 +116,23 @@ mod tests {
     fn apply_vec() {
         let mut p1 = Point::new(-2., 3., 1.);
         p1.apply_vec(Vector::new(3., -2., 5.));
-        assert_eq!(p1, Point::new(1., 1., 6.));
+        assert_approx_eq_low_prec!(p1, Point::new(1., 1., 6.));
 
         let mut p2 = Point::new(3., 2., 1.);
         p2.apply_vec(-Vector::new(5., 6., 7.));
-        assert_eq!(p2, Point::new(-2., -4., -6.));
+        assert_approx_eq_low_prec!(p2, Point::new(-2., -4., -6.));
     }
 
     #[test]
     fn add_vector() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Point::new(-2., 3., 1.) + Vector::new(3., -2., 5.),
             Point::new(1., 1., 6.)
         );
     }
     #[test]
     fn sub_vector() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Point::new(3., 2., 1.) - Vector::new(5., 6., 7.),
             Point::new(-2., -4., -6.)
         );
@@ -140,7 +140,7 @@ mod tests {
 
     #[test]
     fn sub() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Point::new(3., 2., 1.) - Point::new(5., 6., 7.),
             Vector::new(-2., -4., -6.)
         );
@@ -153,7 +153,7 @@ mod tests {
         base.transform(&transformation);
 
         let expected = Point::new(0., -2., 6.);
-        assert_eq!(base, expected);
-        assert_eq!(p1, expected);
+        assert_approx_eq_low_prec!(base, expected);
+        assert_approx_eq_low_prec!(p1, expected);
     }
 }

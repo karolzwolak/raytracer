@@ -99,6 +99,7 @@ mod tests {
 
     use crate::{
         approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
         primitive::{matrix::Matrix, tuple::Tuple},
         render::{
             intersection::IntersectionCollection,
@@ -120,7 +121,7 @@ mod tests {
         let normal_v = Vector::new(0., 0., -1.);
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 1.),
             Color::new(0.1, 0.1, 0.1)
         );
@@ -134,7 +135,7 @@ mod tests {
         let normal_v = Vector::new(0., 0., -1.);
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(1.9, 1.9, 1.9)
         );
@@ -148,7 +149,7 @@ mod tests {
         let normal_v = Vector::new(0., 0., -1.);
         let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(1.0, 1.0, 1.0)
         );
@@ -163,7 +164,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 10., -10.), Color::white());
 
         let intensity = 0.1 + 0.9 * FRAC_1_SQRT_2;
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(intensity, intensity, intensity)
         );
@@ -178,7 +179,7 @@ mod tests {
         let light = PointLightSource::new(Point::new(0., 10., -10.), Color::white());
 
         let intensity = 1. + 0.9 * FRAC_1_SQRT_2;
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(intensity, intensity, intensity)
         );
@@ -192,7 +193,7 @@ mod tests {
         let normal_v = Vector::new(0., 0., -1.);
         let light = PointLightSource::new(Point::new(0., 0., 10.), Color::white());
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             color_of_illuminated_point(&obj, &light, point, eye_v, normal_v, 0.),
             Color::new(0.1, 0.1, 0.1)
         );
@@ -212,7 +213,7 @@ mod tests {
         let normal_v = Vector::new(0., 0., -1.);
         let light_source = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             color_of_illuminated_point(
                 &obj,
                 &light_source,
@@ -223,7 +224,7 @@ mod tests {
             ),
             Color::white()
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             color_of_illuminated_point(
                 &obj,
                 &light_source,
@@ -248,7 +249,7 @@ mod tests {
         );
         let comps = intersections.hit_computations().unwrap();
 
-        assert_eq!(schlick_reflectance(&comps), 1.);
+        assert_approx_eq_low_prec!(schlick_reflectance(&comps), 1.);
     }
 
     #[test]
@@ -259,7 +260,7 @@ mod tests {
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![-1., 1.], &sphere);
         let comps = intersections.hit_computations().unwrap();
 
-        assert!(schlick_reflectance(&comps).approx_eq(&0.04));
+        assert_approx_eq_low_prec!(schlick_reflectance(&comps), 0.04);
     }
 
     #[test]
@@ -270,6 +271,6 @@ mod tests {
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![1.8589], &sphere);
         let comps = intersections.hit_computations().unwrap();
 
-        assert!(schlick_reflectance(&comps).approx_eq(&0.48873));
+        assert_approx_eq_low_prec!(schlick_reflectance(&comps), 0.48873);
     }
 }

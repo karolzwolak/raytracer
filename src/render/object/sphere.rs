@@ -41,6 +41,8 @@ mod tests {
     use std::{f64::consts::FRAC_1_SQRT_2, f64::consts::PI};
 
     use crate::{
+        approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
         primitive::{
             matrix::{Matrix, Transform},
             point::Point,
@@ -91,7 +93,7 @@ mod tests {
     fn normal_on_sphere_x_axis() {
         let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(1., 0., 0.,)),
             Vector::new(1., 0., 0.)
         );
@@ -100,7 +102,7 @@ mod tests {
     fn normal_on_sphere_y_axis() {
         let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(0., 1., 0.,)),
             Vector::new(0., 1., 0.)
         );
@@ -109,7 +111,7 @@ mod tests {
     fn normal_on_sphere_z_axis() {
         let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(0., 0., 1.,)),
             Vector::new(0., 0., 1.)
         );
@@ -119,7 +121,7 @@ mod tests {
         let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
 
         let frac_sqrt_3_3 = 3_f64.sqrt() / 3.;
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(frac_sqrt_3_3, frac_sqrt_3_3, frac_sqrt_3_3)),
             Vector::new(frac_sqrt_3_3, frac_sqrt_3_3, frac_sqrt_3_3)
         );
@@ -128,7 +130,7 @@ mod tests {
     fn compute_normal_on_translated_sphere() {
         let mut sphere_obj = Object::primitive_with_shape(Shape::Sphere);
         sphere_obj.transform(&Matrix::translation(0., 1., 0.));
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(0., 1. + FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
             Vector::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)
         );
@@ -137,7 +139,7 @@ mod tests {
     fn compute_normal_on_transformed_sphere() {
         let mut sphere_obj = Object::primitive_with_shape(Shape::Sphere);
         sphere_obj.transform(&(Matrix::scaling(1., 0.5, 1.) * Matrix::rotation_z(PI / 5.)));
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
             Vector::new(0., 0.97014, -0.24254)
         );

@@ -102,6 +102,9 @@ impl Material {
 
 #[cfg(test)]
 mod tests {
+    use crate::approx_eq::ApproxEq;
+    use crate::assert_approx_eq_low_prec;
+
     use super::*;
 
     #[test]
@@ -109,12 +112,12 @@ mod tests {
         let m = Material::default();
 
         assert_eq!(m.pattern(), &Pattern::Const(Color::white()));
-        assert_eq!(m.ambient, 0.1);
-        assert_eq!(m.diffuse, 0.9);
-        assert_eq!(m.specular, 0.9);
-        assert_eq!(m.shininess, 200.0);
-        assert_eq!(m.reflectivity, 0.0);
-        assert_eq!(m.transparency, 0.0);
-        assert_eq!(m.refractive_index, AIR_REFRACTIVE_INDEX);
+        assert_approx_eq_low_prec!(m.ambient, 0.1);
+        assert_approx_eq_low_prec!(m.diffuse, 0.9);
+        assert_approx_eq_low_prec!(m.specular, 0.9);
+        assert_approx_eq_low_prec!(m.shininess, 200.0);
+        assert_approx_eq_low_prec!(m.reflectivity, 0.0);
+        assert_approx_eq_low_prec!(m.transparency, 0.0);
+        assert_approx_eq_low_prec!(m.refractive_index, AIR_REFRACTIVE_INDEX);
     }
 }

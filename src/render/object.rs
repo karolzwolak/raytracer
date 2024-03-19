@@ -341,11 +341,13 @@ impl Transform for PrimitiveObject {
 #[cfg(test)]
 mod tests {
 
+    use crate::assert_approx_eq_low_prec;
+
     use super::*;
 
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Object::primitive_with_shape(Shape::Sphere).transformation_inverse(),
             Matrix::identity()
         );
@@ -358,6 +360,6 @@ mod tests {
         let frac_sqrt_3_3 = 3_f64.sqrt() / 3.;
         let normal =
             sphere_obj.normal_vector_at(Point::new(frac_sqrt_3_3, frac_sqrt_3_3, frac_sqrt_3_3));
-        assert_eq!(normal, normal.normalize());
+        assert_approx_eq_low_prec!(normal, normal.normalize());
     }
 }

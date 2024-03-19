@@ -144,13 +144,15 @@ impl ops::Div<f64> for Vector {
 
 #[cfg(test)]
 mod tests {
+    use crate::approx_eq::ApproxEq;
+    use crate::assert_approx_eq_low_prec;
     use std::f64::consts::FRAC_1_SQRT_2;
 
     use super::*;
 
     #[test]
     fn add_point() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Vector::new(3., -2., 5.) + Point::new(-2., 3., 1.),
             Point::new(1., 1., 6.)
         );
@@ -158,7 +160,7 @@ mod tests {
 
     #[test]
     fn add() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Vector::new(3., -2., 5.) + Vector::new(-2., 3., 1.),
             Vector::new(1., 1., 6.)
         );
@@ -166,7 +168,7 @@ mod tests {
 
     #[test]
     fn sub() {
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Vector::new(3., 2., 1.) - Vector::new(5., 6., 7.),
             Vector::new(-2., -4., -6.)
         );
@@ -174,64 +176,64 @@ mod tests {
 
     #[test]
     fn neg() {
-        assert_eq!(-Vector::new(1., -2., 3.), Vector::new(-1., 2., -3.));
+        assert_approx_eq_low_prec!(-Vector::new(1., -2., 3.), Vector::new(-1., 2., -3.));
     }
 
     #[test]
     fn mul_f64() {
-        assert_eq!(Vector::new(1., -2., 3.) * 3.5, Vector::new(3.5, -7., 10.5));
+        assert_approx_eq_low_prec!(Vector::new(1., -2., 3.) * 3.5, Vector::new(3.5, -7., 10.5));
     }
 
     #[test]
     fn div_f64() {
-        assert_eq!(Vector::new(1., -2., 4.) / 2., Vector::new(0.5, -1., 2.));
+        assert_approx_eq_low_prec!(Vector::new(1., -2., 4.) / 2., Vector::new(0.5, -1., 2.));
     }
 
     #[test]
     fn magnitude() {
-        assert_eq!(Vector::new(1., 0., 0.).magnitude(), 1.);
-        assert_eq!(Vector::new(0., 1., 0.).magnitude(), 1.);
-        assert_eq!(Vector::new(0., 0., 1.).magnitude(), 1.);
-        assert_eq!(Vector::new(0., 0., 0.).magnitude(), 0.);
+        assert_approx_eq_low_prec!(Vector::new(1., 0., 0.).magnitude(), 1.);
+        assert_approx_eq_low_prec!(Vector::new(0., 1., 0.).magnitude(), 1.);
+        assert_approx_eq_low_prec!(Vector::new(0., 0., 1.).magnitude(), 1.);
+        assert_approx_eq_low_prec!(Vector::new(0., 0., 0.).magnitude(), 0.);
 
-        assert_eq!(Vector::new(1., 2., 3.).magnitude(), 14_f64.sqrt());
-        assert_eq!(Vector::new(-1., -2., 3.).magnitude(), 14_f64.sqrt());
+        assert_approx_eq_low_prec!(Vector::new(1., 2., 3.).magnitude(), 14_f64.sqrt());
+        assert_approx_eq_low_prec!(Vector::new(-1., -2., 3.).magnitude(), 14_f64.sqrt());
     }
     #[test]
     fn normalize() {
-        assert_eq!(Vector::new(4., 0., 0.).normalize(), Vector::new(1., 0., 0.));
+        assert_approx_eq_low_prec!(Vector::new(4., 0., 0.).normalize(), Vector::new(1., 0., 0.));
         let sqrt_14 = 14_f64.sqrt();
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             Vector::new(1., -2., 3.).normalize(),
             Vector::new(1. / sqrt_14, -2. / sqrt_14, 3. / sqrt_14)
         );
 
-        assert_eq!(Vector::new(1., 2., 3.).normalize().magnitude(), 1.);
+        assert_approx_eq_low_prec!(Vector::new(1., 2., 3.).normalize().magnitude(), 1.);
     }
 
     #[test]
     fn dot_product() {
-        assert_eq!(Vector::new(1., 2., 3.).dot(Vector::new(2., 3., 4.)), 20.);
+        assert_approx_eq_low_prec!(Vector::new(1., 2., 3.).dot(Vector::new(2., 3., 4.)), 20.);
     }
 
     #[test]
     fn cross_product() {
         let v1 = Vector::new(1., 2., 3.);
         let v2 = Vector::new(2., 3., 4.);
-        assert_eq!(v1.cross(v2), Vector::new(-1., 2., -1.));
-        assert_eq!(v2.cross(v1), Vector::new(1., -2., 1.));
+        assert_approx_eq_low_prec!(v1.cross(v2), Vector::new(-1., 2., -1.));
+        assert_approx_eq_low_prec!(v2.cross(v1), Vector::new(1., -2., 1.));
     }
     #[test]
     fn reflect_vector_approaching_at_45_deg() {
         let v = Vector::new(1., -1., 0.);
         let normal = Vector::new(0., 1., 0.);
-        assert_eq!(v.reflect(normal), Vector::new(1., 1., 0.));
+        assert_approx_eq_low_prec!(v.reflect(normal), Vector::new(1., 1., 0.));
     }
 
     #[test]
     fn reflect_vector_off_slanted_surface() {
         let v = Vector::new(0., -1., 0.);
         let normal = Vector::new(FRAC_1_SQRT_2, FRAC_1_SQRT_2, 0.);
-        assert_eq!(v.reflect(normal), Vector::new(1., 0., 0.));
+        assert_approx_eq_low_prec!(v.reflect(normal), Vector::new(1., 0., 0.));
     }
 }

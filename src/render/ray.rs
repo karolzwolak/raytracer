@@ -50,7 +50,7 @@ impl Ray {
 
 #[cfg(test)]
 mod tests {
-    use crate::primitive::tuple::Tuple;
+    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec, primitive::tuple::Tuple};
 
     use super::*;
 
@@ -58,9 +58,9 @@ mod tests {
     fn position() {
         let ray = Ray::new(Point::new(2., 3., 4.), Vector::new(1., 0., 0.));
 
-        assert_eq!(ray.position(0.), Point::new(2., 3., 4.));
-        assert_eq!(ray.position(1.), Point::new(3., 3., 4.));
-        assert_eq!(ray.position(-1.), Point::new(1., 3., 4.));
-        assert_eq!(ray.position(2.5), Point::new(4.5, 3., 4.));
+        assert_approx_eq_low_prec!(ray.position(0.), Point::new(2., 3., 4.));
+        assert_approx_eq_low_prec!(ray.position(1.), Point::new(3., 3., 4.));
+        assert_approx_eq_low_prec!(ray.position(-1.), Point::new(1., 3., 4.));
+        assert_approx_eq_low_prec!(ray.position(2.5), Point::new(4.5, 3., 4.));
     }
 }

@@ -81,6 +81,7 @@ mod tests {
 
     use crate::{
         approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
         primitive::{matrix::Transform, tuple::Tuple, vector::Vector},
         render::{color::Color, world::World},
     };
@@ -120,8 +121,8 @@ mod tests {
         let camera = Camera::new(201, 101, FRAC_PI_2);
 
         let ray = camera.ray_for_pixel(0., 0.);
-        assert_eq!(ray.origin(), &Point::new(0., 0., 0.));
-        assert_eq!(ray.direction(), &Vector::new(0.66519, 0.33259, -0.66851));
+        assert_approx_eq_low_prec!(ray.origin(), &Point::new(0., 0., 0.));
+        assert_approx_eq_low_prec!(ray.direction(), &Vector::new(0.66519, 0.33259, -0.66851));
     }
 
     #[test]
@@ -159,6 +160,6 @@ mod tests {
         );
 
         let canvas = world.render(&camera);
-        assert_eq!(canvas.pixel_at(5, 5), Color::new(0.38066, 0.47583, 0.2855));
+        assert_approx_eq_low_prec!(canvas.pixel_at(5, 5), Color::new(0.38066, 0.47583, 0.2855));
     }
 }

@@ -110,6 +110,7 @@ impl Triangle {
 #[cfg(test)]
 mod tests {
     use crate::approx_eq::ApproxEq;
+    use crate::assert_approx_eq_low_prec;
     use crate::{
         primitive::{point::Point, tuple::Tuple, vector::Vector},
         render::{
@@ -126,9 +127,9 @@ mod tests {
 
         let t = Triangle::new(p1, p2, p3);
 
-        assert_eq!(t.e1, Vector::new(-1., -1., 0.));
-        assert_eq!(t.e2, Vector::new(1., -1., 0.));
-        assert_eq!(t.normal, Vector::new(0., 0., -1.));
+        assert_approx_eq_low_prec!(t.e1, Vector::new(-1., -1., 0.));
+        assert_approx_eq_low_prec!(t.e2, Vector::new(1., -1., 0.));
+        assert_approx_eq_low_prec!(t.normal, Vector::new(0., 0., -1.));
     }
 
     fn get_triangle() -> Object {
@@ -147,12 +148,12 @@ mod tests {
             _ => unreachable!(),
         };
 
-        assert_eq!(t.normal_vector_at(Point::new(1., 0.5, 0.)), t_shape.normal);
-        assert_eq!(
+        assert_approx_eq_low_prec!(t.normal_vector_at(Point::new(1., 0.5, 0.)), t_shape.normal);
+        assert_approx_eq_low_prec!(
             t.normal_vector_at(Point::new(-0.5, 0.75, 0.)),
             t_shape.normal
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             t.normal_vector_at(Point::new(0.5, 0.25, 0.)),
             t_shape.normal
         );

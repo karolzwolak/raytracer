@@ -131,6 +131,7 @@ impl SmoothTriangle {
 mod tests {
     use crate::{
         approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
         primitive::{point::Point, tuple::Tuple, vector::Vector},
         render::{
             intersection::Intersection,
@@ -165,7 +166,7 @@ mod tests {
         let t = get_smooth_triangle();
         let i = Intersection::new_with_uv(1., &t, 0.45, 0.25);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             t.normal_vector_at_with_intersection(Point::new(0., 0., 0.), Some(&i)),
             Vector::new(-0.5547, 0.83205, 0.)
         );
@@ -177,6 +178,6 @@ mod tests {
         let i = Intersection::new_with_uv(1., &t, 0.45, 0.25);
         let n = t.normal_vector_at_with_intersection(Point::new(0., 0., 0.), Some(&i));
 
-        assert_eq!(n, Vector::new(-0.5547, 0.83205, 0.));
+        assert_approx_eq_low_prec!(n, Vector::new(-0.5547, 0.83205, 0.));
     }
 }

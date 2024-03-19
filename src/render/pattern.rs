@@ -136,6 +136,8 @@ impl Pattern {
 
 #[cfg(test)]
 mod tests {
+    use crate::approx_eq::ApproxEq;
+    use crate::assert_approx_eq_low_prec;
     use crate::{primitive::tuple::Tuple, render::object::shape::Shape};
 
     use super::*;
@@ -144,18 +146,18 @@ mod tests {
     fn stripe_pattern_const_in_y() {
         let stripe = Pattern::stripe(Color::white(), Color::black(), None);
 
-        assert_eq!(stripe.color_at(&Point::new(0., 0., 0.)), Color::white());
-        assert_eq!(stripe.color_at(&Point::new(0., 1., 0.)), Color::white());
-        assert_eq!(stripe.color_at(&Point::new(0., 2., 0.)), Color::white());
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(0., 1., 0.)), Color::white());
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(0., 2., 0.)), Color::white());
     }
 
     #[test]
     fn stripe_pattern_const_in_z() {
         let stripe = Pattern::stripe(Color::white(), Color::black(), None);
 
-        assert_eq!(stripe.color_at(&Point::new(0., 0., 0.)), Color::white());
-        assert_eq!(stripe.color_at(&Point::new(0., 0., 1.)), Color::white());
-        assert_eq!(stripe.color_at(&Point::new(0., 0., 2.)), Color::white());
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(0., 0., 1.)), Color::white());
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(0., 0., 2.)), Color::white());
     }
 
     #[test]
@@ -164,12 +166,12 @@ mod tests {
         let white = Color::white();
         let stripe = Pattern::stripe(white, black, None);
 
-        assert_eq!(stripe.color_at(&Point::new(0., 0., 0.)), white);
-        assert_eq!(stripe.color_at(&Point::new(0.9, 0., 0.)), white);
-        assert_eq!(stripe.color_at(&Point::new(1., 0., 0.)), black);
-        assert_eq!(stripe.color_at(&Point::new(-0.1, 0., 0.)), black);
-        assert_eq!(stripe.color_at(&Point::new(-1., 0., 0.)), black);
-        assert_eq!(stripe.color_at(&Point::new(-1.1, 0., 0.)), white);
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(0., 0., 0.)), white);
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(0.9, 0., 0.)), white);
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(1., 0., 0.)), black);
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(-0.1, 0., 0.)), black);
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(-1., 0., 0.)), black);
+        assert_approx_eq_low_prec!(stripe.color_at(&Point::new(-1.1, 0., 0.)), white);
     }
 
     #[test]
@@ -178,7 +180,7 @@ mod tests {
             Object::primitive_with_transformation(Shape::Sphere, Matrix::scaling(2., 2., 2.));
         let stripe = Pattern::stripe(Color::white(), Color::black(), None);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             stripe.color_at_object(&sphere, Point::new(1.5, 0., 0.)),
             Color::white()
         );
@@ -193,7 +195,7 @@ mod tests {
             Some(Matrix::scaling_uniform(2.)),
         );
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             stripe.color_at_object(&sphere, Point::new(1.5, 0., 0.)),
             Color::white()
         );
@@ -209,7 +211,7 @@ mod tests {
             Some(Matrix::translation(0.5, 0., 0.)),
         );
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             stripe.color_at_object(&sphere, Point::new(2.5, 0., 0.)),
             Color::white()
         );
@@ -219,16 +221,16 @@ mod tests {
     fn gradient_linearly_interpolates_between_colors() {
         let gradient = Pattern::gradient(Color::white(), Color::black(), None);
 
-        assert_eq!(gradient.color_at(&Point::new(0., 0., 0.)), Color::white());
-        assert_eq!(
+        assert_approx_eq_low_prec!(gradient.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_approx_eq_low_prec!(
             gradient.color_at(&Point::new(0.25, 0., 0.)),
             Color::new(0.75, 0.75, 0.75)
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             gradient.color_at(&Point::new(0.5, 0., 0.)),
             Color::new(0.5, 0.5, 0.5)
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             gradient.color_at(&Point::new(0.75, 0., 0.)),
             Color::new(0.25, 0.25, 0.25)
         );
@@ -238,33 +240,33 @@ mod tests {
     fn ring_should_extend_in_both_x_and_z() {
         let ring = Pattern::ring(Color::white(), Color::black(), None);
 
-        assert_eq!(ring.color_at(&Point::new(0., 0., 0.)), Color::white());
-        assert_eq!(ring.color_at(&Point::new(1., 0., 0.)), Color::black());
-        assert_eq!(ring.color_at(&Point::new(0., 0., 1.)), Color::black());
-        assert_eq!(ring.color_at(&Point::new(0.708, 0., 0.708)), Color::black());
+        assert_approx_eq_low_prec!(ring.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_approx_eq_low_prec!(ring.color_at(&Point::new(1., 0., 0.)), Color::black());
+        assert_approx_eq_low_prec!(ring.color_at(&Point::new(0., 0., 1.)), Color::black());
+        assert_approx_eq_low_prec!(ring.color_at(&Point::new(0.708, 0., 0.708)), Color::black());
     }
 
     #[test]
     fn checkers_should_repeat_in_x() {
         let checkers = Pattern::checkers(Color::white(), Color::black(), None);
-        assert_eq!(checkers.color_at(&Point::new(0., 0., 0.)), Color::white());
-        assert_eq!(checkers.color_at(&Point::new(0.99, 0., 0.)), Color::white());
-        assert_eq!(checkers.color_at(&Point::new(1.01, 0., 0.)), Color::black());
+        assert_approx_eq_low_prec!(checkers.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_approx_eq_low_prec!(checkers.color_at(&Point::new(0.99, 0., 0.)), Color::white());
+        assert_approx_eq_low_prec!(checkers.color_at(&Point::new(1.01, 0., 0.)), Color::black());
     }
 
     #[test]
     fn checkers_should_repeat_in_y() {
         let checkers = Pattern::checkers(Color::white(), Color::black(), None);
-        assert_eq!(checkers.color_at(&Point::new(0., 0., 0.)), Color::white());
-        assert_eq!(checkers.color_at(&Point::new(0., 0.99, 0.)), Color::white());
-        assert_eq!(checkers.color_at(&Point::new(0., 1.01, 0.)), Color::black());
+        assert_approx_eq_low_prec!(checkers.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_approx_eq_low_prec!(checkers.color_at(&Point::new(0., 0.99, 0.)), Color::white());
+        assert_approx_eq_low_prec!(checkers.color_at(&Point::new(0., 1.01, 0.)), Color::black());
     }
 
     #[test]
     fn checkers_should_repeat_in_z() {
         let checkers = Pattern::checkers(Color::white(), Color::black(), None);
-        assert_eq!(checkers.color_at(&Point::new(0., 0., 0.)), Color::white());
-        assert_eq!(checkers.color_at(&Point::new(0., 0., 0.99)), Color::white());
-        assert_eq!(checkers.color_at(&Point::new(0., 0., 1.01)), Color::black());
+        assert_approx_eq_low_prec!(checkers.color_at(&Point::new(0., 0., 0.)), Color::white());
+        assert_approx_eq_low_prec!(checkers.color_at(&Point::new(0., 0., 0.99)), Color::white());
+        assert_approx_eq_low_prec!(checkers.color_at(&Point::new(0., 0., 1.01)), Color::black());
     }
 }

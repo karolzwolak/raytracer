@@ -131,6 +131,7 @@ impl Default for Cylinder {
 mod tests {
     use crate::{
         approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
         primitive::{point::Point, tuple::Tuple, vector::Vector},
         render::{
             object::{shape::Shape, Object},
@@ -182,7 +183,7 @@ mod tests {
 
             assert_eq!(times.len(), expected.len());
             for t in times.iter().zip(expected.iter()) {
-                assert!(t.0.approx_eq(t.1));
+                assert_approx_eq_low_prec!(t.0, t.1);
             }
         }
     }
@@ -199,7 +200,7 @@ mod tests {
         ];
 
         for (point, expected) in examples {
-            assert_eq!(cyl.normal_vector_at(point), expected);
+            assert_approx_eq_low_prec!(cyl.normal_vector_at(point), expected);
         }
     }
 
@@ -215,8 +216,8 @@ mod tests {
     fn default_min_max_for_cylinder() {
         let cyl = Cylinder::default();
 
-        assert_eq!(cyl.y_min, f64::NEG_INFINITY);
-        assert_eq!(cyl.y_max, f64::INFINITY);
+        assert_approx_eq_low_prec!(cyl.y_min, f64::NEG_INFINITY);
+        assert_approx_eq_low_prec!(cyl.y_max, f64::INFINITY);
         assert!(!cyl.closed);
     }
 
@@ -276,7 +277,7 @@ mod tests {
         ];
 
         for (point, expected) in examples {
-            assert_eq!(cyl.normal_vector_at(point), expected);
+            assert_approx_eq_low_prec!(cyl.normal_vector_at(point), expected);
         }
     }
 }

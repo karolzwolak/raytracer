@@ -196,6 +196,7 @@ impl Transform for ObjectGroup {
 mod tests {
     use crate::{
         approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
         primitive::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
         render::{
             intersection::IntersectionCollection,
@@ -261,6 +262,6 @@ mod tests {
             .unwrap()
             .children[0];
         let normal = sphere.normal_vector_at(Point::new(1.7321, 1.1547, -5.5774));
-        assert!(normal.approx_eq_low_prec(&Vector::new(0.2857, 0.4286, -0.8571)));
+        assert_approx_eq_low_prec!(normal, Vector::new(0.2857, 0.4286, -0.8571));
     }
 }

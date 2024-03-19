@@ -325,7 +325,9 @@ impl World {
 mod tests {
     use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 
-    use crate::{primitive::vector::Vector, render::intersection::Intersection};
+    use crate::{
+        assert_approx_eq_low_prec, primitive::vector::Vector, render::intersection::Intersection,
+    };
 
     use super::*;
 
@@ -342,7 +344,7 @@ mod tests {
         let world = World::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
 
-        assert_eq!(world.color_at(ray), Color::new(0.38066, 0.47583, 0.2855));
+        assert_approx_eq_low_prec!(world.color_at(ray), Color::new(0.38066, 0.47583, 0.2855));
     }
 
     #[test]
@@ -355,7 +357,7 @@ mod tests {
 
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
 
-        assert_eq!(world.color_at(ray), Color::new(0.90498, 0.90498, 0.90498));
+        assert_approx_eq_low_prec!(world.color_at(ray), Color::new(0.90498, 0.90498, 0.90498));
     }
 
     #[test]
@@ -363,7 +365,7 @@ mod tests {
         let world = World::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 1., 0.));
 
-        assert_eq!(world.color_at(ray), Color::black());
+        assert_approx_eq_low_prec!(world.color_at(ray), Color::black());
     }
 
     #[test]
@@ -371,7 +373,7 @@ mod tests {
         let world = World::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 1., 0.));
 
-        assert_eq!(world.color_at(ray), Color::black());
+        assert_approx_eq_low_prec!(world.color_at(ray), Color::black());
     }
 
     #[test]
@@ -379,7 +381,7 @@ mod tests {
         let world = World::default_testing();
         let point = Point::new(0., 10., 0.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             world.point_shadow_intensity(&world.light_sources()[0], point),
             0.
         )
@@ -390,7 +392,7 @@ mod tests {
         let world = World::default_testing();
         let point = Point::new(10., -10., 10.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             world.point_shadow_intensity(&world.light_sources()[0], point),
             1.
         )
@@ -401,7 +403,7 @@ mod tests {
         let world = World::default_testing();
         let point = Point::new(-20., 20., -20.);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             world.point_shadow_intensity(&world.light_sources()[0], point),
             0.
         )
@@ -425,7 +427,7 @@ mod tests {
         let inter = Intersection::new(4., &world.objects()[1]);
         let comps = inter.computations(&ray);
 
-        assert_eq!(world.shade_hit(comps, 0), Color::new(0.1, 0.1, 0.1));
+        assert_approx_eq_low_prec!(world.shade_hit(comps, 0), Color::new(0.1, 0.1, 0.1));
     }
 
     #[test]
@@ -438,7 +440,7 @@ mod tests {
         let i = Intersection::new(1., &w.objects()[1]);
         let comps = i.computations(&r);
 
-        assert_eq!(w.reflected_color(&comps, 0), Color::black());
+        assert_approx_eq_low_prec!(w.reflected_color(&comps, 0), Color::black());
     }
 
     #[test]
@@ -519,7 +521,7 @@ mod tests {
         let i = Intersection::new(SQRT_2, world.objects().last().unwrap());
         let comps = i.computations(&r);
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             world.reflected_color(&comps, world.max_recursive_depth),
             Color::black()
         );
@@ -533,7 +535,7 @@ mod tests {
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![4., 6.], shape);
         let comps = intersections.hit_computations().unwrap();
 
-        assert_eq!(world.refracted_color(&comps, 0), Color::black());
+        assert_approx_eq_low_prec!(world.refracted_color(&comps, 0), Color::black());
     }
 
     #[test]
@@ -548,7 +550,7 @@ mod tests {
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![4., 6.], shape);
         let comps = intersections.hit_computations().unwrap();
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             world.refracted_color(&comps, world.max_recursive_depth),
             Color::black()
         );
@@ -568,7 +570,7 @@ mod tests {
 
         let comps = intersections.computations_at_id(1).unwrap();
 
-        assert_eq!(world.refracted_color(&comps, 0), Color::black());
+        assert_approx_eq_low_prec!(world.refracted_color(&comps, 0), Color::black());
     }
 
     #[test]
@@ -592,9 +594,10 @@ mod tests {
         let intersections = IntersectionCollection::from_ray_and_mult_objects(ray, &objects);
         let comps = intersections.hit_computations().unwrap();
 
-        assert!(world
-            .refracted_color(&comps, 0)
-            .approx_eq_low_prec(&Color::new(0., 0.99888, 0.04725)));
+        assert_approx_eq_low_prec!(
+            world.refracted_color(&comps, 0),
+            &Color::new(0., 0.99888, 0.04725)
+        );
     }
 
     #[test]
@@ -628,7 +631,7 @@ mod tests {
         let intersections = world.intersect(ray);
         let cmps = intersections.hit_computations().unwrap();
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             world.shade_hit(cmps, 0),
             Color::new(0.93642, 0.68642, 0.68642)
         );
@@ -666,7 +669,7 @@ mod tests {
         let intersections = world.intersect(ray);
         let cmps = intersections.hit_computations().unwrap();
 
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             world.shade_hit(cmps, 0),
             Color::new(0.93391, 0.69643, 0.69243)
         );

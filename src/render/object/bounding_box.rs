@@ -233,16 +233,16 @@ impl BoundingBox {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::primitive::matrix::Matrix;
+    use crate::{assert_approx_eq_low_prec, primitive::matrix::Matrix};
 
     #[test]
     fn test_empty() {
         let bb = BoundingBox::empty();
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             bb.min,
             Point::new(f64::INFINITY, f64::INFINITY, f64::INFINITY)
         );
-        assert_eq!(
+        assert_approx_eq_low_prec!(
             bb.max,
             Point::new(f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY)
         );
@@ -261,8 +261,8 @@ mod tests {
     fn test_add_point() {
         let mut bb = BoundingBox::empty();
         bb.add_point(Point::new(1.0, 2.0, 3.0));
-        assert_eq!(bb.min, Point::new(1.0, 2.0, 3.0));
-        assert_eq!(bb.max, Point::new(1.0, 2.0, 3.0));
+        assert_approx_eq_low_prec!(bb.min, Point::new(1.0, 2.0, 3.0));
+        assert_approx_eq_low_prec!(bb.max, Point::new(1.0, 2.0, 3.0));
     }
 
     #[test]
@@ -272,8 +272,8 @@ mod tests {
         let mut bb2 = BoundingBox::empty();
         bb2.add_point(Point::new(4.0, 5.0, 6.0));
         bb1.add_bounding_box(&bb2);
-        assert_eq!(bb1.min, Point::new(1.0, 2.0, 3.0));
-        assert_eq!(bb1.max, Point::new(4.0, 5.0, 6.0));
+        assert_approx_eq_low_prec!(bb1.min, Point::new(1.0, 2.0, 3.0));
+        assert_approx_eq_low_prec!(bb1.max, Point::new(4.0, 5.0, 6.0));
     }
 
     #[test]
@@ -294,8 +294,8 @@ mod tests {
         let transform_matrix = Matrix::translation(1.0, 1.0, 1.0);
         bb.transform(&transform_matrix);
 
-        assert_eq!(bb.min, Point::new(2.0, 3.0, 4.0));
-        assert_eq!(bb.max, Point::new(5.0, 6.0, 7.0));
+        assert_approx_eq_low_prec!(bb.min, Point::new(2.0, 3.0, 4.0));
+        assert_approx_eq_low_prec!(bb.max, Point::new(5.0, 6.0, 7.0));
     }
 
     #[test]
@@ -319,6 +319,6 @@ mod tests {
         let mut bb2 = BoundingBox::empty();
         bb2.add_point(Point::new(1.0, 2.0, 2.0));
 
-        assert_eq!(bb1.distance(&bb2), 1.0);
+        assert_approx_eq_low_prec!(bb1.distance(&bb2), 1.0);
     }
 }

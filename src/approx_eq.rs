@@ -46,5 +46,6 @@ mod tests {
         assert!(!0f64.approx_eq(&-EPSILON));
 
         assert!(!0f64.approx_eq(&(EPSILON - LOW_PREC_EPSILON)));
+        assert_approx_eq_low_prec!(0., 0.5 * LOW_PREC_EPSILON);
     }
 }

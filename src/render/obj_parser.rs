@@ -192,7 +192,11 @@ impl Default for ObjParser {
 
 mod tests {
 
-    use crate::render::object::{smooth_triangle::SmoothTriangle, triangle::Triangle};
+    use crate::{
+        approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
+        render::object::{smooth_triangle::SmoothTriangle, triangle::Triangle},
+    };
 
     use super::*;
 
@@ -222,10 +226,10 @@ mod tests {
         parser.not_consuming_parse(data.to_string()).unwrap();
 
         assert_eq!(parser.vertices().len(), 4);
-        assert_eq!(parser.vertices()[0], Point::new(-1.0, 1.0, 0.0));
-        assert_eq!(parser.vertices()[1], Point::new(-1.0, 0.5, 0.0));
-        assert_eq!(parser.vertices()[2], Point::new(1.0, 0.0, 0.0));
-        assert_eq!(parser.vertices()[3], Point::new(1.0, 1.0, 0.0));
+        assert_approx_eq_low_prec!(parser.vertices()[0], Point::new(-1.0, 1.0, 0.0));
+        assert_approx_eq_low_prec!(parser.vertices()[1], Point::new(-1.0, 0.5, 0.0));
+        assert_approx_eq_low_prec!(parser.vertices()[2], Point::new(1.0, 0.0, 0.0));
+        assert_approx_eq_low_prec!(parser.vertices()[3], Point::new(1.0, 1.0, 0.0));
     }
 
     fn _obj_as_triangle(object: &Object) -> Option<Triangle> {
@@ -345,9 +349,9 @@ mod tests {
 
         assert_eq!(parser.ignored(), 0);
         assert_eq!(parser.normals.len(), 3);
-        assert_eq!(parser.normals[0], Vector::new(0.0, 0.0, 1.0));
-        assert_eq!(parser.normals[1], Vector::new(0.707, 0.0, -0.707));
-        assert_eq!(parser.normals[2], Vector::new(1.0, 2.0, 3.0));
+        assert_approx_eq_low_prec!(parser.normals[0], Vector::new(0.0, 0.0, 1.0));
+        assert_approx_eq_low_prec!(parser.normals[1], Vector::new(0.707, 0.0, -0.707));
+        assert_approx_eq_low_prec!(parser.normals[2], Vector::new(1.0, 2.0, 3.0));
     }
 
     fn _obj_as_smooth_triangle(object: &Object) -> SmoothTriangle {
@@ -376,11 +380,11 @@ mod tests {
         let child2 = _obj_as_smooth_triangle(&parser.main_group.children()[1]);
 
         assert_eq!(child1, child2);
-        assert_eq!(child1.p1(), parser.vertices[0]);
-        assert_eq!(child1.p2(), parser.vertices[1]);
-        assert_eq!(child1.p3(), parser.vertices[2]);
-        assert_eq!(child1.n1(), parser.normals[2]);
-        assert_eq!(child1.n2(), parser.normals[0]);
-        assert_eq!(child1.n3(), parser.normals[1]);
+        assert_approx_eq_low_prec!(child1.p1(), parser.vertices[0]);
+        assert_approx_eq_low_prec!(child1.p2(), parser.vertices[1]);
+        assert_approx_eq_low_prec!(child1.p3(), parser.vertices[2]);
+        assert_approx_eq_low_prec!(child1.n1(), parser.normals[2]);
+        assert_approx_eq_low_prec!(child1.n2(), parser.normals[0]);
+        assert_approx_eq_low_prec!(child1.n3(), parser.normals[1]);
     }
 }

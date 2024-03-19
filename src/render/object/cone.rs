@@ -140,6 +140,7 @@ mod tests {
 
     use crate::{
         approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
         primitive::{point::Point, tuple::Tuple, vector::Vector},
         render::{
             object::{shape::Shape, Object},
@@ -172,8 +173,8 @@ mod tests {
             let times = cone.intersection_times(&ray);
 
             assert_eq!(times.len(), 2);
-            assert!(times[0].approx_eq(&expected.0));
-            assert!(times[1].approx_eq(&expected.1));
+            assert_approx_eq_low_prec!(times[0], expected.0);
+            assert_approx_eq_low_prec!(times[1], expected.1);
         }
     }
 
@@ -184,7 +185,7 @@ mod tests {
         let times = cone.intersection_times(&ray);
 
         assert_eq!(times.len(), 1);
-        assert!(times[0].approx_eq(&0.35355));
+        assert_approx_eq_low_prec!(times[0], 0.35355);
     }
 
     #[test]
@@ -218,7 +219,7 @@ mod tests {
         ];
 
         for (point, expected) in examples {
-            assert_eq!(cone.normal_vector_at(point), expected.normalize());
+            assert_approx_eq_low_prec!(cone.normal_vector_at(point), expected.normalize());
         }
     }
 }

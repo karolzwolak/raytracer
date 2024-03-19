@@ -147,6 +147,9 @@ impl Canvas {
 
 #[cfg(test)]
 mod tests {
+    use crate::approx_eq::ApproxEq;
+    use crate::assert_approx_eq_low_prec;
+
     use super::*;
 
     #[test]
@@ -168,7 +171,7 @@ mod tests {
         canvas
             .pixels
             .iter()
-            .for_each(|pixel| assert_eq!(*pixel, black))
+            .for_each(|pixel| assert_approx_eq_low_prec!(*pixel, black))
     }
 
     #[test]
@@ -177,7 +180,7 @@ mod tests {
         let red = Color::red();
 
         canvas.write_pixel(2, 3, red);
-        assert_eq!(canvas.pixel_at(2, 3), red);
+        assert_approx_eq_low_prec!(canvas.pixel_at(2, 3), red);
     }
 
     #[test]
