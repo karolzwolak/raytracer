@@ -1,6 +1,10 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{point::Point, vector::Vector},
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+        vector::Vector,
+    },
     render::{
         intersection::{Intersection, IntersectionCollector},
         ray::Ray,
@@ -19,6 +23,23 @@ pub struct SmoothTriangle {
     n1: Vector,
     n2: Vector,
     n3: Vector,
+}
+
+impl Transform for SmoothTriangle {
+    fn transform(&mut self, matrix: &Matrix) {
+        *self = self.transform_new(matrix);
+    }
+
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        let p1 = matrix * self.p1;
+        let p2 = matrix * self.p2;
+        let p3 = matrix * self.p3;
+        let n1 = matrix * self.n1;
+        let n2 = matrix * self.n2;
+        let n3 = matrix * self.n3;
+
+        Self::new(p1, p2, p3, n1, n2, n3)
+    }
 }
 
 impl SmoothTriangle {

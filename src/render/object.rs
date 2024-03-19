@@ -98,9 +98,11 @@ impl Object {
     }
 
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
-        collector.set_next_object(self);
         match self {
-            Self::Primitive(obj) => obj.intersect_with_collector(world_ray, collector),
+            Self::Primitive(obj) => {
+                collector.set_next_object(self);
+                obj.intersect(world_ray, collector);
+            }
             Self::Group(group) => group.intersect(world_ray, collector),
         }
     }
@@ -225,14 +227,14 @@ pub struct PrimitiveObject {
 
 impl PrimitiveObject {
     pub fn new(shape: Shape, material: Material, transformation: Matrix) -> Self {
-        Self {
+        let mut res = PrimitiveObject {
             shape,
             material,
-            transformation,
-            transformation_inverse: transformation
-                .inverse()
-                .expect("Object with singular tranfromation matrix cannot be rendered"),
-        }
+            transformation: Matrix::identity(),
+            transformation_inverse: Matrix::identity(),
+        };
+        res.transform(&transformation);
+        res
     }
 
     pub fn bounding_box(&self) -> BoundingBox {
@@ -273,23 +275,31 @@ impl PrimitiveObject {
         world_point: Point,
         i: Option<&'a Intersection<'a>>,
     ) -> Vector {
-        let inverse = self.transformation_inverse();
-        let object_point = inverse * world_point;
+        let world_normal = match self.shape {
+            Shape::Triangle(_) | Shape::SmoothTriangle(_) => {
+                self.shape.local_normal_at(world_point, i)
+            }
+            _ => {
+                let inverse = self.transformation_inverse();
+                let object_point = inverse * world_point;
 
-        let object_normal = self.shape.local_normal_at(object_point, i);
-        let world_normal = inverse.transpose() * object_normal;
+                let object_normal = self.shape.local_normal_at(object_point, i);
+                inverse.transpose() * object_normal
+            }
+        };
         world_normal.normalize()
     }
 
-    pub fn intersect_with_collector<'a>(
-        &'a self,
-        world_ray: &Ray,
-        collector: &mut IntersectionCollector<'a>,
-    ) {
-        self.shape.local_intersect(
-            &world_ray.transform_new(&self.transformation_inverse),
-            collector,
-        );
+    pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
+        match self.shape {
+            Shape::Triangle(_) | Shape::SmoothTriangle(_) => {
+                self.shape.local_intersect(world_ray, collector)
+            }
+            _ => self.shape.local_intersect(
+                &world_ray.transform_new(&self.transformation_inverse),
+                collector,
+            ),
+        };
     }
 
     pub fn material(&self) -> &Material {
@@ -307,11 +317,17 @@ impl PrimitiveObject {
 
 impl Transform for PrimitiveObject {
     fn transform(&mut self, matrix: &Matrix) {
-        self.transformation.transform(matrix);
-        self.transformation_inverse = self
-            .transformation
-            .inverse()
-            .expect("Object with singular tranfromation matrix cannot be rendered");
+        match &mut self.shape {
+            Shape::Triangle(t) => t.transform(matrix),
+            Shape::SmoothTriangle(t) => t.transform(matrix),
+            _ => {
+                self.transformation.transform(matrix);
+                self.transformation_inverse = self
+                    .transformation
+                    .inverse()
+                    .expect("Object with singular tranfromation matrix cannot be rendered");
+            }
+        }
     }
 
     fn transform_new(&self, matrix: &Matrix) -> Self {

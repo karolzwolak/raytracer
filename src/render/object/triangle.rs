@@ -1,6 +1,10 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{point::Point, vector::Vector},
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+        vector::Vector,
+    },
     render::{intersection::IntersectionCollector, ray::Ray},
 };
 
@@ -14,6 +18,20 @@ pub struct Triangle {
     e1: Vector,
     e2: Vector,
     normal: Vector,
+}
+
+impl Transform for Triangle {
+    fn transform(&mut self, matrix: &Matrix) {
+        *self = self.transform_new(matrix);
+    }
+
+    fn transform_new(&self, matrix: &Matrix) -> Self {
+        let p1 = matrix * self.p1;
+        let p2 = matrix * self.p2;
+        let p3 = matrix * self.p3;
+
+        Self::new(p1, p2, p3)
+    }
 }
 
 impl Triangle {
