@@ -57,6 +57,22 @@ impl Matrix {
 
         res
     }
+    pub fn mul_transposed<T: Tuple>(&self, rhs: T) -> T {
+        T::new(
+            self[(0, 0)] * rhs.x()
+                + self[(1, 0)] * rhs.y()
+                + self[(2, 0)] * rhs.z()
+                + self[(3, 0)] * rhs.w(),
+            self[(0, 1)] * rhs.x()
+                + self[(1, 1)] * rhs.y()
+                + self[(2, 1)] * rhs.z()
+                + self[(3, 1)] * rhs.w(),
+            self[(0, 2)] * rhs.x()
+                + self[(1, 2)] * rhs.y()
+                + self[(2, 2)] * rhs.z()
+                + self[(3, 2)] * rhs.w(),
+        )
+    }
     pub fn inverse(&self) -> Option<Matrix> {
         let mut res = Matrix::identity();
 
@@ -498,7 +514,7 @@ mod tests {
         assert_eq!(Matrix::identity() * m, m);
     }
     #[test]
-    fn transose() {
+    fn transpose() {
         #[rustfmt::skip]
         let m = Matrix::new([
             0., 9., 3., 0.,
@@ -516,7 +532,27 @@ mod tests {
         assert_eq!(m.transpose(), expected);
         assert_eq!(Matrix::identity().transpose(), Matrix::identity());
     }
+    #[test]
+    fn mul_transposed() {
+        #[rustfmt::skip]
+        let m = Matrix::new([
+            0., 9., 3., 0.,
+            9., 8., 0., 8.,
+            1., 8., 5., 3.,
+            0., 0., 5., 8.,
+        ]);
+        #[rustfmt::skip]
+        let transposed = Matrix::new([
+            0., 9., 1., 0.,
+            9., 8., 8., 0.,
+            3., 0., 5., 5.,
+            0., 8., 3., 8.,
+        ]);
 
+        let v = Vector::new(1., -2., 0.5);
+        assert_eq!(m.transpose(), transposed);
+        assert_eq!(m.mul_transposed(v), transposed * v);
+    }
     #[test]
     fn inverse() {
         #[rustfmt::skip]
