@@ -2,7 +2,10 @@ use std::{cmp::Reverse, collections::binary_heap};
 
 use crate::{
     approx_eq::ApproxEq,
-    primitive::matrix::{Matrix, Transform},
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+    },
     render::{
         intersection::{Intersection, IntersectionCollector},
         material::Material,
@@ -112,6 +115,13 @@ impl ObjectGroup {
             if group.primitive_count < Self::PARTITION_THRESHOLD {
                 continue;
             }
+            group.children.sort_unstable_by(|a, b| {
+                let p = Point::zero();
+                let time_a = a.bounding_box().intersection_time_from_point(p);
+                let time_b = b.bounding_box().intersection_time_from_point(p);
+                time_a.partial_cmp(&time_b).unwrap()
+            });
+
             let (boxes, vectors) = group.divide();
 
             group.children.extend(
@@ -123,6 +133,13 @@ impl ObjectGroup {
                         ObjectGroup::with_bounding_box(children, bounding_box).into()
                     }),
             );
+
+            group.children.sort_unstable_by(|a, b| {
+                let p = Point::zero();
+                let time_a = a.bounding_box().intersection_time_from_point(p);
+                let time_b = b.bounding_box().intersection_time_from_point(p);
+                time_a.partial_cmp(&time_b).unwrap()
+            });
 
             group_stack.extend(
                 group
@@ -150,7 +167,10 @@ impl ObjectGroup {
             _ => return,
         }
         while let Some(t) = binary_heap.pop() {
-            binary_heap.extend(t.0.group.children.iter().filter_map(|child| match child {
+            if t.0.time >= collector.hit_time() {
+                continue;
+            }
+            binary_heap.extend(t.0.group.children.iter().rev().filter_map(|child| match child {
                 Object::Group(g) => {
                     let time = g.bounding_box.intersection_time(world_ray);
                     match time {
