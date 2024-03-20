@@ -136,16 +136,35 @@ impl ObjectGroup {
     pub fn into_children(self) -> Vec<Object> {
         self.children
     }
+    fn is_skipped(&self, world_ray: &Ray, collector: &IntersectionCollector) -> bool {
+        match self.bounding_box.intersection_time(world_ray) {
+            None => true,
+            Some(t) if t > collector.hit_time() => true,
+            _ => false,
+        }
+    }
+    fn intersect_iter<'a>(
+        root: &'a ObjectGroup,
+        world_ray: &Ray,
+        collector: &mut IntersectionCollector<'a>,
+    ) {
+        if root.is_skipped(world_ray, collector) {
+            return;
+        }
+        let mut stack = vec![root];
+        while let Some(group) = stack.pop() {
+            stack.extend(group.children.iter().filter_map(|child| match child {
+                Object::Group(g) if g.is_skipped(world_ray, collector) => None,
+                Object::Group(g) => Some(g),
+                Object::Primitive(_) => {
+                    child.intersect(world_ray, collector);
+                    None
+                }
+            }));
+        }
+    }
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
-        let time = self.bounding_box.intersection_time(world_ray);
-        match time {
-            None => return,
-            Some(t) if t > collector.hit_time() => return,
-            _ => {}
-        }
-        for child in self.children.iter() {
-            child.intersect(world_ray, collector)
-        }
+        Self::intersect_iter(self, world_ray, collector);
     }
 
     // TODO: Investigate why this unused method somehow improves performance
