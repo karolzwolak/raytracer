@@ -8,6 +8,7 @@ use super::{
     camera::Camera,
     canvas::Canvas,
     color::Color,
+    intersection::IntersectionCollector,
     light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
     material::Material,
     object::Object,
@@ -114,6 +115,16 @@ impl World {
         IntersectionCollection::from_group(ray, &self.objects)
     }
 
+    pub fn intersect_with_dest_obj<'a>(
+        &'a self,
+        ray: Ray,
+        obj: &'a Object,
+    ) -> IntersectionCollection {
+        let mut collector = IntersectionCollector::with_dest_obj(&ray, obj);
+        self.objects.intersect(&ray, &mut collector);
+        IntersectionCollection::from_collector(ray, collector)
+    }
+
     fn color_at_depth(&self, ray: Ray, depth: usize) -> Color {
         self.intersect(ray)
             .hit_computations()
@@ -175,15 +186,7 @@ impl World {
     }
 
     /// 0. means no shadow, 1. means full shadow
-    pub fn point_shadow_intensity(&self, light_source: &PointLightSource, point: Point) -> f64 {
-        let v = light_source.position() - point;
-
-        let distance = v.magnitude();
-        let direction = v.normalize();
-
-        let ray = Ray::new(point, direction);
-        let intersections = self.intersect(ray);
-
+    fn point_shadow_intensity(&self, distance: f64, intersections: &IntersectionCollection) -> f64 {
         if !self.use_shadow_intensity {
             return match intersections.hit() {
                 Some(inter) => {
@@ -214,6 +217,47 @@ impl World {
             }
         }
         intensity
+    }
+
+    fn get_point_shadow_dist_ray(
+        &self,
+        light_source: &PointLightSource,
+        point: Point,
+    ) -> (f64, Ray) {
+        let v = light_source.position() - point;
+
+        let distance = v.magnitude();
+        let direction = v.normalize();
+
+        let ray = Ray::new(point, direction);
+
+        (distance, ray)
+    }
+
+    pub fn point_shadow_intensity_point(
+        &self,
+        light_source: &PointLightSource,
+        point: Point,
+    ) -> f64 {
+        let (distance, ray) = self.get_point_shadow_dist_ray(light_source, point);
+        let intersections = self.intersect(ray);
+
+        self.point_shadow_intensity(distance, &intersections)
+    }
+
+    pub fn point_shadow_intensity_comps(
+        &self,
+        light_source: &PointLightSource,
+        comps: &IntersecComputations,
+    ) -> f64 {
+        let (distance, ray) = self.get_point_shadow_dist_ray(light_source, comps.over_point());
+
+        let intersections = match comps.object() {
+            Object::Primitive(_) => self.intersect_with_dest_obj(ray, comps.object()),
+            Object::Group(_) => self.intersect(ray),
+        };
+
+        self.point_shadow_intensity(distance, &intersections)
     }
 
     fn reflected_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {
@@ -271,7 +315,7 @@ impl World {
                     hit_comps.over_point(),
                     hit_comps.eye_v(),
                     hit_comps.normal_v(),
-                    self.point_shadow_intensity(light_source, hit_comps.over_point()),
+                    self.point_shadow_intensity_comps(light_source, &hit_comps),
                 );
                 let reflected = self.reflected_color(&hit_comps, depth);
                 let refracted = self.refracted_color(&hit_comps, depth);
@@ -382,7 +426,7 @@ mod tests {
         let point = Point::new(0., 10., 0.);
 
         assert_approx_eq_low_prec!(
-            world.point_shadow_intensity(&world.light_sources()[0], point),
+            world.point_shadow_intensity_point(&world.light_sources()[0], point),
             0.
         )
     }
@@ -393,7 +437,7 @@ mod tests {
         let point = Point::new(10., -10., 10.);
 
         assert_approx_eq_low_prec!(
-            world.point_shadow_intensity(&world.light_sources()[0], point),
+            world.point_shadow_intensity_point(&world.light_sources()[0], point),
             1.
         )
     }
@@ -404,7 +448,7 @@ mod tests {
         let point = Point::new(-20., 20., -20.);
 
         assert_approx_eq_low_prec!(
-            world.point_shadow_intensity(&world.light_sources()[0], point),
+            world.point_shadow_intensity_point(&world.light_sources()[0], point),
             0.
         )
     }
