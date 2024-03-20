@@ -137,6 +137,40 @@ impl BoundingBox {
 
         tmin <= tmax
     }
+    pub fn intersection_time(&self, ray: &Ray) -> Option<f64> {
+        let (xtmin, xtmax) = self.axis_intersection_times(
+            ray.origin().x(),
+            ray.dir_inv().x(),
+            self.min.x(),
+            self.max.x(),
+        );
+        let (ytmin, ytmax) = self.axis_intersection_times(
+            ray.origin().y(),
+            ray.dir_inv().y(),
+            self.min.y(),
+            self.max.y(),
+        );
+        let tmin = xtmin.max(ytmin);
+        let tmax = xtmax.min(ytmax);
+
+        if tmin > tmax {
+            return None;
+        }
+        let (ztmin, ztmax) = self.axis_intersection_times(
+            ray.origin().z(),
+            ray.dir_inv().z(),
+            self.min.z(),
+            self.max.z(),
+        );
+
+        let tmin = tmin.max(ztmin);
+        let tmax = tmax.min(ztmax);
+
+        if tmin > tmax {
+            return None;
+        }
+        Some(tmin)
+    }
     pub fn split_along_longest_axis(&self) -> (BoundingBox, BoundingBox) {
         let x_len = self.max.x() - self.min.x();
         let y_len = self.max.y() - self.min.y();

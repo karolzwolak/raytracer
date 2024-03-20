@@ -13,6 +13,7 @@ use super::{
 pub struct IntersectionCollector<'a> {
     vec: Vec<Intersection<'a>>,
     next_object: Option<&'a Object>,
+    hit_time: f64,
 }
 
 impl<'a> IntersectionCollector<'a> {
@@ -20,12 +21,14 @@ impl<'a> IntersectionCollector<'a> {
         Self {
             vec: Vec::new(),
             next_object: None,
+            hit_time: f64::INFINITY,
         }
     }
     pub fn with_next_object(next_object: &'a Object) -> Self {
         Self {
             vec: Vec::new(),
             next_object: Some(next_object),
+            hit_time: f64::INFINITY,
         }
     }
     pub fn set_next_object(&mut self, object: &'a Object) {
@@ -35,20 +38,30 @@ impl<'a> IntersectionCollector<'a> {
         self.next_object
             .expect("Internal error: tried adding intersection without providing object reference")
     }
+    fn update_hit_time(&mut self, time: f64) {
+        if time.is_sign_positive() && time < self.hit_time {
+            self.hit_time = time;
+        }
+    }
     /// Will panic if next_object is None
     pub fn add(&mut self, time: f64) {
         let obj = self.get_next_object_expect();
         self.vec.push(Intersection::new(time, obj));
+        self.update_hit_time(time);
     }
     /// Will panic if next_object is None
     pub fn add_uv(&mut self, time: f64, u: f64, v: f64) {
         let obj = self.get_next_object_expect();
         self.vec.push(Intersection::new_with_uv(time, obj, u, v));
+        self.update_hit_time(time);
     }
     pub fn collect_sorted(mut self) -> Vec<Intersection<'a>> {
         self.vec
             .sort_unstable_by(|i1, i2| i1.time().partial_cmp(&i2.time()).unwrap());
         self.vec
+    }
+    pub fn hit_time(&self) -> f64 {
+        self.hit_time
     }
 }
 

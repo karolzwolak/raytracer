@@ -137,8 +137,11 @@ impl ObjectGroup {
         self.children
     }
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
-        if !self.bounding_box.is_intersected(world_ray) {
-            return;
+        let time = self.bounding_box.intersection_time(world_ray);
+        match time {
+            None => return,
+            Some(t) if t > collector.hit_time() => return,
+            _ => {}
         }
         for child in self.children.iter() {
             child.intersect(world_ray, collector)
