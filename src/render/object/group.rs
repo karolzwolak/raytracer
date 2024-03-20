@@ -1,6 +1,9 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::matrix::{Matrix, Transform},
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+    },
     render::{
         intersection::{Intersection, IntersectionCollector},
         material::Material,
@@ -110,6 +113,13 @@ impl ObjectGroup {
             if group.primitive_count < Self::PARTITION_THRESHOLD {
                 continue;
             }
+            group.children.sort_unstable_by(|a, b| {
+                let p = Point::zero();
+                let time_a = a.bounding_box().intersection_time_from_point(p);
+                let time_b = b.bounding_box().intersection_time_from_point(p);
+                time_a.partial_cmp(&time_b).unwrap()
+            });
+
             let (boxes, vectors) = group.divide();
 
             group.children.extend(
@@ -121,6 +131,13 @@ impl ObjectGroup {
                         ObjectGroup::with_bounding_box(children, bounding_box).into()
                     }),
             );
+
+            group.children.sort_unstable_by(|a, b| {
+                let p = Point::zero();
+                let time_a = a.bounding_box().intersection_time_from_point(p);
+                let time_b = b.bounding_box().intersection_time_from_point(p);
+                time_a.partial_cmp(&time_b).unwrap()
+            });
 
             group_stack.extend(
                 group
@@ -153,7 +170,7 @@ impl ObjectGroup {
         }
         let mut stack = vec![root];
         while let Some(group) = stack.pop() {
-            stack.extend(group.children.iter().filter_map(|child| match child {
+            stack.extend(group.children.iter().rev().filter_map(|child| match child {
                 Object::Group(g) if g.is_skipped(world_ray, collector) => None,
                 Object::Group(g) => Some(g),
                 Object::Primitive(_) => {

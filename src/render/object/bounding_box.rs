@@ -171,6 +171,10 @@ impl BoundingBox {
         }
         Some(tmin)
     }
+    pub fn intersection_time_from_point(&self, point: Point) -> Option<f64> {
+        let ray = Ray::new(point, (self.center() - point).normalize());
+        self.intersection_time(&ray)
+    }
     pub fn split_along_longest_axis(&self) -> (BoundingBox, BoundingBox) {
         let x_len = self.max.x() - self.min.x();
         let y_len = self.max.y() - self.min.y();
