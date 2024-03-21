@@ -182,7 +182,7 @@ impl World {
         let direction = v.normalize();
 
         let ray = Ray::new(point, direction);
-        let intersections = self.intersect(ray);
+        let mut intersections = self.intersect(ray);
 
         if !self.use_shadow_intensity {
             return match intersections.hit() {
@@ -200,7 +200,7 @@ impl World {
         // calculate shadow intensity by summation of transparency of all objects
         // (1 - transparency to be exact)
         let mut intensity = 0.;
-        for inter in intersections.vec() {
+        for inter in intersections.vec_sorted() {
             // skip intersections behind light source
             if inter.time() < 0. {
                 continue;
@@ -336,8 +336,12 @@ mod tests {
         let world = World::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
 
-        let intersections = world.intersect(ray);
-        assert_eq!(intersections.times_vec(), vec![4., 4.5, 5.5, 6.]);
+        let mut intersections = world.intersect(ray);
+        intersections.sort();
+        assert_eq!(
+            intersections.try_sorted_times_vec().unwrap(),
+            vec![4., 4.5, 5.5, 6.]
+        );
     }
     #[test]
     fn shade_intersection() {

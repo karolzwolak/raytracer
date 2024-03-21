@@ -110,21 +110,21 @@ impl Object {
         }
     }
 
-    pub fn intersect_to_vec<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
+    pub fn intersect_to_sorted_vec<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
         let mut collector = IntersectionCollector::with_next_object(self);
         self.intersect(world_ray, &mut collector);
         collector.collect_sorted()
     }
 
     pub fn intersection_times(&self, world_ray: &Ray) -> Vec<f64> {
-        self.intersect_to_vec(world_ray)
+        self.intersect_to_sorted_vec(world_ray)
             .iter_mut()
             .map(|i| i.time())
             .collect()
     }
 
     pub fn is_intersected_by_ray(&self, ray: &Ray) -> bool {
-        !self.intersect_to_vec(ray).is_empty()
+        !self.intersect_to_sorted_vec(ray).is_empty()
     }
 
     pub fn material(&self) -> Option<&Material> {
