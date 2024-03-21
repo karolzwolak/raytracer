@@ -8,6 +8,7 @@ use super::{
     camera::Camera,
     canvas::Canvas,
     color::Color,
+    intersection::IntersectionCollector,
     light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
     material::Material,
     object::Object,
@@ -114,6 +115,22 @@ impl World {
         IntersectionCollection::from_group(ray, &self.objects)
     }
 
+    pub fn intersect_testing(&self, ray: Ray) -> IntersectionCollection {
+        let mut collector = IntersectionCollector::new_keep_redundant();
+        self.objects.intersect(&ray, &mut collector);
+        IntersectionCollection::from_collector(ray, collector)
+    }
+
+    pub fn intersect_with_dest_obj<'a>(
+        &'a self,
+        ray: Ray,
+        obj: &'a Object,
+    ) -> IntersectionCollection {
+        let mut collector = IntersectionCollector::with_dest_obj(&ray, obj);
+        self.objects.intersect(&ray, &mut collector);
+        IntersectionCollection::from_collector(ray, collector)
+    }
+
     fn color_at_depth(&self, ray: Ray, depth: usize) -> Color {
         self.intersect(ray)
             .hit_computations()
@@ -175,15 +192,11 @@ impl World {
     }
 
     /// 0. means no shadow, 1. means full shadow
-    pub fn point_shadow_intensity(&self, light_source: &PointLightSource, point: Point) -> f64 {
-        let v = light_source.position() - point;
-
-        let distance = v.magnitude();
-        let direction = v.normalize();
-
-        let ray = Ray::new(point, direction);
-        let intersections = self.intersect(ray);
-
+    fn point_shadow_intensity(
+        &self,
+        distance: f64,
+        mut intersections: IntersectionCollection,
+    ) -> f64 {
         if !self.use_shadow_intensity {
             return match intersections.hit() {
                 Some(inter) => {
@@ -200,7 +213,7 @@ impl World {
         // calculate shadow intensity by summation of transparency of all objects
         // (1 - transparency to be exact)
         let mut intensity = 0.;
-        for inter in intersections.vec() {
+        for inter in intersections.vec_sorted() {
             // skip intersections behind light source
             if inter.time() < 0. {
                 continue;
@@ -212,6 +225,50 @@ impl World {
             if intensity >= 1. {
                 return 1.;
             }
+        }
+        intensity
+    }
+
+    fn get_point_shadow_dist_ray(
+        &self,
+        light_source: &PointLightSource,
+        point: Point,
+    ) -> (f64, Ray) {
+        let v = light_source.position() - point;
+
+        let distance = v.magnitude();
+        let direction = v.normalize();
+
+        let ray = Ray::new(point, direction);
+
+        (distance, ray)
+    }
+
+    pub fn point_shadow_intensity_point(
+        &self,
+        light_source: &PointLightSource,
+        point: Point,
+    ) -> f64 {
+        let (distance, ray) = self.get_point_shadow_dist_ray(light_source, point);
+        let intersections = self.intersect(ray);
+
+        self.point_shadow_intensity(distance, intersections)
+    }
+
+    pub fn point_shadow_intensity_comps(
+        &self,
+        light_source: &PointLightSource,
+        comps: &IntersecComputations,
+    ) -> f64 {
+        let (dist, ray) = self.get_point_shadow_dist_ray(light_source, comps.over_point());
+        let mut collector =
+            IntersectionCollector::with_dest_obj_shadow_intensity(comps.object(), dist);
+
+        self.objects.intersect(&ray, &mut collector);
+        let intensity = collector.shadow_intensity().unwrap_or(0.);
+
+        if !self.use_shadow_intensity {
+            return if intensity.approx_eq(&0.) { 0. } else { 1. };
         }
         intensity
     }
@@ -271,7 +328,7 @@ impl World {
                     hit_comps.over_point(),
                     hit_comps.eye_v(),
                     hit_comps.normal_v(),
-                    self.point_shadow_intensity(light_source, hit_comps.over_point()),
+                    self.point_shadow_intensity_comps(light_source, &hit_comps),
                 );
                 let reflected = self.reflected_color(&hit_comps, depth);
                 let refracted = self.refracted_color(&hit_comps, depth);
@@ -336,8 +393,12 @@ mod tests {
         let world = World::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
 
-        let intersections = world.intersect(ray);
-        assert_eq!(intersections.times_vec(), vec![4., 4.5, 5.5, 6.]);
+        let mut intersections = world.intersect_testing(ray);
+        intersections.sort();
+        assert_eq!(
+            intersections.try_sorted_times_vec().unwrap(),
+            vec![4., 4.5, 5.5, 6.]
+        );
     }
     #[test]
     fn shade_intersection() {
@@ -382,7 +443,7 @@ mod tests {
         let point = Point::new(0., 10., 0.);
 
         assert_approx_eq_low_prec!(
-            world.point_shadow_intensity(&world.light_sources()[0], point),
+            world.point_shadow_intensity_point(&world.light_sources()[0], point),
             0.
         )
     }
@@ -393,7 +454,7 @@ mod tests {
         let point = Point::new(10., -10., 10.);
 
         assert_approx_eq_low_prec!(
-            world.point_shadow_intensity(&world.light_sources()[0], point),
+            world.point_shadow_intensity_point(&world.light_sources()[0], point),
             1.
         )
     }
@@ -404,7 +465,7 @@ mod tests {
         let point = Point::new(-20., 20., -20.);
 
         assert_approx_eq_low_prec!(
-            world.point_shadow_intensity(&world.light_sources()[0], point),
+            world.point_shadow_intensity_point(&world.light_sources()[0], point),
             0.
         )
     }

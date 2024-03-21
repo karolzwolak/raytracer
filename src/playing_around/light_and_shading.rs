@@ -51,7 +51,7 @@ pub fn run() -> Canvas {
             let direction = (point_on_canvas - origin).normalize();
             let ray = Ray::new(origin, direction);
 
-            let intersections = IntersectionCollection::from_ray_and_obj(ray, &sphere_obj);
+            let intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &sphere_obj);
 
             let hit_point = match intersections.hit_pos() {
                 None => continue,

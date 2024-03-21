@@ -44,7 +44,8 @@ pub fn run() -> Canvas {
             let point = Point::new(x as f64, y as f64, -radius - 1.);
             let ray = Ray::new(point, ray_direction);
 
-            if IntersectionCollection::from_ray_and_obj(ray, &sphere_obj).has_intersection() {
+            if IntersectionCollection::from_ray_and_obj_testing(ray, &sphere_obj).has_intersection()
+            {
                 canvas.write_pixel(x, CANVAS_SIZE - y, Color::red());
             }
         }

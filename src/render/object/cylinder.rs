@@ -179,7 +179,7 @@ mod tests {
 
         for (origin, direction, expected) in examples {
             let ray = Ray::new(origin, direction.normalize());
-            let times = cyl.intersection_times(&ray);
+            let times = cyl.intersection_times_testing(&ray);
 
             assert_eq!(times.len(), expected.len());
             for t in times.iter().zip(expected.iter()) {
@@ -235,7 +235,7 @@ mod tests {
 
         for (origin, direction, expected) in examples {
             let ray = Ray::new(origin, direction.normalize());
-            let times = cyl.intersection_times(&ray);
+            let times = cyl.intersection_times_testing(&ray);
             assert_eq!(times.len(), expected);
         }
     }
@@ -258,7 +258,7 @@ mod tests {
 
         for (origin, direction, expected) in examples {
             let ray = Ray::new(origin, direction.normalize());
-            let times = cyl.intersection_times(&ray);
+            let times = cyl.intersection_times_testing(&ray);
             assert_eq!(times.len(), expected);
         }
     }

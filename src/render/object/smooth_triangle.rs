@@ -155,7 +155,7 @@ mod tests {
         let ray = Ray::new(Point::new(-0.2, 0.3, -2.), Vector::new(0., 0., 1.));
         let triangle = get_smooth_triangle();
 
-        let xs = triangle.intersect_to_vec(&ray);
+        let xs = triangle.intersect_to_sorted_vec_testing(&ray);
         let i = xs[0];
         assert!(i.u().approx_eq(&0.45));
         assert!(i.v().approx_eq(&0.25));

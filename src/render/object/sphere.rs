@@ -79,7 +79,7 @@ mod tests {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let obj = Object::primitive_with_transformation(Shape::Sphere, Matrix::scaling_uniform(2.));
 
-        assert_eq!(obj.intersection_times(&ray), vec![3., 7.]);
+        assert_eq!(obj.intersection_times_testing(&ray), vec![3., 7.]);
     }
     #[test]
     fn intersect_translated_sphere() {
@@ -87,7 +87,7 @@ mod tests {
         let obj =
             Object::primitive_with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
 
-        assert_eq!(obj.intersection_times(&ray), vec![]);
+        assert_eq!(obj.intersection_times_testing(&ray), vec![]);
     }
     #[test]
     fn normal_on_sphere_x_axis() {

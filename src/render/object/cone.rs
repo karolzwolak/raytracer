@@ -170,7 +170,7 @@ mod tests {
 
         for (origin, direction, expected) in examples {
             let ray = Ray::new(origin, direction.normalize());
-            let times = cone.intersection_times(&ray);
+            let times = cone.intersection_times_testing(&ray);
 
             assert_eq!(times.len(), 2);
             assert_approx_eq_low_prec!(times[0], expected.0);
@@ -182,7 +182,7 @@ mod tests {
     fn intersecting_cone_with_ray_parallel_to_one_half() {
         let cone = Object::primitive_with_shape(Shape::default_cone());
         let ray = Ray::new(Point::new(0., 0., -1.), Vector::new(0., 1., 1.).normalize());
-        let times = cone.intersection_times(&ray);
+        let times = cone.intersection_times_testing(&ray);
 
         assert_eq!(times.len(), 1);
         assert_approx_eq_low_prec!(times[0], 0.35355);
@@ -203,7 +203,7 @@ mod tests {
 
         for (origin, direction, expected) in examples {
             let ray = Ray::new(origin, direction.normalize());
-            let times = cone.intersection_times(&ray);
+            let times = cone.intersection_times_testing(&ray);
             assert_eq!(times.len(), expected);
         }
     }
