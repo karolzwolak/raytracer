@@ -254,14 +254,21 @@ impl World {
         light_source: &PointLightSource,
         comps: &IntersecComputations,
     ) -> f64 {
-        let (distance, ray) = self.get_point_shadow_dist_ray(light_source, comps.over_point());
+        let (_, ray) = self.get_point_shadow_dist_ray(light_source, comps.over_point());
+        let mut collector =
+            IntersectionCollector::with_dest_obj_shadow_intensity(&ray, comps.object());
 
-        let intersections = match comps.object() {
-            Object::Primitive(_) => self.intersect_with_dest_obj(ray, comps.object()),
-            Object::Group(_) => self.intersect(ray),
-        };
+        if collector.hit().is_none() {
+            return 0.;
+        }
 
-        self.point_shadow_intensity(distance, intersections)
+        self.objects.intersect(&ray, &mut collector);
+        let intensity = collector.shadow_intensity().unwrap_or(0.);
+
+        if !self.use_shadow_intensity {
+            return if intensity.approx_eq(&0.) { 0. } else { 1. };
+        }
+        intensity
     }
 
     fn reflected_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {

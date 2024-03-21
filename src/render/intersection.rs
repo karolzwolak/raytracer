@@ -15,6 +15,7 @@ pub struct IntersectionCollector<'a> {
     next_object: Option<&'a Object>,
     hit_time: f64,
     hit: Option<Intersection<'a>>,
+    shadow_intensity_dest_time: Option<(f64, f64)>,
 }
 
 impl<'a> IntersectionCollector<'a> {
@@ -24,6 +25,16 @@ impl<'a> IntersectionCollector<'a> {
             next_object: None,
             hit_time: f64::INFINITY,
             hit: None,
+            shadow_intensity_dest_time: None,
+        }
+    }
+    pub fn with_calculating_shadow_intensity() -> Self {
+        Self {
+            vec: Vec::new(),
+            next_object: None,
+            hit_time: f64::INFINITY,
+            hit: None,
+            shadow_intensity_dest_time: Some((0., f64::INFINITY)),
         }
     }
     pub fn with_next_object(next_object: &'a Object) -> Self {
@@ -32,11 +43,17 @@ impl<'a> IntersectionCollector<'a> {
             next_object: Some(next_object),
             hit_time: f64::INFINITY,
             hit: None,
+            shadow_intensity_dest_time: None,
         }
     }
     pub fn with_dest_obj(ray: &Ray, dest: &'a Object) -> Self {
         let mut res = Self::new();
         dest.intersect(ray, &mut res);
+        res
+    }
+    pub fn with_dest_obj_shadow_intensity(ray: &Ray, dest: &'a Object) -> Self {
+        let mut res = Self::with_dest_obj(ray, dest);
+        res.shadow_intensity_dest_time = Some((0., res.hit_time));
         res
     }
     pub fn set_next_object(&mut self, object: &'a Object) {
@@ -46,23 +63,43 @@ impl<'a> IntersectionCollector<'a> {
         self.next_object
             .expect("Internal error: tried adding intersection without providing object reference")
     }
-    fn update_hit_time(&mut self, time: f64) {
-        if time.is_sign_positive() && time < self.hit_time {
-            self.hit_time = time;
-            self.hit = Some(*self.vec.last().unwrap());
+    fn skip_intersection(&mut self, time: f64, inter: Intersection<'a>) -> bool {
+        match &mut self.shadow_intensity_dest_time {
+            None => {
+                if time.is_sign_positive() && time < self.hit_time {
+                    self.hit_time = time;
+                    self.hit = Some(inter);
+
+                    false
+                } else {
+                    true
+                }
+            }
+            Some((intensity, dest_time)) => {
+                if time.is_sign_positive() && time < *dest_time && *intensity < 1. {
+                    *intensity += 1. - self.next_object.unwrap().material_unwrapped().transparency;
+                }
+                true
+            }
         }
     }
     /// Will panic if next_object is None
     pub fn add(&mut self, time: f64) {
         let obj = self.get_next_object_expect();
-        self.vec.push(Intersection::new(time, obj));
-        self.update_hit_time(time);
+        let inter = Intersection::new(time, obj);
+
+        if !self.skip_intersection(time, inter) {
+            self.vec.push(inter);
+        }
     }
     /// Will panic if next_object is None
     pub fn add_uv(&mut self, time: f64, u: f64, v: f64) {
         let obj = self.get_next_object_expect();
-        self.vec.push(Intersection::new_with_uv(time, obj, u, v));
-        self.update_hit_time(time);
+        let inter = Intersection::new_with_uv(time, obj, u, v);
+
+        if !self.skip_intersection(time, inter) {
+            self.vec.push(inter);
+        }
     }
     pub fn collect_sorted(mut self) -> Vec<Intersection<'a>> {
         self.vec
@@ -78,6 +115,10 @@ impl<'a> IntersectionCollector<'a> {
     pub fn into_vec_hit(self) -> (Vec<Intersection<'a>>, Option<Intersection<'a>>) {
         (self.vec, self.hit)
     }
+    pub fn shadow_intensity(&self) -> Option<f64> {
+        self.shadow_intensity_dest_time
+            .map(|(intensity, _)| intensity.min(1.))
+    }
 }
 
 impl<'a> Default for IntersectionCollector<'a> {
@@ -86,7 +127,7 @@ impl<'a> Default for IntersectionCollector<'a> {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct Intersection<'a> {
     time: f64,
     intersected_object: &'a Object,
