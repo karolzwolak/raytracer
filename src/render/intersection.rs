@@ -13,9 +13,8 @@ use super::{
 pub struct IntersectionCollector<'a> {
     vec: Vec<Intersection<'a>>,
     next_object: Option<&'a Object>,
-    hit_time: f64,
     hit: Option<Intersection<'a>>,
-    shadow_intensity_dest_time: Option<(f64, f64)>,
+    shadow_intensity: Option<f64>,
 }
 
 impl<'a> IntersectionCollector<'a> {
@@ -23,27 +22,24 @@ impl<'a> IntersectionCollector<'a> {
         Self {
             vec: Vec::new(),
             next_object: None,
-            hit_time: f64::INFINITY,
             hit: None,
-            shadow_intensity_dest_time: None,
+            shadow_intensity: None,
         }
     }
     pub fn with_calculating_shadow_intensity() -> Self {
         Self {
             vec: Vec::new(),
             next_object: None,
-            hit_time: f64::INFINITY,
             hit: None,
-            shadow_intensity_dest_time: Some((0., f64::INFINITY)),
+            shadow_intensity: Some(0.),
         }
     }
     pub fn with_next_object(next_object: &'a Object) -> Self {
         Self {
             vec: Vec::new(),
             next_object: Some(next_object),
-            hit_time: f64::INFINITY,
             hit: None,
-            shadow_intensity_dest_time: None,
+            shadow_intensity: None,
         }
     }
     pub fn with_dest_obj(ray: &Ray, dest: &'a Object) -> Self {
@@ -53,7 +49,7 @@ impl<'a> IntersectionCollector<'a> {
     }
     pub fn with_dest_obj_shadow_intensity(ray: &Ray, dest: &'a Object) -> Self {
         let mut res = Self::with_dest_obj(ray, dest);
-        res.shadow_intensity_dest_time = Some((0., res.hit_time));
+        res.shadow_intensity = Some(0.);
         res
     }
     pub fn set_next_object(&mut self, object: &'a Object) {
@@ -64,10 +60,10 @@ impl<'a> IntersectionCollector<'a> {
             .expect("Internal error: tried adding intersection without providing object reference")
     }
     fn skip_intersection(&mut self, time: f64, inter: Intersection<'a>) -> bool {
-        match &mut self.shadow_intensity_dest_time {
+        let dest_time = self.hit().map_or(f64::INFINITY, |hit| hit.time());
+        match &mut self.shadow_intensity {
             None => {
-                if time.is_sign_positive() && time < self.hit_time {
-                    self.hit_time = time;
+                if time.is_sign_positive() && time < self.hit_time() {
                     self.hit = Some(inter);
 
                     false
@@ -75,8 +71,8 @@ impl<'a> IntersectionCollector<'a> {
                     true
                 }
             }
-            Some((intensity, dest_time)) => {
-                if time.is_sign_positive() && time < *dest_time && *intensity < 1. {
+            Some(intensity) => {
+                if time.is_sign_positive() && time < dest_time && *intensity < 1. {
                     *intensity += 1. - self.next_object.unwrap().material_unwrapped().transparency;
                 }
                 true
@@ -107,7 +103,7 @@ impl<'a> IntersectionCollector<'a> {
         self.vec
     }
     pub fn hit_time(&self) -> f64 {
-        self.hit_time
+        self.hit.map_or(f64::INFINITY, |hit| hit.time())
     }
     pub fn hit(&self) -> Option<Intersection<'_>> {
         self.hit
@@ -116,8 +112,7 @@ impl<'a> IntersectionCollector<'a> {
         (self.vec, self.hit)
     }
     pub fn shadow_intensity(&self) -> Option<f64> {
-        self.shadow_intensity_dest_time
-            .map(|(intensity, _)| intensity.min(1.))
+        self.shadow_intensity.map(|intensity| intensity.min(1.))
     }
 }
 
