@@ -1,6 +1,11 @@
+use std::{cmp::Reverse, collections::binary_heap};
+
 use crate::{
     approx_eq::ApproxEq,
-    primitive::matrix::{Matrix, Transform},
+    primitive::{
+        matrix::{Matrix, Transform},
+        point::Point,
+    },
     render::{
         intersection::{Intersection, IntersectionCollector},
         material::Material,
@@ -110,6 +115,13 @@ impl ObjectGroup {
             if group.primitive_count < Self::PARTITION_THRESHOLD {
                 continue;
             }
+            group.children.sort_unstable_by(|a, b| {
+                let p = Point::zero();
+                let time_a = a.bounding_box().intersection_time_from_point(p);
+                let time_b = b.bounding_box().intersection_time_from_point(p);
+                time_a.partial_cmp(&time_b).unwrap()
+            });
+
             let (boxes, vectors) = group.divide();
 
             group.children.extend(
@@ -121,6 +133,13 @@ impl ObjectGroup {
                         ObjectGroup::with_bounding_box(children, bounding_box).into()
                     }),
             );
+
+            group.children.sort_unstable_by(|a, b| {
+                let p = Point::zero();
+                let time_a = a.bounding_box().intersection_time_from_point(p);
+                let time_b = b.bounding_box().intersection_time_from_point(p);
+                time_a.partial_cmp(&time_b).unwrap()
+            });
 
             group_stack.extend(
                 group
@@ -136,33 +155,60 @@ impl ObjectGroup {
     pub fn into_children(self) -> Vec<Object> {
         self.children
     }
-    fn intersect_iter<'a>(
-        root: &'a ObjectGroup,
-        world_ray: &Ray,
-        collector: &mut IntersectionCollector<'a>,
-    ) {
-        let mut stack = Vec::new();
-        match root.bounding_box.intersection_time(world_ray) {
-            None => return,
-            Some(t) => stack.push((root, t)),
-        }
-        while let Some((group, time)) = stack.pop() {
-            if time >= collector.hit_time() {
-                continue;
-            }
-            stack.extend(group.children.iter().rev().filter_map(|child| match child {
-                Object::Group(g) => g.bounding_box.intersection_time(world_ray).map(|t| (g, t)),
-                Object::Primitive(_) => {
-                    child.intersect(world_ray, collector);
-                    None
-                }
-            }));
-        }
-    }
+// <<<<<<< HEAD
+//     fn intersect_iter<'a>(
+//         root: &'a ObjectGroup,
+//         world_ray: &Ray,
+//         collector: &mut IntersectionCollector<'a>,
+//     ) {
+//         let mut stack = Vec::new();
+//         match root.bounding_box.intersection_time(world_ray) {
+//             None => return,
+//             Some(t) => stack.push((root, t)),
+//         }
+//         while let Some((group, time)) = stack.pop() {
+//             if time >= collector.hit_time() {
+//                 continue;
+//             }
+//             stack.extend(group.children.iter().rev().filter_map(|child| match child {
+//                 Object::Group(g) => g.bounding_box.intersection_time(world_ray).map(|t| (g, t)),
+// =======
+//     fn intersect_iter<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
+//         let mut binary_heap = binary_heap::BinaryHeap::new();
+//         match self.bounding_box.intersection_time(world_ray) {
+//             Some(t) if t < collector.hit_time() => {
+//                 binary_heap.push(Reverse(HitGroupTuple {
+//                     group: self,
+//                     time: t,
+//                 }));
+//             }
+//             _ => return,
+//         }
+//         while let Some(t) = binary_heap.pop() {
+//             if t.0.time >= collector.hit_time() {
+//                 continue;
+//             }
+//             binary_heap.extend(t.0.group.children.iter().rev().filter_map(|child| match child {
+//                 Object::Group(g) => {
+//                     let time = g.bounding_box.intersection_time(world_ray);
+//                     match time {
+//                         Some(t) if t < collector.hit_time() => {
+//                             Some(Reverse(HitGroupTuple { group: g, time: t }))
+//                         }
+//                         _ => None,
+//                     }
+//                 }
+// >>>>>>> sort-children-by-distance-to-origin
+//                 Object::Primitive(_) => {
+//                     child.intersect(world_ray, collector);
+//                     None
+//                 }
+//             }));
+//         }
+//     }
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
-        Self::intersect_iter(self, world_ray, collector);
+        self.intersect_iter(world_ray, collector);
     }
-
     // TODO: Investigate why this unused method somehow improves performance
     pub fn intersect_to_vec<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
         let mut collector = IntersectionCollector::new();
@@ -207,6 +253,59 @@ impl Transform for ObjectGroup {
         let mut new = self.clone();
         new.transform(matrix);
         new
+    }
+}
+
+struct HitGroupTuple<'a> {
+    group: &'a ObjectGroup,
+    time: f64,
+}
+impl PartialEq for HitGroupTuple<'_> {
+    fn eq(&self, other: &Self) -> bool {
+        self == other
+    }
+}
+
+impl PartialOrd for HitGroupTuple<'_> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for HitGroupTuple<'_> {}
+
+impl Ord for HitGroupTuple<'_> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.time.partial_cmp(&other.time).unwrap()
+    }
+
+    fn max(self, other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        std::cmp::max_by(self, other, Ord::cmp)
+    }
+
+    fn min(self, other: Self) -> Self
+    where
+        Self: Sized,
+    {
+        std::cmp::min_by(self, other, Ord::cmp)
+    }
+
+    fn clamp(self, min: Self, max: Self) -> Self
+    where
+        Self: Sized,
+        Self: PartialOrd,
+    {
+        assert!(min <= max);
+        if self < min {
+            min
+        } else if self > max {
+            max
+        } else {
+            self
+        }
     }
 }
 
