@@ -186,7 +186,11 @@ impl World {
     }
 
     /// 0. means no shadow, 1. means full shadow
-    fn point_shadow_intensity(&self, distance: f64, intersections: &IntersectionCollection) -> f64 {
+    fn point_shadow_intensity(
+        &self,
+        distance: f64,
+        mut intersections: IntersectionCollection,
+    ) -> f64 {
         if !self.use_shadow_intensity {
             return match intersections.hit() {
                 Some(inter) => {
@@ -242,7 +246,7 @@ impl World {
         let (distance, ray) = self.get_point_shadow_dist_ray(light_source, point);
         let intersections = self.intersect(ray);
 
-        self.point_shadow_intensity(distance, &intersections)
+        self.point_shadow_intensity(distance, intersections)
     }
 
     pub fn point_shadow_intensity_comps(
@@ -257,7 +261,7 @@ impl World {
             Object::Group(_) => self.intersect(ray),
         };
 
-        self.point_shadow_intensity(distance, &intersections)
+        self.point_shadow_intensity(distance, intersections)
     }
 
     fn reflected_color(&self, hit_comps: &IntersecComputations, depth: usize) -> Color {

@@ -35,13 +35,9 @@ impl<'a> IntersectionCollector<'a> {
         }
     }
     pub fn with_dest_obj(ray: &Ray, dest: &'a Object) -> Self {
-        let mut helper = Self::new();
-        dest.intersect(ray, &mut helper);
-        Self {
-            vec: Vec::new(),
-            next_object: None,
-            hit_time: helper.hit_time,
-        }
+        let mut res = Self::new();
+        dest.intersect(ray, &mut res);
+        res
     }
     pub fn set_next_object(&mut self, object: &'a Object) {
         self.next_object = Some(object);
