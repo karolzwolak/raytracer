@@ -34,6 +34,15 @@ impl<'a> IntersectionCollector<'a> {
             hit: None,
         }
     }
+    pub fn with_dest_obj(ray: &Ray, dest: &'a Object) -> Self {
+        let mut helper = Self::new();
+        dest.intersect(ray, &mut helper);
+        Self {
+            vec: Vec::new(),
+            next_object: None,
+            hit_time: helper.hit_time,
+        }
+    }
     pub fn set_next_object(&mut self, object: &'a Object) {
         self.next_object = Some(object);
     }
@@ -393,6 +402,9 @@ impl<'a> IntersectionCollection<'a> {
         }
         let (vec, hit) = collector.into_vec_hit();
         Self::new(ray, vec, hit, false)
+    }
+    pub fn from_collector(ray: Ray, collector: IntersectionCollector<'a>) -> Self {
+        Self::new_with_sorted_vec(ray, collector.collect_sorted())
     }
     pub fn from_ray_and_obj(ray: Ray, object: &'a Object) -> Self {
         let mut collector = IntersectionCollector::new();
