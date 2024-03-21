@@ -109,12 +109,6 @@ impl ObjectGroup {
             if group.primitive_count < Self::PARTITION_THRESHOLD {
                 continue;
             }
-            group.children.sort_unstable_by(|a, b| {
-                let p = Point::zero();
-                let time_a = a.bounding_box().intersection_time_from_point(p);
-                let time_b = b.bounding_box().intersection_time_from_point(p);
-                time_a.partial_cmp(&time_b).unwrap()
-            });
 
             let (boxes, vectors) = group.divide();
 
