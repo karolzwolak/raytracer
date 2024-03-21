@@ -115,6 +115,12 @@ impl World {
         IntersectionCollection::from_group(ray, &self.objects)
     }
 
+    pub fn intersect_testing(&self, ray: Ray) -> IntersectionCollection {
+        let mut collector = IntersectionCollector::new_keep_redundant();
+        self.objects.intersect(&ray, &mut collector);
+        IntersectionCollection::from_collector(ray, collector)
+    }
+
     pub fn intersect_with_dest_obj<'a>(
         &'a self,
         ray: Ray,
@@ -254,13 +260,9 @@ impl World {
         light_source: &PointLightSource,
         comps: &IntersecComputations,
     ) -> f64 {
-        let (_, ray) = self.get_point_shadow_dist_ray(light_source, comps.over_point());
+        let (dist, ray) = self.get_point_shadow_dist_ray(light_source, comps.over_point());
         let mut collector =
-            IntersectionCollector::with_dest_obj_shadow_intensity(&ray, comps.object());
-
-        if collector.hit().is_none() {
-            return 0.;
-        }
+            IntersectionCollector::with_dest_obj_shadow_intensity(comps.object(), dist);
 
         self.objects.intersect(&ray, &mut collector);
         let intensity = collector.shadow_intensity().unwrap_or(0.);
@@ -391,7 +393,7 @@ mod tests {
         let world = World::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
 
-        let mut intersections = world.intersect(ray);
+        let mut intersections = world.intersect_testing(ray);
         intersections.sort();
         assert_eq!(
             intersections.try_sorted_times_vec().unwrap(),

@@ -196,7 +196,7 @@ mod tests {
         let t = get_triangle();
         let ray = Ray::new(Point::new(0., 0.5, -2.), Vector::new(0., 0., 1.));
 
-        let xs = t.intersection_times(&ray);
+        let xs = t.intersection_times_testing(&ray);
         assert_eq!(xs.len(), 1);
         assert!(xs[0].approx_eq(&2.));
     }

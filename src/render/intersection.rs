@@ -15,42 +15,41 @@ pub struct IntersectionCollector<'a> {
     next_object: Option<&'a Object>,
     hit: Option<Intersection<'a>>,
     shadow_intensity: Option<f64>,
+    skip_reduntant: bool,
+}
+
+impl<'a> Default for IntersectionCollector<'a> {
+    fn default() -> Self {
+        Self::new(None, true)
+    }
 }
 
 impl<'a> IntersectionCollector<'a> {
-    pub fn new() -> Self {
+    pub fn new(next_object: Option<&'a Object>, skip_reduntant: bool) -> Self {
         Self {
             vec: Vec::new(),
-            next_object: None,
+            next_object,
             hit: None,
             shadow_intensity: None,
+            skip_reduntant,
         }
     }
-    pub fn with_calculating_shadow_intensity() -> Self {
-        Self {
-            vec: Vec::new(),
-            next_object: None,
-            hit: None,
-            shadow_intensity: Some(0.),
-        }
-    }
-    pub fn with_next_object(next_object: &'a Object) -> Self {
-        Self {
-            vec: Vec::new(),
-            next_object: Some(next_object),
-            hit: None,
-            shadow_intensity: None,
-        }
+    pub fn new_keep_redundant() -> Self {
+        Self::new(None, false)
     }
     pub fn with_dest_obj(ray: &Ray, dest: &'a Object) -> Self {
-        let mut res = Self::new();
+        let mut res = Self::default();
         dest.intersect(ray, &mut res);
         res
     }
-    pub fn with_dest_obj_shadow_intensity(ray: &Ray, dest: &'a Object) -> Self {
-        let mut res = Self::with_dest_obj(ray, dest);
-        res.shadow_intensity = Some(0.);
-        res
+    pub fn with_dest_obj_shadow_intensity(dest: &'a Object, dist: f64) -> Self {
+        Self {
+            vec: Vec::new(),
+            next_object: None,
+            hit: Some(Intersection::new(dist, dest)),
+            shadow_intensity: Some(0.),
+            skip_reduntant: true,
+        }
     }
     pub fn set_next_object(&mut self, object: &'a Object) {
         self.next_object = Some(object);
@@ -63,19 +62,24 @@ impl<'a> IntersectionCollector<'a> {
         let dest_time = self.hit().map_or(f64::INFINITY, |hit| hit.time());
         match &mut self.shadow_intensity {
             None => {
-                if time.is_sign_positive() && time < self.hit_time() {
+                let is_positive = time.is_sign_positive();
+                if is_positive && time < self.hit_time() {
                     self.hit = Some(inter);
 
                     false
                 } else {
-                    true
+                    is_positive && self.skip_reduntant
                 }
             }
             Some(intensity) => {
-                if time.is_sign_positive() && time < dest_time && *intensity < 1. {
+                if time.is_sign_positive()
+                    && !time.approx_eq(&dest_time)
+                    && time < dest_time
+                    && *intensity < 1.
+                {
                     *intensity += 1. - self.next_object.unwrap().material_unwrapped().transparency;
                 }
-                true
+                self.skip_reduntant
             }
         }
     }
@@ -113,12 +117,6 @@ impl<'a> IntersectionCollector<'a> {
     }
     pub fn shadow_intensity(&self) -> Option<f64> {
         self.shadow_intensity.map(|intensity| intensity.min(1.))
-    }
-}
-
-impl<'a> Default for IntersectionCollector<'a> {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -422,13 +420,13 @@ impl<'a> IntersectionCollection<'a> {
         Self::new(ray, xs, hit, false)
     }
     pub fn from_group(ray: Ray, group: &'a ObjectGroup) -> Self {
-        let mut collector = IntersectionCollector::new();
+        let mut collector = IntersectionCollector::default();
         group.intersect(&ray, &mut collector);
         let (vec, hit) = collector.into_vec_hit();
         Self::new(ray, vec, hit, false)
     }
     pub fn from_ray_and_mult_objects(ray: Ray, objects: &'a [Object]) -> Self {
-        let mut collector = IntersectionCollector::new();
+        let mut collector = IntersectionCollector::default();
         for object in objects {
             object.intersect(&ray, &mut collector);
         }
@@ -438,9 +436,10 @@ impl<'a> IntersectionCollection<'a> {
     pub fn from_collector(ray: Ray, collector: IntersectionCollector<'a>) -> Self {
         Self::new_with_sorted_vec(ray, collector.collect_sorted())
     }
-    pub fn from_ray_and_obj(ray: Ray, object: &'a Object) -> Self {
-        let mut collector = IntersectionCollector::new();
+    pub fn from_ray_and_obj_testing(ray: Ray, object: &'a Object) -> Self {
+        let mut collector = IntersectionCollector::new_keep_redundant();
         object.intersect(&ray, &mut collector);
+        println!("collector: {:?}", collector.skip_reduntant);
         let (vec, hit) = collector.into_vec_hit();
         Self::new(ray, vec, hit, false)
     }
@@ -514,7 +513,7 @@ mod tests {
     fn intersect_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let obj = Object::primitive_with_shape(Shape::Sphere);
-        let mut intersections = IntersectionCollection::from_ray_and_obj(ray, &obj);
+        let mut intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
 
@@ -527,7 +526,7 @@ mod tests {
     fn ray_intersects_sphere_at_tangent() {
         let ray = Ray::new(Point::new(0., 1., -5.), Vector::new(0., 0., 1.));
         let obj = Object::primitive_with_shape(Shape::Sphere);
-        let mut intersections = IntersectionCollection::from_ray_and_obj(ray, &obj);
+        let mut intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
 
@@ -542,7 +541,7 @@ mod tests {
         let obj = Object::primitive_with_shape(Shape::Sphere);
 
         assert_eq!(
-            IntersectionCollection::from_ray_and_obj(ray, &obj).count(),
+            IntersectionCollection::from_ray_and_obj_testing(ray, &obj).count(),
             0
         );
     }
@@ -550,7 +549,7 @@ mod tests {
     fn intersect_ray_originates_inside_sphere() {
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
         let obj = Object::primitive_with_shape(Shape::Sphere);
-        let mut intersections = IntersectionCollection::from_ray_and_obj(ray, &obj);
+        let mut intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
 
@@ -563,7 +562,7 @@ mod tests {
     fn intersect_ray_behind_sphere() {
         let ray = Ray::new(Point::new(0., 0., 5.), Vector::new(0., 0., 1.));
         let obj = Object::primitive_with_shape(Shape::Sphere);
-        let mut intersections = IntersectionCollection::from_ray_and_obj(ray, &obj);
+        let mut intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
 
@@ -626,7 +625,7 @@ mod tests {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let obj = Object::primitive_with_shape(Shape::Sphere);
 
-        let inter_vec = IntersectionCollection::from_ray_and_obj(ray.clone(), &obj);
+        let inter_vec = IntersectionCollection::from_ray_and_obj_testing(ray.clone(), &obj);
         let comps = inter_vec.hit().unwrap().computations(&ray);
         assert!(!comps.inside_obj());
     }
@@ -635,7 +634,7 @@ mod tests {
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
         let obj = Object::primitive_with_shape(Shape::Sphere);
 
-        let inter_vec = IntersectionCollection::from_ray_and_obj(ray.clone(), &obj);
+        let inter_vec = IntersectionCollection::from_ray_and_obj_testing(ray.clone(), &obj);
         let comps = inter_vec.hit().unwrap().computations(&ray);
 
         assert!(comps.inside_obj());
@@ -664,7 +663,7 @@ mod tests {
         let plane = Object::primitive_with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., 10., 0.), Vector::new(0., 0., 1.));
 
-        let intersections = IntersectionCollection::from_ray_and_obj(ray, &plane);
+        let intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &plane);
         assert!(!intersections.has_intersection());
     }
 
@@ -673,7 +672,7 @@ mod tests {
         let plane = Object::primitive_with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
 
-        let intersections = IntersectionCollection::from_ray_and_obj(ray, &plane);
+        let intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &plane);
         assert!(!intersections.has_intersection());
     }
 

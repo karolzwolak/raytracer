@@ -4,11 +4,7 @@ use crate::{
         matrix::{Matrix, Transform},
         point::Point,
     },
-    render::{
-        intersection::{Intersection, IntersectionCollector},
-        material::Material,
-        ray::Ray,
-    },
+    render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
 
 use super::{bounding_box::BoundingBox, Object};
@@ -179,12 +175,6 @@ impl ObjectGroup {
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
         Self::intersect_iter(self, world_ray, collector)
     }
-    // TODO: Investigate why this unused method somehow improves performance
-    pub fn intersect_to_vec<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
-        let mut collector = IntersectionCollector::new();
-        self.intersect(world_ray, &mut collector);
-        collector.collect_sorted()
-    }
 
     pub fn bounding_box(&self) -> &BoundingBox {
         &self.bounding_box
@@ -243,7 +233,7 @@ mod tests {
     fn intersecting_ray_with_empty_group() {
         let object = Object::group_with_children(Vec::new());
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
-        assert!(object.intersect_to_sorted_vec(&ray).is_empty());
+        assert!(object.intersect_to_sorted_vec_testing(&ray).is_empty());
     }
 
     #[test]
@@ -255,7 +245,7 @@ mod tests {
         let object = Object::group_with_children(vec![s1, s2, s3]);
 
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let mut xs = IntersectionCollection::from_ray_and_obj(ray, &object);
+        let mut xs = IntersectionCollection::from_ray_and_obj_testing(ray, &object);
         let data = xs.vec_sorted();
         let group = object.as_group().unwrap();
 
@@ -276,7 +266,7 @@ mod tests {
         ));
 
         let ray = Ray::new(Point::new(10., 0., -10.), Vector::new(0., 0., 1.));
-        assert_eq!(object.intersect_to_sorted_vec(&ray).len(), 2);
+        assert_eq!(object.intersect_to_sorted_vec_testing(&ray).len(), 2);
     }
 
     #[test]

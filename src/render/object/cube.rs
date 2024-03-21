@@ -98,7 +98,7 @@ mod tests {
         assert_eq!(examples.len(), expected_times.len());
 
         for (ray, expected) in examples.iter().zip(expected_times.iter()) {
-            assert_eq!(cube.intersection_times(ray), *expected);
+            assert_eq!(cube.intersection_times_testing(ray), *expected);
         }
     }
 

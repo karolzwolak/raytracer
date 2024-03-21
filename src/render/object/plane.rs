@@ -30,8 +30,8 @@ impl PlaneXZ {
 #[cfg(test)]
 mod tests {
     use crate::{
-        assert_approx_eq_low_prec,
         approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
         primitive::{point::Point, tuple::Tuple, vector::Vector},
         render::{
             object::{shape::Shape, Object},
@@ -44,7 +44,7 @@ mod tests {
         let plane = Object::primitive_with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., 1., 0.), Vector::new(0., -1., 0.));
 
-        assert_eq!(plane.intersection_times(&ray), vec![1.]);
+        assert_eq!(plane.intersection_times_testing(&ray), vec![1.]);
     }
 
     #[test]
@@ -52,7 +52,7 @@ mod tests {
         let plane = Object::primitive_with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., -1., 0.), Vector::new(0., 1., 0.));
 
-        assert_eq!(plane.intersection_times(&ray), vec![1.]);
+        assert_eq!(plane.intersection_times_testing(&ray), vec![1.]);
     }
 
     #[test]
