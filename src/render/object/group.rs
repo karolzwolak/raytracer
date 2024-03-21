@@ -1,11 +1,7 @@
 use crate::{
     approx_eq::ApproxEq,
     primitive::matrix::{Matrix, Transform},
-    render::{
-        intersection::{Intersection, IntersectionCollector},
-        material::Material,
-        ray::Ray,
-    },
+    render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
 
 use super::{bounding_box::BoundingBox, Object};
@@ -161,13 +157,6 @@ impl ObjectGroup {
     }
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
         Self::intersect_iter(self, world_ray, collector);
-    }
-
-    // TODO: Investigate why this unused method somehow improves performance
-    pub fn intersect_to_vec<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
-        let mut collector = IntersectionCollector::new();
-        self.intersect(world_ray, &mut collector);
-        collector.collect_sorted()
     }
 
     pub fn bounding_box(&self) -> &BoundingBox {
