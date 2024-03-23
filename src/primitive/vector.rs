@@ -37,7 +37,7 @@ impl Vector {
         Self::new(0., 0., 0.)
     }
     pub fn magnitude(&self) -> f64 {
-        (self.x.powi(2) + self.y.powi(2) + self.z.powi(2)).sqrt()
+        (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
     }
     pub fn normalize(&self) -> Self {
         let len = self.magnitude();

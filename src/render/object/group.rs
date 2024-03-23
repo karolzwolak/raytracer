@@ -92,7 +92,7 @@ impl ObjectGroup {
                 }
 
                 let dist_to_group = self.bounding_box.distance(&child_box);
-                if dist_to_group < min_d || dist_to_group.approx_eq(&min_d) {
+                if dist_to_group <= min_d {
                     self.children.push(child);
                 } else {
                     boxes[min_id].add_bounding_box(&child_box);
