@@ -1,3 +1,5 @@
+use rayon::iter::{IndexedParallelIterator, IntoParallelIterator, ParallelIterator};
+
 use crate::{
     approx_eq::ApproxEq,
     primitive::{
@@ -104,37 +106,42 @@ impl ObjectGroup {
     fn partition_iter(root: &mut ObjectGroup) {
         let mut group_stack = vec![root];
 
-        while let Some(group) = group_stack.pop() {
-            group.bounding_box.limit_dimensions();
-            if group.primitive_count < Self::PARTITION_THRESHOLD {
-                continue;
-            }
+        while !group_stack.is_empty() {
+            group_stack = group_stack
+                .into_par_iter()
+                .rev()
+                .flat_map(|group| {
+                    group.bounding_box.limit_dimensions();
+                    if group.primitive_count < Self::PARTITION_THRESHOLD {
+                        return Vec::new();
+                    }
 
-            let (boxes, vectors) = group.divide();
+                    let (boxes, vectors) = group.divide();
 
-            group.children.extend(
-                vectors
-                    .into_iter()
-                    .zip(boxes.into_iter())
-                    .filter(|(v, _)| !v.is_empty())
-                    .map(|(children, bounding_box)| {
-                        ObjectGroup::with_bounding_box(children, bounding_box).into()
-                    }),
-            );
+                    group.children.extend(
+                        vectors
+                            .into_iter()
+                            .zip(boxes)
+                            .filter(|(v, _)| !v.is_empty())
+                            .map(|(children, bounding_box)| {
+                                ObjectGroup::with_bounding_box(children, bounding_box).into()
+                            }),
+                    );
 
-            group.children.sort_unstable_by(|a, b| {
-                let p = Point::zero();
-                let time_a = a.bounding_box().intersection_time_from_point(p);
-                let time_b = b.bounding_box().intersection_time_from_point(p);
-                time_a.partial_cmp(&time_b).unwrap()
-            });
+                    group.children.sort_unstable_by(|a, b| {
+                        let p = Point::zero();
+                        let time_a = a.bounding_box().intersection_time_from_point(p);
+                        let time_b = b.bounding_box().intersection_time_from_point(p);
+                        time_a.partial_cmp(&time_b).unwrap()
+                    });
 
-            group_stack.extend(
-                group
-                    .children
-                    .iter_mut()
-                    .filter_map(|child| child.as_group_mut().map(|g| g as &mut ObjectGroup)),
-            );
+                    group
+                        .children
+                        .iter_mut()
+                        .filter_map(|child| child.as_group_mut().map(|g| g as &mut ObjectGroup))
+                        .collect()
+                })
+                .collect();
         }
     }
     pub fn partition(&mut self) {
