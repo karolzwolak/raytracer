@@ -94,10 +94,10 @@ impl Cone {
         let min = self.y_min.abs();
         let max = self.y_max.abs();
         let max_radius = min.max(max);
-        BoundingBox {
-            min: Point::new(-max_radius, self.y_min, -max_radius),
-            max: Point::new(max_radius, self.y_max, max_radius),
-        }
+        BoundingBox::new(
+            Point::new(-max_radius, self.y_min, -max_radius),
+            Point::new(max_radius, self.y_max, max_radius),
+        )
     }
 
     fn check_cap_within_radius(&self, ray: &Ray, t: f64, radius: f64) -> bool {

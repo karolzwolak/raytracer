@@ -12,10 +12,7 @@ impl UnitSphere {
         object_point - Point::zero()
     }
     pub fn bounding_box() -> BoundingBox {
-        BoundingBox {
-            min: Point::new(-1., -1., -1.),
-            max: Point::new(1., 1., 1.),
-        }
+        BoundingBox::new(Point::new(-1., -1., -1.), Point::new(1., 1., 1.))
     }
 
     pub fn local_intersect(object_ray: &Ray, collector: &mut IntersectionCollector) {

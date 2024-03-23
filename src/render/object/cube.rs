@@ -43,10 +43,7 @@ impl UnitCube {
     }
 
     pub fn bounding_box() -> BoundingBox {
-        BoundingBox {
-            min: Point::new(-1., -1., -1.),
-            max: Point::new(1., 1., 1.),
-        }
+        BoundingBox::new(Point::new(-1., -1., -1.), Point::new(1., 1., 1.))
     }
 
     fn cube_axis_intersec_times(origin: f64, dir_inv: f64) -> (f64, f64) {

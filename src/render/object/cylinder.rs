@@ -90,10 +90,10 @@ impl Cylinder {
         }
     }
     pub fn bounding_box(&self) -> BoundingBox {
-        BoundingBox {
-            min: Point::new(-1., self.y_min, -1.),
-            max: Point::new(1., self.y_max, 1.),
-        }
+        BoundingBox::new(
+            Point::new(-1., self.y_min, -1.),
+            Point::new(1., self.y_max, 1.),
+        )
     }
     fn check_cap_within_radius(&self, ray: &Ray, t: f64) -> bool {
         let x = ray.origin().x() + t * ray.direction().x();

@@ -20,6 +20,7 @@ use crate::{
 pub struct BoundingBox {
     pub min: Point,
     pub max: Point,
+    center: Point,
 }
 
 impl Transform for BoundingBox {
@@ -52,7 +53,16 @@ impl BoundingBox {
         Self {
             min: Point::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
             max: Point::new(f64::NEG_INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY),
+            center: Point::zero(),
         }
+    }
+    pub fn new(min: Point, max: Point) -> Self {
+        let center = Point::new(
+            (min.x() + max.x()) * 0.5,
+            (min.y() + max.y()) * 0.5,
+            (min.z() + max.z()) * 0.5,
+        );
+        Self { min, max, center }
     }
     pub fn is_empty(&self) -> bool {
         self.min.x() == f64::INFINITY
@@ -72,6 +82,11 @@ impl BoundingBox {
             self.max.x().max(point.x()),
             self.max.y().max(point.y()),
             self.max.z().max(point.z()),
+        );
+        self.center = Point::new(
+            (self.min.x() + self.max.x()) * 0.5,
+            (self.min.y() + self.max.y()) * 0.5,
+            (self.min.z() + self.max.z()) * 0.5,
         );
     }
     pub fn add_bounding_box(&mut self, other: &BoundingBox) {
@@ -198,14 +213,8 @@ impl BoundingBox {
         let mid_min = Point::new(x0, y0, z0);
         let mid_max = Point::new(x1, y1, z1);
         (
-            BoundingBox {
-                min: self.min,
-                max: mid_max,
-            },
-            BoundingBox {
-                min: mid_min,
-                max: self.max,
-            },
+            BoundingBox::new(self.min, mid_max),
+            BoundingBox::new(mid_min, self.max),
         )
     }
     pub fn split_n(&self, n: usize) -> Vec<BoundingBox> {
@@ -246,11 +255,7 @@ impl BoundingBox {
         )
     }
     pub fn center(&self) -> Point {
-        Point::new(
-            (self.min.x() + self.max.x()) / 2.,
-            (self.min.y() + self.max.y()) / 2.,
-            (self.min.z() + self.max.z()) / 2.,
-        )
+        self.center
     }
     pub fn contains_point(&self, point: &Point) -> bool {
         (self.min.x() < point.x() || self.min.x().approx_eq(&point.x()))

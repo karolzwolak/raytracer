@@ -20,10 +20,10 @@ impl PlaneXZ {
         collector.add(-object_ray.origin().y() / object_ray.direction().y());
     }
     pub fn bounding_box() -> BoundingBox {
-        BoundingBox {
-            min: Point::new(f64::NEG_INFINITY, 0., f64::NEG_INFINITY),
-            max: Point::new(f64::INFINITY, 0., f64::INFINITY),
-        }
+        BoundingBox::new(
+            Point::new(f64::NEG_INFINITY, 0., f64::NEG_INFINITY),
+            Point::new(f64::INFINITY, 0., f64::INFINITY),
+        )
     }
 }
 
