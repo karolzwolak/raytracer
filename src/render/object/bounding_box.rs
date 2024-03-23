@@ -269,7 +269,11 @@ impl BoundingBox {
         self.contains_point(&other.min) && self.contains_point(&other.max)
     }
     pub fn distance(&self, other: &BoundingBox) -> f64 {
-        (self.center() - other.center()).magnitude()
+        let x_diff = self.center().x() - other.center().x();
+        let y_diff = self.center().y() - other.center().y();
+        let z_diff = self.center().z() - other.center().z();
+
+        (x_diff * x_diff + y_diff * y_diff + z_diff * z_diff).sqrt()
     }
 }
 
