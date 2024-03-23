@@ -1,13 +1,11 @@
+use super::{bounding_box::BoundingBox, Object};
 use crate::{
-    approx_eq::ApproxEq,
     primitive::{
         matrix::{Matrix, Transform},
         point::Point,
     },
     render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
-
-use super::{bounding_box::BoundingBox, Object};
 
 #[derive(Clone, Debug)]
 /// A group of objects that can be transformed simultaneously.
@@ -20,7 +18,9 @@ pub struct ObjectGroup {
 }
 
 impl ObjectGroup {
-    pub const PARTITION_THRESHOLD: usize = 2;
+    pub const PARTITION_THRESHOLD: usize = 8;
+    const BBOX_SPLIT_POWER: usize = 5;
+    const DIVISION_BBOX_LEN_FACTOR: f64 = 5.0e-3;
 
     fn with_bounding_box(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
         let count = children
@@ -72,7 +72,9 @@ impl ObjectGroup {
         }
     }
     fn divide(&mut self) -> (Vec<BoundingBox>, Vec<Vec<Object>>) {
-        let mut boxes = self.bounding_box().split_n(7);
+        let mut boxes = self.bounding_box().split_n(Self::BBOX_SPLIT_POWER);
+        let box_len = (boxes[0].max - boxes[0].min).magnitude();
+        let min_dist_to_be_divided = box_len * Self::DIVISION_BBOX_LEN_FACTOR;
         let mut vectors = vec![vec![]; boxes.len()];
 
         std::mem::take(&mut self.children)
@@ -83,6 +85,13 @@ impl ObjectGroup {
 
                 let mut min_id = 0;
                 let mut min_d = f64::INFINITY;
+
+                let dist_to_group = self.bounding_box.distance(&child_box);
+                if dist_to_group <= min_dist_to_be_divided {
+                    self.children.push(child);
+                    return;
+                }
+
                 for (id, b) in boxes.iter().enumerate() {
                     let d = b.distance(&child_box);
                     if d < min_d {
@@ -91,13 +100,8 @@ impl ObjectGroup {
                     }
                 }
 
-                let dist_to_group = self.bounding_box.distance(&child_box);
-                if dist_to_group < min_d || dist_to_group.approx_eq(&min_d) {
-                    self.children.push(child);
-                } else {
-                    boxes[min_id].add_bounding_box(&child_box);
-                    vectors[min_id].push(child);
-                }
+                boxes[min_id].add_bounding_box(&child_box);
+                vectors[min_id].push(child);
             });
         (boxes, vectors)
     }
