@@ -15,5 +15,6 @@ codegen-units = 1
 [dependencies]
 png = "0.17.11"
 rayon = "1.8.0"
+saphyr = "0.0.3"
 serde = { version = "1.0.197", features = ["derive"] }
 serde_yaml = "0.9.33"
