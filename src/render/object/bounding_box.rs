@@ -15,7 +15,7 @@ use crate::{
     },
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 /// Axis-aligned bounding box
 pub struct BoundingBox {
     pub min: Point,

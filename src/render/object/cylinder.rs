@@ -7,7 +7,7 @@ use crate::{
 use super::bounding_box::BoundingBox;
 
 /// Cylinder with radius 1
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Cylinder {
     pub y_min: f64,
     pub y_max: f64,

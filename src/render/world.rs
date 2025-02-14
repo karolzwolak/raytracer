@@ -20,6 +20,7 @@ use super::{
 };
 use super::{object::shape::Shape, pattern::Pattern};
 
+#[derive(PartialEq, Debug)]
 pub struct World {
     objects: ObjectGroup,
     light_sources: Vec<PointLightSource>,

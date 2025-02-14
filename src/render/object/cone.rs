@@ -6,7 +6,7 @@ use crate::{
 
 use super::bounding_box::BoundingBox;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Cone {
     pub y_min: f64,
     pub y_max: f64,

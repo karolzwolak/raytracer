@@ -4,7 +4,7 @@ use super::{color::Color, object::Object, pattern::Pattern};
 
 pub const AIR_REFRACTIVE_INDEX: f64 = 1.0;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Material {
     pub pattern: Pattern,
     pub ambient: f64,      // [0;1]

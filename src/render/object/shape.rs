@@ -12,7 +12,7 @@ use super::{
     smooth_triangle::SmoothTriangle, sphere::UnitSphere,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Shape {
     /// Unit sphere at point zero
     Sphere,

@@ -1,4 +1,5 @@
 pub mod approx_eq;
+pub mod yaml;
 
 pub mod primitive {
     pub mod matrix;
@@ -37,4 +38,5 @@ pub mod playing_around {
     pub mod shadows;
     pub mod transformations;
     pub mod triangles;
+    pub mod yaml;
 }

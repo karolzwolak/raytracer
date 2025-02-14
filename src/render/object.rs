@@ -27,7 +27,7 @@ use super::{
     ray::Ray,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Object {
     Primitive(Box<PrimitiveObject>),
     Group(ObjectGroup),
@@ -224,7 +224,7 @@ impl Object {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct PrimitiveObject {
     shape: Shape,
     material: Material,

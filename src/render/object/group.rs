@@ -7,7 +7,7 @@ use crate::{
     render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 /// A group of objects that can be transformed simultaneously.
 /// However, children added later will not be affected by previous transformations.
 /// It also features automatic bounding_box calculation, that reduce ray intersection checks.

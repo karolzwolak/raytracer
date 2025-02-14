@@ -4,7 +4,7 @@ use crate::playing_around::{making_patterns, planes, reflections, shadows};
 
 use super::{
     cubes, cylinders, groups, light_and_shading, making_scene, projectiles, rays_and_spheres,
-    refractions, transformations, triangles,
+    refractions, transformations, triangles, yaml,
 };
 
 const DEFAULT_WIDTH: usize = 1200;
@@ -99,6 +99,7 @@ fn run_with_args(
         "cylinders" => cylinders::run(width, height),
         "groups" => groups::run(width, height),
         "triangles" => triangles::run(width, height),
+        "yaml" => yaml::run(width, height),
         _ => return Err(format!("no such chapter '{chapter}'")),
     };
 

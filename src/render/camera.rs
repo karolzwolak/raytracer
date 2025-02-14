@@ -4,6 +4,7 @@ use super::{canvas::Canvas, ray::Ray};
 
 // camera looks toward -z direction from point zero
 // this makes +x to be on the left
+#[derive(PartialEq, Debug)]
 pub struct Camera {
     target_width: usize,
     target_height: usize,
