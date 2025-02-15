@@ -189,7 +189,7 @@ impl<'a> YamlParser<'a> {
 
     fn parse_transformation(&self, body: &Yaml) -> YamlParseResult<Matrix> {
         let mut res = Matrix::identity();
-        for transformation in body.as_vec().ok_or(YamlParseError::InvalidField)? {
+        for transformation in body.as_vec().unwrap_or(&Vec::new()) {
             let matrix = self.parse_matrix(transformation)?;
             res.transform(&matrix);
         }
