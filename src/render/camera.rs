@@ -74,6 +74,14 @@ impl Camera {
     pub fn canvas(&self) -> Canvas {
         Canvas::new(self.target_width, self.target_height)
     }
+
+    pub fn target_width(&self) -> usize {
+        self.target_width
+    }
+
+    pub fn target_height(&self) -> usize {
+        self.target_height
+    }
 }
 
 #[cfg(test)]
