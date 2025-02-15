@@ -9,6 +9,7 @@ use crate::{
 pub enum YamlParseError {
     MissingField,
     InvalidField,
+    UnexpectedValue,
 }
 
 pub struct YamlParser<'a> {
@@ -56,18 +57,18 @@ impl<'a> YamlParser<'a> {
         Ok(Point::new(x, y, z))
     }
 
-    fn parse_ligth(&self, value: &Yaml) -> YamlParseResult<PointLightSource> {
-        let at = self.parse_point(&value["at"])?;
-        let intensity = self.parse_color(&value["intensity"])?;
+    fn parse_light(&self, body: &Yaml) -> YamlParseResult<PointLightSource> {
+        let at = self.parse_point(&body["at"])?;
+        let intensity = self.parse_color(&body["intensity"])?;
 
         Ok(PointLightSource::new(at, intensity))
     }
 
-    fn parse_add(&mut self, value: &Yaml) -> YamlParseResult<()> {
-        if let Yaml::String(str_value) = value {
+    fn parse_add(&mut self, what: &Yaml, body: &Yaml) -> YamlParseResult<()> {
+        if let Yaml::String(str_value) = what {
             match str_value.as_str() {
                 "light" => {
-                    let light = self.parse_ligth(value)?;
+                    let light = self.parse_light(body)?;
                     self.world.add_light(light);
                 }
                 _ => {}
@@ -79,12 +80,13 @@ impl<'a> YamlParser<'a> {
     fn parse(mut self) -> YamlParserOutput {
         for yaml_obj in self.yaml.as_vec().unwrap_or(&Vec::new()) {
             if let Yaml::Hash(hash) = yaml_obj {
-                let iter = hash.iter();
-                for (key, value) in hash.iter() {
-                    println!("{:?}: {:?}", key, value);
-                    match key.as_str() {
-                        Some("add") => self.parse_add(value)?,
-                        _ => (),
+                match hash.front() {
+                    Some((Yaml::String(operation), what)) => match operation.as_str() {
+                        "add" => self.parse_add(what, yaml_obj)?,
+                        _ => {}
+                    },
+                    _ => {
+                        return Err(YamlParseError::UnexpectedValue);
                     }
                 }
             }
