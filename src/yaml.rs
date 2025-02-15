@@ -7,7 +7,15 @@ use crate::{
         tuple::Tuple,
         vector::Vector,
     },
-    render::{camera::Camera, color::Color, light::PointLightSource, world::World},
+    render::{
+        camera::Camera,
+        color::Color,
+        light::PointLightSource,
+        material::Material,
+        object::{shape::Shape, Object},
+        pattern::Pattern,
+        world::World,
+    },
 };
 
 #[derive(Debug)]
@@ -26,6 +34,48 @@ pub struct YamlParser<'a> {
 type YamlParseResult<T> = Result<T, YamlParseError>;
 type YamlParserOutput = YamlParseResult<(World, Camera)>;
 
+macro_rules! parse_optional_field {
+    ($self:ident, $yaml_body:ident, $base:ident, $field:ident) => {
+        match &$yaml_body[stringify!($field)] {
+            &Yaml::BadValue => {}
+            val => $base.$field = $self.parse_num(val)?,
+        }
+    };
+}
+
+macro_rules! call_with_n_first_values {
+    ($values:ident, 0, $func:path) => {
+        $func($values)
+    };
+    ($values:ident, 1, $func:path) => {
+        $func($values[0])
+    };
+    ($values:ident, 2, $func:path) => {
+        $func($values[0], $values[1])
+    };
+    ($values:ident, 3, $func:path) => {
+        $func($values[0], $values[1], $values[2])
+    };
+    ($values:ident, 4, $func:path) => {
+        $func($values[0], $values[1], $values[2], $values[3])
+    };
+    ($values:ident, 6, $func:path) => {
+        $func(
+            $values[0], $values[1], $values[2], $values[3], $values[4], $values[5],
+        )
+    };
+}
+
+macro_rules! parse_transformation {
+    ($code_name:ident, $values:ident, $n:tt) => {
+        if $values.len() != $n {
+            return Err(YamlParseError::InvalidField);
+        } else {
+            Ok(call_with_n_first_values!($values, $n, Matrix::$code_name))
+        }
+    };
+}
+
 impl<'a> YamlParser<'a> {
     fn new(yaml: &'a Yaml, default_world: World, default_camera: Camera) -> Self {
         Self {
@@ -41,6 +91,10 @@ impl<'a> YamlParser<'a> {
             Yaml::Real(value) => Ok(value.parse().unwrap()),
             _ => Err(YamlParseError::InvalidField),
         }
+    }
+
+    fn parse_vec(&self, vector: &[Yaml]) -> YamlParseResult<Vec<f64>> {
+        vector.iter().map(|v| self.parse_num(v)).collect()
     }
 
     fn parse_vec3(&self, value: &Yaml) -> YamlParseResult<(f64, f64, f64)> {
@@ -94,6 +148,66 @@ impl<'a> YamlParser<'a> {
         Ok(Camera::with_transformation(width, height, fov, view))
     }
 
+    fn parse_material(&self, body: &Yaml) -> YamlParseResult<Material> {
+        let mut base = Material::default();
+        match &body["color"] {
+            &Yaml::BadValue => {}
+            val => base.pattern = Pattern::Const(self.parse_color(val)?),
+        }
+        match &body["reflective"] {
+            &Yaml::BadValue => {}
+            val => base.reflectivity = self.parse_num(val)?,
+        }
+        parse_optional_field!(self, body, base, ambient);
+        parse_optional_field!(self, body, base, diffuse);
+        parse_optional_field!(self, body, base, specular);
+        parse_optional_field!(self, body, base, shininess);
+        parse_optional_field!(self, body, base, transparency);
+        parse_optional_field!(self, body, base, refractive_index);
+
+        Ok(Material::default())
+    }
+
+    fn parse_matrix(&self, body: &Yaml) -> YamlParseResult<Matrix> {
+        let values = body.as_vec().ok_or(YamlParseError::InvalidField)?;
+        if values.is_empty() {
+            return Ok(Matrix::identity());
+        }
+        let kind = values[0].as_str().ok_or(YamlParseError::InvalidField)?;
+        let vector = self.parse_vec(&values[1..])?;
+        match kind {
+            "translate" => parse_transformation!(translation, vector, 3),
+            "scale" => parse_transformation!(scaling, vector, 3),
+            "scale-uniform" => parse_transformation!(scaling_uniform, vector, 1),
+            "rotate-x" => parse_transformation!(rotation_x, vector, 1),
+            "rotate-y" => parse_transformation!(rotation_y, vector, 1),
+            "rotate-z" => parse_transformation!(rotation_z, vector, 1),
+            "shear" => parse_transformation!(shearing, vector, 6),
+            _ => Err(YamlParseError::InvalidField),
+        }
+    }
+
+    fn parse_transformation(&self, body: &Yaml) -> YamlParseResult<Matrix> {
+        let mut res = Matrix::identity();
+        for transformation in body.as_vec().ok_or(YamlParseError::InvalidField)? {
+            let matrix = self.parse_matrix(transformation)?;
+            res.transform(&matrix);
+        }
+        Ok(res)
+    }
+
+    fn parse_object(&self, body: &Yaml, obj_kind: &str) -> YamlParseResult<Object> {
+        let shape = match obj_kind {
+            "sphere" => Shape::Sphere,
+            "cube" => Shape::Cube,
+            "plane" => Shape::Plane,
+            _ => unimplemented!(),
+        };
+        let material = self.parse_material(&body["material"])?;
+        let transformation = self.parse_transformation(&body["transform"])?;
+        Ok(Object::primitive(shape, material, transformation))
+    }
+
     fn parse_add(&mut self, what: &Yaml, body: &Yaml) -> YamlParseResult<()> {
         if let Yaml::String(str_value) = what {
             match str_value.as_str() {
@@ -105,7 +219,10 @@ impl<'a> YamlParser<'a> {
                     let camera = self.parse_camera(body)?;
                     self.camera = camera;
                 }
-                _ => {}
+                kind => {
+                    let object = self.parse_object(body, kind)?;
+                    self.world.add_obj(object);
+                }
             }
         };
         Ok(())
@@ -145,6 +262,8 @@ pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> (World,
 
 #[cfg(test)]
 mod tests {
+    use crate::primitive::matrix::Transform;
+
     use super::*;
 
     const WIDTH: usize = 600;
@@ -166,6 +285,18 @@ mod tests {
   from: [ -6, 6, -10 ]
   to: [ 6, 0, 6 ]
   up: [ -0.45, 1, 0 ]
+"#;
+
+    const PLANE_YAML: &str = r#"
+- add: plane
+  material:
+    color: [ 1, 1, 1 ]
+    ambient: 1
+    diffuse: 0
+    specular: 0
+  transform:
+    - [ rotate-x, 1.5707963267948966 ] # pi/2
+    - [ translate, 0, 0, 500 ]
 "#;
 
     fn parse(source: &str) -> (World, Camera) {
@@ -200,5 +331,17 @@ mod tests {
         );
         let expected_camera = Camera::with_transformation(100, 100, 0.785, view);
         assert_eq!(camera, expected_camera);
+    }
+
+    #[test]
+    fn parse_plane() {
+        let (world, _) = parse(PLANE_YAML);
+        let expected_material = Material::with_color(Color::white());
+        let expected_transformation = Matrix::rotation_x(std::f64::consts::PI / 2.0)
+            .translate(0., 0., 500.)
+            .transformed();
+        let expected_object =
+            Object::primitive(Shape::Plane, expected_material, expected_transformation);
+        assert_eq!(world.objects(), vec![expected_object]);
     }
 }
