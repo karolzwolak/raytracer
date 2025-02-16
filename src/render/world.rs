@@ -48,7 +48,8 @@ impl World {
             0 | 1 => vec![0.],
             2 => vec![-0.25, 0.25],
             3 => vec![-0.25, 0., 0.25],
-            _ => vec![-0.5, -0.25, -0.125, 0., 0.125, 0.25, 0.5],
+            4 => vec![-0.5, -0.25, 0.25, 0.5],
+            _ => vec![-0.5, -0.25, 0., 0.25, 0.5],
         }
     }
 
@@ -178,6 +179,7 @@ impl World {
 
         println!("rendering {} objects", primitive_count);
         println!("with {} rays", ray_count);
+        println!("with {} maximum recursive depth", self.max_recursive_depth);
 
         let now = std::time::Instant::now();
 
@@ -349,6 +351,30 @@ impl World {
                 };
                 acc + surface + reflected_refracted
             })
+    }
+
+    pub fn use_shadow_intensity(&self) -> bool {
+        self.use_shadow_intensity
+    }
+
+    pub fn set_use_shadow_intensity(&mut self, use_shadow_intensity: bool) {
+        self.use_shadow_intensity = use_shadow_intensity;
+    }
+
+    pub fn max_recursive_depth(&self) -> usize {
+        self.max_recursive_depth
+    }
+
+    pub fn set_max_recursive_depth(&mut self, max_recursive_depth: usize) {
+        self.max_recursive_depth = max_recursive_depth;
+    }
+
+    pub fn supersampling_level(&self) -> usize {
+        self.supersampling_offsets.len()
+    }
+
+    pub fn set_supersampling_level(&mut self, level: usize) {
+        self.supersampling_offsets = Self::gen_supersampling_offsets(level);
     }
 }
 
