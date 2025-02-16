@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use saphyr::Yaml;
 
 use crate::{
@@ -23,12 +25,14 @@ pub enum YamlParseError {
     MissingField,
     InvalidField,
     UnexpectedValue,
+    UnknownDefine,
 }
 
 pub struct YamlParser<'a> {
     yaml: &'a Yaml,
     world: World,
     camera: Camera,
+    defines: HashMap<String, Yaml>,
 }
 
 type YamlParseResult<T> = Result<T, YamlParseError>;
@@ -82,6 +86,7 @@ impl<'a> YamlParser<'a> {
             yaml,
             world: default_world,
             camera: default_camera,
+            defines: HashMap::new(),
         }
     }
 
@@ -149,23 +154,30 @@ impl<'a> YamlParser<'a> {
     }
 
     fn parse_material(&self, body: &Yaml) -> YamlParseResult<Material> {
-        let mut base = Material::default();
+        if let Some(name) = body.as_str() {
+            let material = self
+                .defines
+                .get(name)
+                .ok_or(YamlParseError::UnknownDefine)?;
+            return self.parse_material(material);
+        }
+        let mut res = Material::default();
         match &body["color"] {
             &Yaml::BadValue => {}
-            val => base.pattern = Pattern::Const(self.parse_color(val)?),
+            val => res.pattern = Pattern::Const(self.parse_color(val)?),
         }
         match &body["reflective"] {
             &Yaml::BadValue => {}
-            val => base.reflectivity = self.parse_num(val)?,
+            val => res.reflectivity = self.parse_num(val)?,
         }
-        parse_optional_field!(self, body, base, ambient);
-        parse_optional_field!(self, body, base, diffuse);
-        parse_optional_field!(self, body, base, specular);
-        parse_optional_field!(self, body, base, shininess);
-        parse_optional_field!(self, body, base, transparency);
-        parse_optional_field!(self, body, base, refractive_index);
+        parse_optional_field!(self, body, res, ambient);
+        parse_optional_field!(self, body, res, diffuse);
+        parse_optional_field!(self, body, res, specular);
+        parse_optional_field!(self, body, res, shininess);
+        parse_optional_field!(self, body, res, transparency);
+        parse_optional_field!(self, body, res, refractive_index);
 
-        Ok(Material::default())
+        Ok(res)
     }
 
     fn parse_matrix(&self, body: &Yaml) -> YamlParseResult<Matrix> {
@@ -228,12 +240,46 @@ impl<'a> YamlParser<'a> {
         Ok(())
     }
 
+    fn parse_define(
+        &mut self,
+        name: &str,
+        extends: Option<&str>,
+        body: &Yaml,
+    ) -> YamlParseResult<()> {
+        let extends = extends.map(|s| self.defines[s].clone());
+        match extends {
+            Some(extend) => {
+                let extend_hash = extend.as_hash().ok_or(YamlParseError::InvalidField)?;
+                let body_hash = body.as_hash().ok_or(YamlParseError::InvalidField)?;
+                let mut new_body = extend_hash.to_owned();
+                for (key, value) in body_hash {
+                    if extend_hash.contains_key(key) {
+                        new_body[key] = value.clone();
+                    } else {
+                        new_body.insert(key.clone(), value.clone());
+                    }
+                }
+                self.defines.insert(name.to_string(), Yaml::Hash(new_body));
+            }
+            None => {
+                self.defines.insert(name.to_string(), body.clone());
+            }
+        }
+        Ok(())
+    }
+
     fn parse(mut self) -> YamlParserOutput {
         for yaml_obj in self.yaml.as_vec().unwrap_or(&Vec::new()) {
             if let Yaml::Hash(hash) = yaml_obj {
                 match hash.front() {
                     Some((Yaml::String(operation), what)) => match operation.as_str() {
                         "add" => self.parse_add(what, yaml_obj)?,
+                        "define" => {
+                            let name = what.as_str().ok_or(YamlParseError::InvalidField)?;
+                            let extends = yaml_obj["extend"].as_str();
+                            let body = &yaml_obj["value"];
+                            self.parse_define(name, extends, body)?;
+                        }
                         _ => {}
                     },
                     _ => {
@@ -299,6 +345,31 @@ mod tests {
     - [ translate, 0, 0, 500 ]
 "#;
 
+    const DEFINE_TRANSFORMS_YAML: &str = r#"
+- define: standard-transform
+  value:
+    - [ translate, 1, -1, 1 ]
+    - [ scale, 0.5, 0.5, 0.5 ]
+- define: large-object
+  value:
+    - standard-transform
+    - [ scale, 3.5, 3.5, 3.5 ]
+"#;
+    const DEFINE_MATERIALS_YAML: &str = r#"
+- define: white-material
+  value:
+    color: [ 1, 1, 1 ]
+    diffuse: 0.7
+- define: blue-material
+  extend: white-material
+  value:
+    color: [ 0, 0, 1 ]
+- add: sphere
+  material: white-material
+- add: cube
+  material: blue-material
+"#;
+
     fn parse(source: &str) -> (World, Camera) {
         parse_str(source, WIDTH, HEIGHT, FOV)
     }
@@ -336,12 +407,38 @@ mod tests {
     #[test]
     fn parse_plane() {
         let (world, _) = parse(PLANE_YAML);
-        let expected_material = Material::with_color(Color::white());
+        let expected_material = Material {
+            pattern: Pattern::Const(Color::white()),
+            ambient: 1.,
+            diffuse: 0.,
+            specular: 0.,
+            ..Material::default()
+        };
         let expected_transformation = Matrix::rotation_x(std::f64::consts::PI / 2.0)
             .translate(0., 0., 500.)
             .transformed();
         let expected_object =
             Object::primitive(Shape::Plane, expected_material, expected_transformation);
         assert_eq!(world.objects(), vec![expected_object]);
+    }
+
+    #[test]
+    fn parse_define_materials() {
+        let (world, _) = parse(DEFINE_MATERIALS_YAML);
+        let white_material = Material {
+            pattern: Pattern::Const(Color::white()),
+            diffuse: 0.7,
+            ..Material::default()
+        };
+        let blue_material = Material {
+            pattern: Pattern::Const(Color::blue()),
+            diffuse: 0.7,
+            ..white_material
+        };
+        let white_sphere = Object::primitive(Shape::Sphere, white_material, Matrix::identity());
+        let blue_cube = Object::primitive(Shape::Cube, blue_material, Matrix::identity());
+        let expected_objects = vec![white_sphere, blue_cube];
+
+        assert_eq!(world.objects(), expected_objects);
     }
 }
