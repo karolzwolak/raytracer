@@ -232,6 +232,28 @@ impl<'a> YamlParser<'a> {
         Ok(Object::primitive(shape, material, transformation))
     }
 
+    fn parse_world(&mut self, body: &Yaml) -> YamlParseResult<()> {
+        match &body["supersampling-level"] {
+            &Yaml::BadValue => {}
+            val => self
+                .world
+                .set_supersampling_level(self.parse_num(val)? as usize),
+        }
+        match &body["max-reflective-depth"] {
+            &Yaml::BadValue => {}
+            val => self
+                .world
+                .set_max_recursive_depth(self.parse_num(val)? as usize),
+        }
+        match &body["use-shadow-intensity"] {
+            &Yaml::BadValue => {}
+            val => self
+                .world
+                .set_use_shadow_intensity(self.parse_num(val)? != 0.),
+        }
+        Ok(())
+    }
+
     fn parse_add(&mut self, what: &Yaml, body: &Yaml) -> YamlParseResult<()> {
         if let Yaml::String(str_value) = what {
             match str_value.as_str() {
@@ -242,6 +264,9 @@ impl<'a> YamlParser<'a> {
                 "camera" => {
                     let camera = self.parse_camera(body)?;
                     self.camera = camera;
+                }
+                "world" => {
+                    self.parse_world(body)?;
                 }
                 kind => {
                     let object = self.parse_object(body, kind)?;
@@ -344,6 +369,12 @@ mod tests {
   to: [ 6, 0, 6 ]
   up: [ -0.45, 1, 0 ]
 "#;
+    const WORLD_YAML: &str = r#"
+- add: world
+  max-reflective-depth: 4
+  supersampling-level: 3
+  use-shadow-intensity: 0
+"#;
 
     const PLANE_YAML: &str = r#"
 - add: plane
@@ -432,6 +463,14 @@ mod tests {
         );
         let expected_camera = Camera::with_transformation(100, 100, 0.785, view);
         assert_eq!(camera, expected_camera);
+    }
+
+    #[test]
+    fn parse_world() {
+        let (world, _) = parse(WORLD_YAML);
+        assert_eq!(world.max_recursive_depth(), 4);
+        assert_eq!(world.supersampling_level(), 3);
+        assert!(!world.use_shadow_intensity());
     }
 
     #[test]
