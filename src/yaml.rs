@@ -40,9 +40,12 @@ type YamlParserOutput = YamlParseResult<(World, Camera)>;
 
 macro_rules! parse_optional_field {
     ($self:ident, $yaml_body:ident, $base:ident, $field:ident) => {
-        match &$yaml_body[stringify!($field)] {
+        parse_optional_field!($self, $yaml_body, $base, stringify!($field), $field);
+    };
+    ($self:ident, $yaml_body:ident, $base:ident, $yaml_field:expr,$field_name: ident) => {
+        match &$yaml_body[$yaml_field] {
             &Yaml::BadValue => {}
-            val => $base.$field = $self.parse_num(val)?,
+            val => $base.$field_name = $self.parse_num(val)?,
         }
     };
 }
@@ -170,12 +173,14 @@ impl<'a> YamlParser<'a> {
             &Yaml::BadValue => {}
             val => res.reflectivity = self.parse_num(val)?,
         }
+
         parse_optional_field!(self, body, res, ambient);
         parse_optional_field!(self, body, res, diffuse);
         parse_optional_field!(self, body, res, specular);
         parse_optional_field!(self, body, res, shininess);
         parse_optional_field!(self, body, res, transparency);
-        parse_optional_field!(self, body, res, refractive_index);
+        parse_optional_field!(self, body, res, "reflective", reflectivity);
+        parse_optional_field!(self, body, res, "refractive-index", refractive_index);
 
         Ok(res)
     }
@@ -351,6 +356,18 @@ mod tests {
     - [ rotate-x, 1.5707963267948966 ] # pi/2
     - [ translate, 0, 0, 500 ]
 "#;
+    const SPHERE_YAML: &str = r#"
+- add: sphere
+  material:
+    color: [ 0.373, 0.404, 0.550 ]
+    diffuse: 0.2
+    ambient: 0.0
+    specular: 1.0
+    shininess: 200
+    reflective: 0.7
+    transparency: 0.7
+    refractive-index: 1.5
+"#;
 
     const DEFINE_TRANSFORMS_YAML: &str = r#"
 - define: standard-transform
@@ -432,6 +449,25 @@ mod tests {
             .transformed();
         let expected_object =
             Object::primitive(Shape::Plane, expected_material, expected_transformation);
+        assert_eq!(world.objects(), vec![expected_object]);
+    }
+
+    #[test]
+    fn parse_sphere() {
+        let (world, _) = parse(SPHERE_YAML);
+        let expected_material = Material {
+            pattern: Pattern::Const(Color::new(0.373, 0.404, 0.550)),
+            ambient: 0.,
+            diffuse: 0.2,
+            specular: 1.,
+            shininess: 200.,
+            reflectivity: 0.7,
+            transparency: 0.7,
+            refractive_index: 1.5,
+        };
+        let expected_object =
+            Object::primitive(Shape::Sphere, expected_material, Matrix::identity());
+
         assert_eq!(world.objects(), vec![expected_object]);
     }
 
