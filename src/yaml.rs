@@ -181,6 +181,13 @@ impl<'a> YamlParser<'a> {
     }
 
     fn parse_matrix(&self, body: &Yaml) -> YamlParseResult<Matrix> {
+        if let Yaml::String(str_value) = body {
+            return self.parse_transformation(
+                self.defines
+                    .get(str_value)
+                    .ok_or(YamlParseError::UnknownDefine)?,
+            );
+        }
         let values = body.as_vec().ok_or(YamlParseError::InvalidField)?;
         if values.is_empty() {
             return Ok(Matrix::identity());
@@ -353,7 +360,13 @@ mod tests {
 - define: large-object
   value:
     - standard-transform
-    - [ scale, 3.5, 3.5, 3.5 ]
+    - [ scale-uniform, 4 ]
+- add: sphere
+  transform: 
+    - standard-transform
+- add: cube
+  transform: 
+    - large-object
 "#;
     const DEFINE_MATERIALS_YAML: &str = r#"
 - define: white-material
@@ -439,6 +452,19 @@ mod tests {
         let blue_cube = Object::primitive(Shape::Cube, blue_material, Matrix::identity());
         let expected_objects = vec![white_sphere, blue_cube];
 
+        assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn parse_define_transforms() {
+        let (world, _) = parse(DEFINE_TRANSFORMS_YAML);
+        let standard_transform = Matrix::translation(1., -1., 1.)
+            .scale(0.5, 0.5, 0.5)
+            .transformed();
+        let large_object_transform = standard_transform.clone().scale_uniform(4.).transformed();
+        let sphere = Object::primitive(Shape::Sphere, Material::default(), standard_transform);
+        let cube = Object::primitive(Shape::Cube, Material::default(), large_object_transform);
+        let expected_objects = vec![sphere, cube];
         assert_eq!(world.objects(), expected_objects);
     }
 }
