@@ -179,7 +179,8 @@ impl World {
 
         println!("rendering {} objects", primitive_count);
         println!("with {} rays", ray_count);
-        println!("with {} maximum recursive depth", self.max_recursive_depth);
+        println!("with {} maximum reflective depth", self.max_recursive_depth);
+        println!("with supersampling level {}", self.supersampling_level());
 
         let now = std::time::Instant::now();
 
