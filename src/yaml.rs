@@ -14,6 +14,7 @@ use crate::{
         color::Color,
         light::PointLightSource,
         material::Material,
+        obj_parser::ObjParser,
         object::{group::ObjectGroup, shape::Shape, Object},
         pattern::Pattern,
         world::World,
@@ -26,6 +27,8 @@ pub enum YamlParseError {
     InvalidField,
     UnexpectedValue,
     UnknownDefine,
+    FileReadError,
+    ObjParsingError,
 }
 
 // TODO: Implement rest of the shapes, pattern, groups and .obj models parsing
@@ -222,9 +225,7 @@ impl<'a> YamlParser<'a> {
         Ok(res)
     }
 
-    fn parse_group(&self, body: &Yaml) -> YamlParseResult<Object> {
-        let transformation = self.parse_transformation(&body["transform"])?;
-        let material = self.parse_material(&body["material"])?;
+    fn parse_group(&self, body: &Yaml) -> YamlParseResult<ObjectGroup> {
         let children_yaml = body["children"]
             .as_vec()
             .ok_or(YamlParseError::InvalidField)?;
@@ -244,17 +245,31 @@ impl<'a> YamlParser<'a> {
                 None => return Err(YamlParseError::UnexpectedValue),
             }
         }
-        Ok(Object::Group(
-            ObjectGroup::with_transformations_and_material(children, transformation, material),
-        ))
+        Ok(ObjectGroup::new(children))
+    }
+
+    fn parse_obj_model(&self, body: &Yaml) -> YamlParseResult<ObjectGroup> {
+        let file = body["file"].as_str().ok_or(YamlParseError::MissingField)?;
+        let data = std::fs::read_to_string(file).map_err(|_| YamlParseError::FileReadError)?;
+        let parser = ObjParser::new();
+        parser
+            .parse(data)
+            .map_err(|_| YamlParseError::ObjParsingError)
     }
 
     fn parse_object(&self, body: &Yaml, obj_kind: &str) -> YamlParseResult<Object> {
         let material = self.parse_material(&body["material"])?;
         let transformation = self.parse_transformation(&body["transform"])?;
         let shape = match obj_kind {
-            "group" => {
-                return self.parse_group(body);
+            "group" | "obj" => {
+                let mut res = match obj_kind {
+                    "group" => self.parse_group(body),
+                    "obj" => self.parse_obj_model(body),
+                    _ => unreachable!(),
+                }?;
+                res.set_material(material);
+                res.transform(&transformation);
+                return Ok(Object::Group(res));
             }
             "sphere" => Shape::Sphere,
             "cube" => Shape::Cube,
@@ -476,6 +491,10 @@ mod tests {
   material: blue-material
 "#;
 
+    const OBJ_YAML: &str = r#"
+- add: obj
+  file: samples/obj/teapot-low.obj
+"#;
     fn parse(source: &str) -> (World, Camera) {
         parse_str(source, WIDTH, HEIGHT, FOV)
     }
@@ -598,5 +617,15 @@ mod tests {
         let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
 
         assert_eq!(world.objects(), vec![Object::Group(group)]);
+    }
+
+    #[test]
+    fn parse_obj() {
+        let (world, _) = parse(OBJ_YAML);
+        let parser = ObjParser::new();
+        let path = "samples/obj/teapot-low.obj";
+        let data = std::fs::read_to_string(path).unwrap();
+        let expected_group = parser.parse(data).unwrap();
+        assert_eq!(world.objects(), vec![Object::Group(expected_group)]);
     }
 }
