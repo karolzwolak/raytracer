@@ -14,7 +14,7 @@ use crate::{
         color::Color,
         light::PointLightSource,
         material::Material,
-        object::{shape::Shape, Object},
+        object::{group::ObjectGroup, shape::Shape, Object},
         pattern::Pattern,
         world::World,
     },
@@ -28,6 +28,8 @@ pub enum YamlParseError {
     UnknownDefine,
 }
 
+// TODO: Implement rest of the shapes, pattern, groups and .obj models parsing
+// TODO: Add supporn for defining anything
 pub struct YamlParser<'a> {
     yaml: &'a Yaml,
     world: World,
@@ -220,15 +222,45 @@ impl<'a> YamlParser<'a> {
         Ok(res)
     }
 
+    fn parse_group(&self, body: &Yaml) -> YamlParseResult<Object> {
+        let transformation = self.parse_transformation(&body["transform"])?;
+        let material = self.parse_material(&body["material"])?;
+        let children_yaml = body["children"]
+            .as_vec()
+            .ok_or(YamlParseError::InvalidField)?;
+        let mut children = Vec::new();
+        for child in children_yaml {
+            match child.as_hash() {
+                Some(hash) => {
+                    let pair = hash.front().ok_or(YamlParseError::InvalidField)?;
+                    match pair {
+                        (Yaml::String(op), Yaml::String(kind)) if op == "add" => {
+                            let object = self.parse_object(child, kind)?;
+                            children.push(object);
+                        }
+                        _ => return Err(YamlParseError::UnexpectedValue),
+                    }
+                }
+                None => return Err(YamlParseError::UnexpectedValue),
+            }
+        }
+        Ok(Object::Group(
+            ObjectGroup::with_transformations_and_material(children, transformation, material),
+        ))
+    }
+
     fn parse_object(&self, body: &Yaml, obj_kind: &str) -> YamlParseResult<Object> {
+        let material = self.parse_material(&body["material"])?;
+        let transformation = self.parse_transformation(&body["transform"])?;
         let shape = match obj_kind {
+            "group" => {
+                return self.parse_group(body);
+            }
             "sphere" => Shape::Sphere,
             "cube" => Shape::Cube,
             "plane" => Shape::Plane,
             _ => unimplemented!(),
         };
-        let material = self.parse_material(&body["material"])?;
-        let transformation = self.parse_transformation(&body["transform"])?;
         Ok(Object::primitive(shape, material, transformation))
     }
 
@@ -400,6 +432,19 @@ mod tests {
     refractive-index: 1.5
 "#;
 
+    const GROUP_YAML: &str = r#"
+- add: group
+  transform:
+    - [translate, 1, 1, 1]
+  children:
+    - add: sphere
+      material:
+        color: [ 1, 0, 0 ]
+    - add: cube
+      material:
+        color: [ 0, 1, 0 ]
+"#;
+
     const DEFINE_TRANSFORMS_YAML: &str = r#"
 - define: standard-transform
   value:
@@ -541,5 +586,17 @@ mod tests {
         let cube = Object::primitive(Shape::Cube, Material::default(), large_object_transform);
         let expected_objects = vec![sphere, cube];
         assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn parse_group() {
+        let (world, _) = parse(GROUP_YAML);
+        let red_sphere = Object::primitive(Shape::Sphere, Material::default(), Matrix::identity());
+        let green_cube = Object::primitive(Shape::Cube, Material::default(), Matrix::identity());
+        let transformation = Matrix::translation(1., 1., 1.);
+
+        let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
+
+        assert_eq!(world.objects(), vec![Object::Group(group)]);
     }
 }

@@ -4,7 +4,11 @@ use crate::{
         matrix::{Matrix, Transform},
         point::Point,
     },
-    render::{intersection::IntersectionCollector, material::Material, ray::Ray},
+    render::{
+        intersection::IntersectionCollector,
+        material::{self, Material},
+        ray::Ray,
+    },
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -44,6 +48,17 @@ impl ObjectGroup {
     pub fn with_transformations(children: Vec<Object>, transformation: Matrix) -> Self {
         let mut group = Self::new(children);
         group.transform(&transformation);
+        group
+    }
+
+    pub fn with_transformations_and_material(
+        children: Vec<Object>,
+        transformation: Matrix,
+        material: Material,
+    ) -> Self {
+        let mut group = Self::new(children);
+        group.transform(&transformation);
+        group.set_material(material);
         group
     }
 
