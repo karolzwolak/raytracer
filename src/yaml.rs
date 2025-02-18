@@ -568,7 +568,7 @@ mod tests {
     }
     #[test]
     fn comments_are_supported() {
-        let _ = parse("");
+        let _ = parse(COMMENT_YAML);
     }
 
     #[test]
