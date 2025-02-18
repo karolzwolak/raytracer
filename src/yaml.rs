@@ -15,7 +15,7 @@ use crate::{
         light::PointLightSource,
         material::Material,
         obj_parser::ObjParser,
-        object::{cylinder::Cylinder, group::ObjectGroup, shape::Shape, Object},
+        object::{cone::Cone, cylinder::Cylinder, group::ObjectGroup, shape::Shape, Object},
         pattern::Pattern,
         world::World,
     },
@@ -298,6 +298,12 @@ impl<'a> YamlParser<'a> {
                 let closed = self.parse_bool(&body["closed"])?;
                 Shape::Cylinder(Cylinder::new(min, max, closed))
             }
+            "cone" => {
+                let min = self.parse_num(&body["min"])?;
+                let max = self.parse_num(&body["max"])?;
+                let closed = self.parse_bool(&body["closed"])?;
+                Shape::Cone(Cone::new(min, max, closed))
+            }
             name => {
                 if let Some(def) = self.defines.get(name) {
                     let kind = def["add"].as_str().ok_or(YamlParseError::InvalidField)?;
@@ -556,6 +562,13 @@ mod tests {
   closed: true
 "#;
 
+    const CONE_YAML: &str = r#"
+- add: cone
+  min: 1
+  max: 5
+  closed: true
+"#;
+
     fn parse(source: &str) -> (World, Camera) {
         parse_str(source, WIDTH, HEIGHT, FOV)
     }
@@ -727,6 +740,14 @@ mod tests {
         let (world, _) = parse(CYLINDER_YAML);
         let cylinder_shape = Cylinder::new(1., 5., true);
         let expected_object = Object::primitive_with_shape(Shape::Cylinder(cylinder_shape));
+        assert_eq!(world.objects(), vec![expected_object]);
+    }
+
+    #[test]
+    fn parse_cone() {
+        let (world, _) = parse(CONE_YAML);
+        let cylinder_shape = Cone::new(1., 5., true);
+        let expected_object = Object::primitive_with_shape(Shape::Cone(cylinder_shape));
         assert_eq!(world.objects(), vec![expected_object]);
     }
 }
