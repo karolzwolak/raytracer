@@ -134,6 +134,39 @@ impl<'a> YamlParser<'a> {
         Ok(Color::new(r, g, b))
     }
 
+    fn parse_pattern(&self, body: &Yaml) -> YamlParseResult<Pattern> {
+        match &body["color"] {
+            Yaml::BadValue => {}
+            val => return Ok(Pattern::Const(self.parse_color(val)?)),
+        }
+        let body = &body["pattern"];
+
+        let kind = body["type"].as_str().ok_or(YamlParseError::InvalidField)?;
+        let colors = body["colors"]
+            .as_vec()
+            .ok_or(YamlParseError::InvalidField)?
+            .iter()
+            .map(|c| self.parse_color(c))
+            .collect::<YamlParseResult<Vec<Color>>>()?;
+
+        if colors.len() != 2 {
+            return Err(YamlParseError::InvalidField);
+        }
+        let transform = match &body["transform"] {
+            &Yaml::BadValue => None,
+            val => Some(self.parse_transformation(val)?),
+        };
+
+        Ok(match kind {
+            "stripe" | "stripes" => Pattern::stripe(colors[0], colors[1], transform),
+            "gradient" => Pattern::gradient(colors[0], colors[1], transform),
+            "checkers" => Pattern::checkers(colors[0], colors[1], transform),
+            "ring" => Pattern::ring(colors[0], colors[1], transform),
+            "color" => Pattern::Const(colors[0]),
+            _ => return Err(YamlParseError::InvalidField),
+        })
+    }
+
     fn parse_point(&self, value: &Yaml) -> YamlParseResult<Point> {
         let (x, y, z) = self.parse_vec3(value)?;
         Ok(Point::new(x, y, z))
@@ -176,22 +209,23 @@ impl<'a> YamlParser<'a> {
     }
 
     fn parse_material(&self, body: &Yaml) -> YamlParseResult<Material> {
-        if let Some(name) = body.as_str() {
-            let material = self
-                .defines
-                .get(name)
-                .ok_or(YamlParseError::UnknownDefine)?;
-            return self.parse_material(material);
+        match *body {
+            Yaml::BadValue => {
+                return Ok(Material::default());
+            }
+            Yaml::String(ref name) => {
+                let material = self
+                    .defines
+                    .get(name)
+                    .ok_or(YamlParseError::UnknownDefine)?;
+                return self.parse_material(material);
+            }
+            _ => {}
         }
-        let mut res = Material::default();
-        match &body["color"] {
-            &Yaml::BadValue => {}
-            val => res.pattern = Pattern::Const(self.parse_color(val)?),
-        }
-        match &body["reflective"] {
-            &Yaml::BadValue => {}
-            val => res.reflectivity = self.parse_num(val)?,
-        }
+        let mut res = Material {
+            pattern: self.parse_pattern(body)?,
+            ..Material::default()
+        };
 
         parse_optional_field!(self, body, res, ambient);
         parse_optional_field!(self, body, res, diffuse);
@@ -497,6 +531,11 @@ mod tests {
     - [ rotate-x, 1.5707963267948966 ] # pi/2
     - [ translate, 0, 0, 500 ]
 "#;
+
+    const DEFAULT_CUBE_YAML: &str = r#"
+- add: sphere
+"#;
+
     const SPHERE_YAML: &str = r#"
 - add: sphere
   material:
@@ -607,6 +646,57 @@ mod tests {
   n3: [ 1, 0, 0 ]
 "#;
 
+    const PATTERNS_YAML: &str = r#"
+- define: red
+  value: [ 1, 0, 0 ]
+- define: green
+  value: [ 0, 1, 0 ]
+
+- define: transformation
+  value:
+    - [ scale, 0.1, 0.1, 0.1 ]
+
+- add: cube
+  material:
+    pattern:
+      type: stripe
+      colors:
+        - red
+        - green
+      transform:
+        - transformation
+
+- add: cube
+  material:
+    pattern:
+      type: gradient
+      colors:
+        - red
+        - green
+      transform:
+        - transformation
+
+- add: cube
+  material:
+    pattern:
+      type: ring
+      colors:
+        - red
+        - green
+      transform:
+        - transformation
+
+- add: cube
+  material:
+    pattern:
+      type: checkers
+      colors:
+        - red
+        - green
+      transform:
+        - transformation
+"#;
+
     fn parse(source: &str) -> (World, Camera) {
         parse_str(source, WIDTH, HEIGHT, FOV)
     }
@@ -665,6 +755,13 @@ mod tests {
         let expected_object =
             Object::primitive(Shape::Plane, expected_material, expected_transformation);
         assert_eq!(world.objects(), vec![expected_object]);
+    }
+
+    #[test]
+    fn objects_have_default_material_and_transformation() {
+        let (world, _) = parse(DEFAULT_CUBE_YAML);
+        let sphere = Object::primitive(Shape::Sphere, Material::default(), Matrix::identity());
+        assert_eq!(world.objects(), vec![sphere]);
     }
 
     #[test]
@@ -812,6 +909,25 @@ mod tests {
             Vector::new(1., 0., 0.),
         )));
         let expected_objects = vec![triangle];
+        assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn parse_patterns() {
+        let (world, _) = parse(PATTERNS_YAML);
+        let red = Color::red();
+        let green = Color::green();
+        let transformation = Matrix::scaling_uniform(0.1);
+        let stripe = Material::with_pattern(Pattern::stripe(red, green, Some(transformation)));
+        let gradient = Material::with_pattern(Pattern::gradient(red, green, Some(transformation)));
+        let ring = Material::with_pattern(Pattern::ring(red, green, Some(transformation)));
+        let checkers = Material::with_pattern(Pattern::checkers(red, green, Some(transformation)));
+        let expected_objects = vec![
+            Object::primitive(Shape::Cube, stripe, Matrix::identity()),
+            Object::primitive(Shape::Cube, gradient, Matrix::identity()),
+            Object::primitive(Shape::Cube, ring, Matrix::identity()),
+            Object::primitive(Shape::Cube, checkers, Matrix::identity()),
+        ];
         assert_eq!(world.objects(), expected_objects);
     }
 }
