@@ -15,7 +15,7 @@ use crate::{
         light::PointLightSource,
         material::Material,
         obj_parser::ObjParser,
-        object::{group::ObjectGroup, shape::Shape, Object},
+        object::{cylinder::Cylinder, group::ObjectGroup, shape::Shape, Object},
         pattern::Pattern,
         world::World,
     },
@@ -146,6 +146,10 @@ impl<'a> YamlParser<'a> {
         let intensity = self.parse_color(&body["intensity"])?;
 
         Ok(PointLightSource::new(at, intensity))
+    }
+
+    fn parse_bool(&self, value: &Yaml) -> YamlParseResult<bool> {
+        value.as_bool().ok_or(YamlParseError::InvalidField)
     }
 
     fn parse_camera(&self, body: &Yaml) -> YamlParseResult<Camera> {
@@ -288,6 +292,12 @@ impl<'a> YamlParser<'a> {
             "sphere" => Shape::Sphere,
             "cube" => Shape::Cube,
             "plane" => Shape::Plane,
+            "cylinder" => {
+                let min = self.parse_num(&body["min"])?;
+                let max = self.parse_num(&body["max"])?;
+                let closed = self.parse_bool(&body["closed"])?;
+                Shape::Cylinder(Cylinder::new(min, max, closed))
+            }
             name => {
                 if let Some(def) = self.defines.get(name) {
                     let kind = def["add"].as_str().ok_or(YamlParseError::InvalidField)?;
@@ -420,7 +430,7 @@ pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> (World,
 
 #[cfg(test)]
 mod tests {
-    use crate::primitive::matrix::Transform;
+    use crate::{primitive::matrix::Transform, render::object::cylinder::Cylinder};
 
     use super::*;
 
@@ -539,6 +549,13 @@ mod tests {
 - add: sphere
   material:
     color: red
+"#;
+
+    const CYLINDER_YAML: &str = r#"
+- add: cylinder
+  min: 1
+  max: 5
+  closed: true
 "#;
 
     fn parse(source: &str) -> (World, Camera) {
@@ -705,5 +722,13 @@ mod tests {
         let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
         let expected_objects = vec![red_sphere];
         assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn parse_cylinder() {
+        let (world, _) = parse(CYLINDER_YAML);
+        let cylinder_shape = Cylinder::new(1., 5., true);
+        let expected_object = Object::primitive_with_shape(Shape::Cylinder(cylinder_shape));
+        assert_eq!(world.objects(), vec![expected_object]);
     }
 }
