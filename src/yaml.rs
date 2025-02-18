@@ -258,8 +258,6 @@ impl<'a> YamlParser<'a> {
     }
 
     fn parse_object(&self, body: &Yaml, obj_kind: &str) -> YamlParseResult<Object> {
-        let material = self.parse_material(&body["material"])?;
-        let transformation = self.parse_transformation(&body["transform"])?;
         let shape = match obj_kind {
             "group" | "obj" => {
                 let mut res = match obj_kind {
@@ -267,15 +265,33 @@ impl<'a> YamlParser<'a> {
                     "obj" => self.parse_obj_model(body),
                     _ => unreachable!(),
                 }?;
-                res.set_material(material);
-                res.transform(&transformation);
+                match &body["material"] {
+                    &Yaml::BadValue => {}
+                    val => {
+                        let material = self.parse_material(val)?;
+                        res.set_material(material);
+                    }
+                }
+                match &body["transform"] {
+                    &Yaml::BadValue => {}
+                    val => res.transform(&self.parse_transformation(val)?),
+                }
                 return Ok(Object::Group(res));
             }
             "sphere" => Shape::Sphere,
             "cube" => Shape::Cube,
             "plane" => Shape::Plane,
-            _ => unimplemented!(),
+            name => {
+                if let Some(def) = self.defines.get(name) {
+                    let kind = def["add"].as_str().ok_or(YamlParseError::InvalidField)?;
+                    let body = self.merge_use_define(def, body)?;
+                    return self.parse_object(&body, kind);
+                }
+                return Err(YamlParseError::UnknownDefine);
+            }
         };
+        let material = self.parse_material(&body["material"])?;
+        let transformation = self.parse_transformation(&body["transform"])?;
         Ok(Object::primitive(shape, material, transformation))
     }
 
@@ -324,6 +340,20 @@ impl<'a> YamlParser<'a> {
         Ok(())
     }
 
+    fn merge_use_define(&self, define_body: &Yaml, body: &Yaml) -> YamlParseResult<Yaml> {
+        let extend_hash = define_body.as_hash().ok_or(YamlParseError::InvalidField)?;
+        let body_hash = body.as_hash().ok_or(YamlParseError::InvalidField)?;
+        let mut new_body = extend_hash.to_owned();
+        for (key, value) in body_hash {
+            if extend_hash.contains_key(key) {
+                new_body[key] = value.clone();
+            } else {
+                new_body.insert(key.clone(), value.clone());
+            }
+        }
+        Ok(Yaml::Hash(new_body))
+    }
+
     fn parse_define(
         &mut self,
         name: &str,
@@ -333,17 +363,8 @@ impl<'a> YamlParser<'a> {
         let extends = extends.map(|s| self.defines[s].clone());
         match extends {
             Some(extend) => {
-                let extend_hash = extend.as_hash().ok_or(YamlParseError::InvalidField)?;
-                let body_hash = body.as_hash().ok_or(YamlParseError::InvalidField)?;
-                let mut new_body = extend_hash.to_owned();
-                for (key, value) in body_hash {
-                    if extend_hash.contains_key(key) {
-                        new_body[key] = value.clone();
-                    } else {
-                        new_body.insert(key.clone(), value.clone());
-                    }
-                }
-                self.defines.insert(name.to_string(), Yaml::Hash(new_body));
+                self.defines
+                    .insert(name.to_string(), self.merge_use_define(&extend, body)?);
             }
             None => {
                 self.defines.insert(name.to_string(), body.clone());
@@ -495,6 +516,15 @@ mod tests {
 - add: obj
   file: samples/obj/teapot-low.obj
 "#;
+
+    const USE_DEFINE_IN_ADD_YAML: &str = r#"
+- define: defined_cube
+  value:
+    add: cube
+- add: defined_cube
+  material:
+    color: [ 1, 0, 0 ]
+"#;
     fn parse(source: &str) -> (World, Camera) {
         parse_str(source, WIDTH, HEIGHT, FOV)
     }
@@ -610,8 +640,16 @@ mod tests {
     #[test]
     fn parse_group() {
         let (world, _) = parse(GROUP_YAML);
-        let red_sphere = Object::primitive(Shape::Sphere, Material::default(), Matrix::identity());
-        let green_cube = Object::primitive(Shape::Cube, Material::default(), Matrix::identity());
+        let red_material = Material {
+            pattern: Pattern::Const(Color::red()),
+            ..Material::default()
+        };
+        let green_material = Material {
+            pattern: Pattern::Const(Color::green()),
+            ..Material::default()
+        };
+        let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
+        let green_cube = Object::primitive(Shape::Cube, green_material, Matrix::identity());
         let transformation = Matrix::translation(1., 1., 1.);
 
         let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
@@ -627,5 +665,17 @@ mod tests {
         let data = std::fs::read_to_string(path).unwrap();
         let expected_group = parser.parse(data).unwrap();
         assert_eq!(world.objects(), vec![Object::Group(expected_group)]);
+    }
+
+    #[test]
+    fn parse_use_define_in_add() {
+        let (world, _) = parse(USE_DEFINE_IN_ADD_YAML);
+        let red_material = Material {
+            pattern: Pattern::Const(Color::red()),
+            ..Material::default()
+        };
+        let red_cube = Object::primitive(Shape::Cube, red_material, Matrix::identity());
+        let expected_objects = vec![red_cube];
+        assert_eq!(world.objects(), expected_objects);
     }
 }
