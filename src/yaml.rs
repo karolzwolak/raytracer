@@ -15,7 +15,10 @@ use crate::{
         light::PointLightSource,
         material::Material,
         obj_parser::ObjParser,
-        object::{cone::Cone, cylinder::Cylinder, group::ObjectGroup, shape::Shape, Object},
+        object::{
+            cone::Cone, cylinder::Cylinder, group::ObjectGroup, shape::Shape,
+            smooth_triangle::SmoothTriangle, triangle::Triangle, Object,
+        },
         pattern::Pattern,
         world::World,
     },
@@ -304,6 +307,21 @@ impl<'a> YamlParser<'a> {
                 let closed = self.parse_bool(&body["closed"])?;
                 Shape::Cone(Cone::new(min, max, closed))
             }
+            "triangle" => {
+                let p1 = self.parse_point(&body["p1"])?;
+                let p2 = self.parse_point(&body["p2"])?;
+                let p3 = self.parse_point(&body["p3"])?;
+                Shape::Triangle(Triangle::new(p1, p2, p3))
+            }
+            "smooth-triangle" => {
+                let p1 = self.parse_point(&body["p1"])?;
+                let p2 = self.parse_point(&body["p2"])?;
+                let p3 = self.parse_point(&body["p3"])?;
+                let n1 = self.parse_vector(&body["n1"])?;
+                let n2 = self.parse_vector(&body["n2"])?;
+                let n3 = self.parse_vector(&body["n3"])?;
+                Shape::SmoothTriangle(SmoothTriangle::new(p1, p2, p3, n1, n2, n3))
+            }
             name => {
                 if let Some(def) = self.defines.get(name) {
                     let kind = def["add"].as_str().ok_or(YamlParseError::InvalidField)?;
@@ -434,7 +452,10 @@ pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> (World,
 
 #[cfg(test)]
 mod tests {
-    use crate::{primitive::matrix::Transform, render::object::cylinder::Cylinder};
+    use crate::{
+        primitive::matrix::Transform,
+        render::object::{cylinder::Cylinder, smooth_triangle::SmoothTriangle, triangle::Triangle},
+    };
 
     use super::*;
 
@@ -567,6 +588,23 @@ mod tests {
   min: 1
   max: 5
   closed: true
+"#;
+
+    const TRIANGLE_YAML: &str = r#"
+- add: triangle
+  p1: [ 0, 1, 0 ]
+  p2: [ -1, 0, 0 ]
+  p3: [ 1, 0, 0 ]
+"#;
+
+    const SMOOTH_TRIANGLE_YAML: &str = r#"
+- add: smooth-triangle
+  p1: [ 0, 1, 0 ]
+  p2: [ -1, 0, 0 ]
+  p3: [ 1, 0, 0 ]
+  n1: [ 0, 1, 0 ]
+  n2: [ -1, 0, 0 ]
+  n3: [ 1, 0, 0 ]
 "#;
 
     fn parse(source: &str) -> (World, Camera) {
@@ -749,5 +787,31 @@ mod tests {
         let cylinder_shape = Cone::new(1., 5., true);
         let expected_object = Object::primitive_with_shape(Shape::Cone(cylinder_shape));
         assert_eq!(world.objects(), vec![expected_object]);
+    }
+
+    #[test]
+    fn parse_triangle() {
+        let (world, _) = parse(TRIANGLE_YAML);
+        let triangle = Object::primitive_with_shape(Shape::Triangle(Triangle::new(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+        )));
+        let expected_objects = vec![triangle];
+        assert_eq!(world.objects(), expected_objects);
+    }
+    #[test]
+    fn parse_smooth_triangle() {
+        let (world, _) = parse(SMOOTH_TRIANGLE_YAML);
+        let triangle = Object::primitive_with_shape(Shape::SmoothTriangle(SmoothTriangle::new(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+            Vector::new(0., 1., 0.),
+            Vector::new(-1., 0., 0.),
+            Vector::new(1., 0., 0.),
+        )));
+        let expected_objects = vec![triangle];
+        assert_eq!(world.objects(), expected_objects);
     }
 }
