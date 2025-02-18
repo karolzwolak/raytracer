@@ -327,9 +327,7 @@ impl<'a> YamlParser<'a> {
         }
         match &body["use-shadow-intensity"] {
             &Yaml::BadValue => {}
-            val => self
-                .world
-                .set_use_shadow_intensity(self.parse_num(val)? != 0.),
+            val => self.world.set_use_shadow_intensity(self.parse_bool(val)?),
         }
         Ok(())
     }
@@ -458,7 +456,7 @@ mod tests {
 - add: world
   max-reflective-depth: 4
   supersampling-level: 3
-  use-shadow-intensity: 0
+  use-shadow-intensity: false
 "#;
 
     const PLANE_YAML: &str = r#"
