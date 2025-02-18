@@ -120,6 +120,13 @@ impl<'a> YamlParser<'a> {
     }
 
     fn parse_color(&self, value: &Yaml) -> YamlParseResult<Color> {
+        if let Yaml::String(str_value) = value {
+            let color = self
+                .defines
+                .get(str_value)
+                .ok_or(YamlParseError::UnknownDefine)?;
+            return self.parse_color(color);
+        }
         let (r, g, b) = self.parse_vec3(value)?;
         Ok(Color::new(r, g, b))
     }
@@ -525,6 +532,15 @@ mod tests {
   material:
     color: [ 1, 0, 0 ]
 "#;
+
+    const DEFINE_COLOR_YAML: &str = r#"
+- define: red
+  value: [ 1, 0, 0 ]
+- add: sphere
+  material:
+    color: red
+"#;
+
     fn parse(source: &str) -> (World, Camera) {
         parse_str(source, WIDTH, HEIGHT, FOV)
     }
@@ -676,6 +692,18 @@ mod tests {
         };
         let red_cube = Object::primitive(Shape::Cube, red_material, Matrix::identity());
         let expected_objects = vec![red_cube];
+        assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn parse_define_color() {
+        let (world, _) = parse(DEFINE_COLOR_YAML);
+        let red_material = Material {
+            pattern: Pattern::Const(Color::red()),
+            ..Material::default()
+        };
+        let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
+        let expected_objects = vec![red_sphere];
         assert_eq!(world.objects(), expected_objects);
     }
 }
