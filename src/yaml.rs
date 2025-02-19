@@ -541,14 +541,37 @@ mod tests {
     const HEIGHT: usize = 800;
     const FOV: f64 = std::f64::consts::PI / 2.0;
 
-    const COMMENT_YAML: &str = r#"#comment"#;
+    fn parse(source: &str) -> (World, Camera) {
+        parse_str(source, WIDTH, HEIGHT, FOV)
+    }
 
-    const LIGHT_YAML: &str = r#"
+    #[test]
+    fn empty_yaml() {
+        let (world, camera) = parse("");
+        assert_eq!(world, World::empty());
+        assert_eq!(camera, Camera::new(WIDTH, HEIGHT, FOV));
+    }
+    #[test]
+    fn comments_are_supported() {
+        let source = "#comment";
+        let _ = parse(source);
+    }
+
+    #[test]
+    fn parse_light() {
+        const LIGHT_YAML: &str = r#"
 - add: light
   at: [ 50, 100, -50 ]
   intensity: [ 1, 1, 1]
 "#;
-    const CAMERA_YAML: &str = r#"
+        let (world, _) = parse(LIGHT_YAML);
+        let expected_light = PointLightSource::new(Point::new(50., 100., -50.), Color::white());
+        assert_eq!(world.light_sources().first(), Some(&expected_light));
+    }
+
+    #[test]
+    fn parse_camera() {
+        const CAMERA_YAML: &str = r#"
 - add: camera
   width: 100
   height: 100
@@ -557,14 +580,33 @@ mod tests {
   to: [ 6, 0, 6 ]
   up: [ -0.45, 1, 0 ]
 "#;
-    const WORLD_YAML: &str = r#"
+        let (_, camera) = parse(CAMERA_YAML);
+        let view = Matrix::view_tranformation(
+            Point::new(-6., 6., -10.),
+            Point::new(6., 0., 6.),
+            Vector::new(-0.45, 1., 0.),
+        );
+        let expected_camera = Camera::with_transformation(100, 100, 0.785, view);
+        assert_eq!(camera, expected_camera);
+    }
+
+    #[test]
+    fn parse_world() {
+        const WORLD_YAML: &str = r#"
 - add: world
   max-reflective-depth: 4
   supersampling-level: 3
   use-shadow-intensity: false
 "#;
+        let (world, _) = parse(WORLD_YAML);
+        assert_eq!(world.max_recursive_depth(), 4);
+        assert_eq!(world.supersampling_level(), 3);
+        assert!(!world.use_shadow_intensity());
+    }
 
-    const PLANE_YAML: &str = r#"
+    #[test]
+    fn parse_plane() {
+        const PLANE_YAML: &str = r#"
 - add: plane
   material:
     color: [ 1, 1, 1 ]
@@ -575,12 +617,35 @@ mod tests {
     - [ rotate-x, 1.5707963267948966 ] # pi/2
     - [ translate, 0, 0, 500 ]
 "#;
+        let (world, _) = parse(PLANE_YAML);
+        let expected_material = Material {
+            pattern: Pattern::Const(Color::white()),
+            ambient: 1.,
+            diffuse: 0.,
+            specular: 0.,
+            ..Material::default()
+        };
+        let expected_transformation = Matrix::rotation_x(std::f64::consts::PI / 2.0)
+            .translate(0., 0., 500.)
+            .transformed();
+        let expected_object =
+            Object::primitive(Shape::Plane, expected_material, expected_transformation);
+        assert_eq!(world.objects(), vec![expected_object]);
+    }
 
-    const DEFAULT_CUBE_YAML: &str = r#"
+    #[test]
+    fn objects_have_default_material_and_transformation() {
+        const DEFAULT_SPHERE_YAML: &str = r#"
 - add: sphere
 "#;
+        let (world, _) = parse(DEFAULT_SPHERE_YAML);
+        let sphere = Object::primitive(Shape::Sphere, Material::default(), Matrix::identity());
+        assert_eq!(world.objects(), vec![sphere]);
+    }
 
-    const SPHERE_YAML: &str = r#"
+    #[test]
+    fn parse_sphere() {
+        const SPHERE_YAML: &str = r#"
 - add: sphere
   material:
     color: [ 0.373, 0.404, 0.550 ]
@@ -592,21 +657,60 @@ mod tests {
     transparency: 0.7
     refractive-index: 1.5
 "#;
+        let (world, _) = parse(SPHERE_YAML);
+        let expected_material = Material {
+            pattern: Pattern::Const(Color::new(0.373, 0.404, 0.550)),
+            ambient: 0.,
+            diffuse: 0.2,
+            specular: 1.,
+            shininess: 200.,
+            reflectivity: 0.7,
+            transparency: 0.7,
+            refractive_index: 1.5,
+        };
+        let expected_object =
+            Object::primitive(Shape::Sphere, expected_material, Matrix::identity());
 
-    const GROUP_YAML: &str = r#"
-- add: group
-  transform:
-    - [translate, 1, 1, 1]
-  children:
-    - add: sphere
-      material:
-        color: [ 1, 0, 0 ]
-    - add: cube
-      material:
-        color: [ 0, 1, 0 ]
+        assert_eq!(world.objects(), vec![expected_object]);
+    }
+
+    #[test]
+    fn parse_define_materials() {
+        const DEFINE_MATERIALS_YAML: &str = r#"
+- define: white-material
+  value:
+    color: [ 1, 1, 1 ]
+    diffuse: 0.7
+- define: blue-material
+  extend: white-material
+  value:
+    color: [ 0, 0, 1 ]
+- add: sphere
+  material: white-material
+- add: cube
+  material: blue-material
 "#;
+        let (world, _) = parse(DEFINE_MATERIALS_YAML);
+        let white_material = Material {
+            pattern: Pattern::Const(Color::white()),
+            diffuse: 0.7,
+            ..Material::default()
+        };
+        let blue_material = Material {
+            pattern: Pattern::Const(Color::blue()),
+            diffuse: 0.7,
+            ..white_material
+        };
+        let white_sphere = Object::primitive(Shape::Sphere, white_material, Matrix::identity());
+        let blue_cube = Object::primitive(Shape::Cube, blue_material, Matrix::identity());
+        let expected_objects = vec![white_sphere, blue_cube];
 
-    const DEFINE_TRANSFORMS_YAML: &str = r#"
+        assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn parse_define_transforms() {
+        const DEFINE_TRANSFORMS_YAML: &str = r#"
 - define: standard-transform
   value:
     - [ translate, 1, -1, 1 ]
@@ -622,27 +726,66 @@ mod tests {
   transform: 
     - large-object
 "#;
-    const DEFINE_MATERIALS_YAML: &str = r#"
-- define: white-material
-  value:
-    color: [ 1, 1, 1 ]
-    diffuse: 0.7
-- define: blue-material
-  extend: white-material
-  value:
-    color: [ 0, 0, 1 ]
-- add: sphere
-  material: white-material
-- add: cube
-  material: blue-material
-"#;
+        let (world, _) = parse(DEFINE_TRANSFORMS_YAML);
+        let standard_transform = Matrix::translation(1., -1., 1.)
+            .scale(0.5, 0.5, 0.5)
+            .transformed();
+        let large_object_transform = standard_transform.clone().scale_uniform(4.).transformed();
+        let sphere = Object::primitive(Shape::Sphere, Material::default(), standard_transform);
+        let cube = Object::primitive(Shape::Cube, Material::default(), large_object_transform);
+        let expected_objects = vec![sphere, cube];
+        assert_eq!(world.objects(), expected_objects);
+    }
 
-    const OBJ_YAML: &str = r#"
+    #[test]
+    fn parse_group() {
+        const GROUP_YAML: &str = r#"
+- add: group
+  transform:
+    - [translate, 1, 1, 1]
+  children:
+    - add: sphere
+      material:
+        color: [ 1, 0, 0 ]
+    - add: cube
+      material:
+        color: [ 0, 1, 0 ]
+"#;
+        let (world, _) = parse(GROUP_YAML);
+        let red_material = Material {
+            pattern: Pattern::Const(Color::red()),
+            ..Material::default()
+        };
+        let green_material = Material {
+            pattern: Pattern::Const(Color::green()),
+            ..Material::default()
+        };
+        let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
+        let green_cube = Object::primitive(Shape::Cube, green_material, Matrix::identity());
+        let transformation = Matrix::translation(1., 1., 1.);
+
+        let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
+
+        assert_eq!(world.objects(), vec![Object::Group(group)]);
+    }
+
+    #[test]
+    fn parse_obj() {
+        const OBJ_YAML: &str = r#"
 - add: obj
   file: samples/obj/teapot-low.obj
 "#;
+        let (world, _) = parse(OBJ_YAML);
+        let parser = ObjParser::new();
+        let path = "samples/obj/teapot-low.obj";
+        let data = std::fs::read_to_string(path).unwrap();
+        let expected_group = parser.parse(data).unwrap();
+        assert_eq!(world.objects(), vec![Object::Group(expected_group)]);
+    }
 
-    const USE_DEFINE_IN_ADD_YAML: &str = r#"
+    #[test]
+    fn parse_use_define_in_add() {
+        const USE_DEFINE_IN_ADD_YAML: &str = r#"
 - define: defined_cube
   value:
     add: cube
@@ -650,8 +793,19 @@ mod tests {
   material:
     color: [ 1, 0, 0 ]
 "#;
+        let (world, _) = parse(USE_DEFINE_IN_ADD_YAML);
+        let red_material = Material {
+            pattern: Pattern::Const(Color::red()),
+            ..Material::default()
+        };
+        let red_cube = Object::primitive(Shape::Cube, red_material, Matrix::identity());
+        let expected_objects = vec![red_cube];
+        assert_eq!(world.objects(), expected_objects);
+    }
 
-    const DEFINE_COLOR_YAML: &str = r#"
+    #[test]
+    fn parse_define_color() {
+        const DEFINE_COLOR_YAML: &str = r#"
 - define: red
   value: [ 1, 0, 0 ]
 - add: sphere
@@ -659,28 +813,67 @@ mod tests {
     color: red
 "#;
 
-    const CYLINDER_YAML: &str = r#"
+        let (world, _) = parse(DEFINE_COLOR_YAML);
+        let red_material = Material {
+            pattern: Pattern::Const(Color::red()),
+            ..Material::default()
+        };
+        let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
+        let expected_objects = vec![red_sphere];
+        assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn parse_cylinder() {
+        const CYLINDER_YAML: &str = r#"
 - add: cylinder
   min: 1
   max: 5
   closed: true
 "#;
 
-    const CONE_YAML: &str = r#"
+        let (world, _) = parse(CYLINDER_YAML);
+        let cylinder_shape = Cylinder::new(1., 5., true);
+        let expected_object = Object::primitive_with_shape(Shape::Cylinder(cylinder_shape));
+        assert_eq!(world.objects(), vec![expected_object]);
+    }
+
+    #[test]
+    fn parse_cone() {
+        const CONE_YAML: &str = r#"
 - add: cone
   min: 1
   max: 5
   closed: true
 "#;
 
-    const TRIANGLE_YAML: &str = r#"
+        let (world, _) = parse(CONE_YAML);
+        let cylinder_shape = Cone::new(1., 5., true);
+        let expected_object = Object::primitive_with_shape(Shape::Cone(cylinder_shape));
+        assert_eq!(world.objects(), vec![expected_object]);
+    }
+
+    #[test]
+    fn parse_triangle() {
+        const TRIANGLE_YAML: &str = r#"
 - add: triangle
   p1: [ 0, 1, 0 ]
   p2: [ -1, 0, 0 ]
   p3: [ 1, 0, 0 ]
 "#;
 
-    const SMOOTH_TRIANGLE_YAML: &str = r#"
+        let (world, _) = parse(TRIANGLE_YAML);
+        let triangle = Object::primitive_with_shape(Shape::Triangle(Triangle::new(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+        )));
+        let expected_objects = vec![triangle];
+        assert_eq!(world.objects(), expected_objects);
+    }
+    #[test]
+    fn parse_smooth_triangle() {
+        const SMOOTH_TRIANGLE_YAML: &str = r#"
 - add: smooth-triangle
   p1: [ 0, 1, 0 ]
   p2: [ -1, 0, 0 ]
@@ -690,7 +883,22 @@ mod tests {
   n3: [ 1, 0, 0 ]
 "#;
 
-    const PATTERNS_YAML: &str = r#"
+        let (world, _) = parse(SMOOTH_TRIANGLE_YAML);
+        let triangle = Object::primitive_with_shape(Shape::SmoothTriangle(SmoothTriangle::new(
+            Point::new(0., 1., 0.),
+            Point::new(-1., 0., 0.),
+            Point::new(1., 0., 0.),
+            Vector::new(0., 1., 0.),
+            Vector::new(-1., 0., 0.),
+            Vector::new(1., 0., 0.),
+        )));
+        let expected_objects = vec![triangle];
+        assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn parse_patterns() {
+        const PATTERNS_YAML: &str = r#"
 - define: red
   value: [ 1, 0, 0 ]
 - define: green
@@ -740,224 +948,6 @@ mod tests {
       transform:
         - transformation
 "#;
-
-    fn parse(source: &str) -> (World, Camera) {
-        parse_str(source, WIDTH, HEIGHT, FOV)
-    }
-
-    #[test]
-    fn empty_yaml() {
-        let (world, camera) = parse("");
-        assert_eq!(world, World::empty());
-        assert_eq!(camera, Camera::new(WIDTH, HEIGHT, FOV));
-    }
-    #[test]
-    fn comments_are_supported() {
-        let _ = parse(COMMENT_YAML);
-    }
-
-    #[test]
-    fn parse_light() {
-        let (world, _) = parse(LIGHT_YAML);
-        let expected_light = PointLightSource::new(Point::new(50., 100., -50.), Color::white());
-        assert_eq!(world.light_sources().first(), Some(&expected_light));
-    }
-
-    #[test]
-    fn parse_camera() {
-        let (_, camera) = parse(CAMERA_YAML);
-        let view = Matrix::view_tranformation(
-            Point::new(-6., 6., -10.),
-            Point::new(6., 0., 6.),
-            Vector::new(-0.45, 1., 0.),
-        );
-        let expected_camera = Camera::with_transformation(100, 100, 0.785, view);
-        assert_eq!(camera, expected_camera);
-    }
-
-    #[test]
-    fn parse_world() {
-        let (world, _) = parse(WORLD_YAML);
-        assert_eq!(world.max_recursive_depth(), 4);
-        assert_eq!(world.supersampling_level(), 3);
-        assert!(!world.use_shadow_intensity());
-    }
-
-    #[test]
-    fn parse_plane() {
-        let (world, _) = parse(PLANE_YAML);
-        let expected_material = Material {
-            pattern: Pattern::Const(Color::white()),
-            ambient: 1.,
-            diffuse: 0.,
-            specular: 0.,
-            ..Material::default()
-        };
-        let expected_transformation = Matrix::rotation_x(std::f64::consts::PI / 2.0)
-            .translate(0., 0., 500.)
-            .transformed();
-        let expected_object =
-            Object::primitive(Shape::Plane, expected_material, expected_transformation);
-        assert_eq!(world.objects(), vec![expected_object]);
-    }
-
-    #[test]
-    fn objects_have_default_material_and_transformation() {
-        let (world, _) = parse(DEFAULT_CUBE_YAML);
-        let sphere = Object::primitive(Shape::Sphere, Material::default(), Matrix::identity());
-        assert_eq!(world.objects(), vec![sphere]);
-    }
-
-    #[test]
-    fn parse_sphere() {
-        let (world, _) = parse(SPHERE_YAML);
-        let expected_material = Material {
-            pattern: Pattern::Const(Color::new(0.373, 0.404, 0.550)),
-            ambient: 0.,
-            diffuse: 0.2,
-            specular: 1.,
-            shininess: 200.,
-            reflectivity: 0.7,
-            transparency: 0.7,
-            refractive_index: 1.5,
-        };
-        let expected_object =
-            Object::primitive(Shape::Sphere, expected_material, Matrix::identity());
-
-        assert_eq!(world.objects(), vec![expected_object]);
-    }
-
-    #[test]
-    fn parse_define_materials() {
-        let (world, _) = parse(DEFINE_MATERIALS_YAML);
-        let white_material = Material {
-            pattern: Pattern::Const(Color::white()),
-            diffuse: 0.7,
-            ..Material::default()
-        };
-        let blue_material = Material {
-            pattern: Pattern::Const(Color::blue()),
-            diffuse: 0.7,
-            ..white_material
-        };
-        let white_sphere = Object::primitive(Shape::Sphere, white_material, Matrix::identity());
-        let blue_cube = Object::primitive(Shape::Cube, blue_material, Matrix::identity());
-        let expected_objects = vec![white_sphere, blue_cube];
-
-        assert_eq!(world.objects(), expected_objects);
-    }
-
-    #[test]
-    fn parse_define_transforms() {
-        let (world, _) = parse(DEFINE_TRANSFORMS_YAML);
-        let standard_transform = Matrix::translation(1., -1., 1.)
-            .scale(0.5, 0.5, 0.5)
-            .transformed();
-        let large_object_transform = standard_transform.clone().scale_uniform(4.).transformed();
-        let sphere = Object::primitive(Shape::Sphere, Material::default(), standard_transform);
-        let cube = Object::primitive(Shape::Cube, Material::default(), large_object_transform);
-        let expected_objects = vec![sphere, cube];
-        assert_eq!(world.objects(), expected_objects);
-    }
-
-    #[test]
-    fn parse_group() {
-        let (world, _) = parse(GROUP_YAML);
-        let red_material = Material {
-            pattern: Pattern::Const(Color::red()),
-            ..Material::default()
-        };
-        let green_material = Material {
-            pattern: Pattern::Const(Color::green()),
-            ..Material::default()
-        };
-        let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
-        let green_cube = Object::primitive(Shape::Cube, green_material, Matrix::identity());
-        let transformation = Matrix::translation(1., 1., 1.);
-
-        let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
-
-        assert_eq!(world.objects(), vec![Object::Group(group)]);
-    }
-
-    #[test]
-    fn parse_obj() {
-        let (world, _) = parse(OBJ_YAML);
-        let parser = ObjParser::new();
-        let path = "samples/obj/teapot-low.obj";
-        let data = std::fs::read_to_string(path).unwrap();
-        let expected_group = parser.parse(data).unwrap();
-        assert_eq!(world.objects(), vec![Object::Group(expected_group)]);
-    }
-
-    #[test]
-    fn parse_use_define_in_add() {
-        let (world, _) = parse(USE_DEFINE_IN_ADD_YAML);
-        let red_material = Material {
-            pattern: Pattern::Const(Color::red()),
-            ..Material::default()
-        };
-        let red_cube = Object::primitive(Shape::Cube, red_material, Matrix::identity());
-        let expected_objects = vec![red_cube];
-        assert_eq!(world.objects(), expected_objects);
-    }
-
-    #[test]
-    fn parse_define_color() {
-        let (world, _) = parse(DEFINE_COLOR_YAML);
-        let red_material = Material {
-            pattern: Pattern::Const(Color::red()),
-            ..Material::default()
-        };
-        let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
-        let expected_objects = vec![red_sphere];
-        assert_eq!(world.objects(), expected_objects);
-    }
-
-    #[test]
-    fn parse_cylinder() {
-        let (world, _) = parse(CYLINDER_YAML);
-        let cylinder_shape = Cylinder::new(1., 5., true);
-        let expected_object = Object::primitive_with_shape(Shape::Cylinder(cylinder_shape));
-        assert_eq!(world.objects(), vec![expected_object]);
-    }
-
-    #[test]
-    fn parse_cone() {
-        let (world, _) = parse(CONE_YAML);
-        let cylinder_shape = Cone::new(1., 5., true);
-        let expected_object = Object::primitive_with_shape(Shape::Cone(cylinder_shape));
-        assert_eq!(world.objects(), vec![expected_object]);
-    }
-
-    #[test]
-    fn parse_triangle() {
-        let (world, _) = parse(TRIANGLE_YAML);
-        let triangle = Object::primitive_with_shape(Shape::Triangle(Triangle::new(
-            Point::new(0., 1., 0.),
-            Point::new(-1., 0., 0.),
-            Point::new(1., 0., 0.),
-        )));
-        let expected_objects = vec![triangle];
-        assert_eq!(world.objects(), expected_objects);
-    }
-    #[test]
-    fn parse_smooth_triangle() {
-        let (world, _) = parse(SMOOTH_TRIANGLE_YAML);
-        let triangle = Object::primitive_with_shape(Shape::SmoothTriangle(SmoothTriangle::new(
-            Point::new(0., 1., 0.),
-            Point::new(-1., 0., 0.),
-            Point::new(1., 0., 0.),
-            Vector::new(0., 1., 0.),
-            Vector::new(-1., 0., 0.),
-            Vector::new(1., 0., 0.),
-        )));
-        let expected_objects = vec![triangle];
-        assert_eq!(world.objects(), expected_objects);
-    }
-
-    #[test]
-    fn parse_patterns() {
         let (world, _) = parse(PATTERNS_YAML);
         let red = Color::red();
         let green = Color::green();
