@@ -32,7 +32,32 @@ pub enum YamlParseError {
     UnknownDefine,
     FileReadError,
     ObjParsingError,
+    InternalError,
 }
+
+const PREDEFINED_DEFINES: &str = r#"
+- define: glass-material
+  value:
+    color: [ 0, 0, 0 ]
+    ambient: 0.025
+    diffuse: 0.2
+    specular: 1.0
+    shininess: 300.0
+    reflective: 0.9
+    transparency: 0.9
+    refractive-index: 1.5
+
+- define: mirror-material
+  extend: glass-material
+  value:
+    reflective: 0.98
+    transparency: 0
+
+- define: air-material
+  value:
+    color: [ 0, 0, 0 ]
+    refractive-index: 1.0
+"#;
 
 // TODO: Implement rest of the shapes, pattern, groups and .obj models parsing
 // TODO: Add supporn for defining anything
@@ -93,11 +118,23 @@ macro_rules! parse_transformation {
 
 impl<'a> YamlParser<'a> {
     fn new(yaml: &'a Yaml, default_world: World, default_camera: Camera) -> Self {
+        let parsed = saphyr::Yaml::load_from_str(PREDEFINED_DEFINES).unwrap();
+        let predefined = parsed.first().unwrap();
+
+        let mut predefined_parser = YamlParser {
+            yaml: predefined,
+            world: World::empty(),
+            camera: Camera::new(1, 1, 1.),
+            defines: HashMap::new(),
+        };
+        predefined_parser
+            .parse()
+            .expect("Error parsing predefined defines");
         Self {
             yaml,
             world: default_world,
             camera: default_camera,
-            defines: HashMap::new(),
+            defines: predefined_parser.defines,
         }
     }
 
@@ -232,7 +269,10 @@ impl<'a> YamlParser<'a> {
         parse_optional_field!(self, body, res, specular);
         parse_optional_field!(self, body, res, shininess);
         parse_optional_field!(self, body, res, transparency);
+
         parse_optional_field!(self, body, res, "reflective", reflectivity);
+        parse_optional_field!(self, body, res, reflectivity); // not a mistake, we permit both
+                                                              // names
         parse_optional_field!(self, body, res, "refractive-index", refractive_index);
 
         Ok(res)
@@ -446,7 +486,7 @@ impl<'a> YamlParser<'a> {
         Ok(())
     }
 
-    fn parse(mut self) -> YamlParserOutput {
+    fn parse(&mut self) -> YamlParseResult<()> {
         for yaml_obj in self.yaml.as_vec().unwrap_or(&Vec::new()) {
             if let Yaml::Hash(hash) = yaml_obj {
                 match hash.front() {
@@ -466,7 +506,11 @@ impl<'a> YamlParser<'a> {
                 }
             }
         }
+        Ok(())
+    }
 
+    fn parse_consume(mut self) -> YamlParserOutput {
+        self.parse()?;
         Ok((self.world, self.camera))
     }
 }
@@ -481,7 +525,7 @@ pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> (World,
     };
     let parser = YamlParser::new(yaml, world, camera);
 
-    parser.parse().unwrap()
+    parser.parse_consume().unwrap()
 }
 
 #[cfg(test)]
@@ -928,6 +972,18 @@ mod tests {
             Object::primitive(Shape::Cube, ring, Matrix::identity()),
             Object::primitive(Shape::Cube, checkers, Matrix::identity()),
         ];
+        assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn there_are_predefined_defines() {
+        let source = r#"
+- add: sphere
+  material: mirror-material
+"#;
+        let (world, _) = parse(source);
+        let sphere = Object::primitive(Shape::Sphere, Material::mirror(), Matrix::identity());
+        let expected_objects = vec![sphere];
         assert_eq!(world.objects(), expected_objects);
     }
 }
