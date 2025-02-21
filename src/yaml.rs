@@ -211,12 +211,6 @@ impl<'a> YamlParser<'a> {
     }
 
     fn parse_pattern(&self, body: &Yaml) -> YamlParseResult<Pattern> {
-        match &body["color"] {
-            Yaml::BadValue => {}
-            val => return Ok(Pattern::Const(self.parse_color(val)?)),
-        }
-        let body = &body["pattern"];
-
         let kind = body["type"].as_str().ok_or(YamlParseError::InvalidField)?;
         let colors = body["colors"]
             .as_vec()
@@ -302,10 +296,14 @@ impl<'a> YamlParser<'a> {
             }
             _ => {}
         }
-        let mut res = Material {
-            pattern: self.parse_pattern(body)?,
-            ..Material::default()
-        };
+        let mut res = Material::default();
+
+        match (&body["color"], &body["pattern"]) {
+            (&Yaml::BadValue, &Yaml::BadValue) => {}
+            (val, &Yaml::BadValue) => res.pattern = Pattern::Const(self.parse_color(val)?),
+            (&Yaml::BadValue, val) => res.pattern = self.parse_pattern(val)?,
+            (_, _) => return Err(YamlParseError::InvalidField),
+        }
 
         parse_optional_field!(self, body, res, ambient);
         parse_optional_field!(self, body, res, diffuse);
