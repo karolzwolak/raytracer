@@ -503,6 +503,54 @@ impl<'a> YamlParser<'a> {
         Ok(())
     }
 
+    fn merge_hash(
+        &self,
+        name: &str,
+        define_hash: &saphyr::Hash,
+        use_hash: &saphyr::Hash,
+    ) -> YamlParseResult<Yaml> {
+        let mut new_hash = define_hash.clone();
+
+        for (key, value) in use_hash {
+            if define_hash.contains_key(key) {
+                let key_str = key.as_str().ok_or(YamlParseError::InvalidField)?;
+                new_hash[key] = self.merge_yaml(name, key_str, &define_hash[key], value)?;
+            } else {
+                new_hash.insert(key.clone(), value.clone());
+            }
+        }
+        Ok(Yaml::Hash(new_hash))
+    }
+
+    fn merge_yaml(
+        &self,
+        name: &str,
+        key_str: &str,
+        define_yaml: &Yaml,
+        use_yaml: &Yaml,
+    ) -> YamlParseResult<Yaml> {
+        Ok(match (define_yaml, use_yaml) {
+            (&Yaml::BadValue, val) => val.clone(),
+            (val, &Yaml::BadValue) => val.clone(),
+            (Yaml::Hash(ref define_hash), Yaml::Hash(ref use_hash)) => {
+                return self.merge_hash(name, define_hash, use_hash);
+            }
+            (Yaml::Array(ref define_array), Yaml::Array(ref use_array))
+                if key_str == "transform" =>
+            {
+                let mut new_array = define_array.clone();
+                new_array.extend(use_array.iter().cloned());
+                Yaml::Array(new_array)
+            }
+            (Yaml::String(define_str), Yaml::String(use_str)) => Yaml::String(if use_str == name {
+                define_str.clone()
+            } else {
+                use_str.clone()
+            }),
+            (_, val) => val.clone(),
+        })
+    }
+
     fn merge_use_define(
         &self,
         define_name: &str,
@@ -511,19 +559,7 @@ impl<'a> YamlParser<'a> {
     ) -> YamlParseResult<Yaml> {
         let extend_hash = define_body.as_hash().ok_or(YamlParseError::InvalidField)?;
         let body_hash = body.as_hash().ok_or(YamlParseError::InvalidField)?;
-        let mut new_body = extend_hash.to_owned();
-        for (key, value) in body_hash {
-            match &value {
-                &Yaml::String(s) if s == define_name => continue,
-                _ => {}
-            }
-            if extend_hash.contains_key(key) {
-                new_body[key] = value.clone();
-            } else {
-                new_body.insert(key.clone(), value.clone());
-            }
-        }
-        Ok(Yaml::Hash(new_body))
+        self.merge_hash(define_name, extend_hash, body_hash)
     }
 
     fn parse_define(
@@ -1118,6 +1154,86 @@ mod tests {
             ..Material::default()
         };
         let sphere = Object::primitive(Shape::Sphere, material, Matrix::identity());
+        assert_eq!(world.objects(), vec![sphere]);
+    }
+
+    #[test]
+    fn merging_material_define() {
+        let source = r#"
+- define: red-material
+  value:
+    color: [ 1, 0, 0 ]
+    ambient: 0.5
+    diffuse: 1
+- define: green-material
+  extend: red-material
+  value:
+    color: [ 0, 1, 0 ]
+    ambient: 1
+- add: sphere
+  material: green-material
+"#;
+        let (world, _) = parse(source);
+        let green_material = Material {
+            pattern: Pattern::Const(Color::green()),
+            ambient: 1.,
+            diffuse: 1.,
+            ..Material::default()
+        };
+        let sphere = Object::primitive(Shape::Sphere, green_material, Matrix::identity());
+        assert_eq!(world.objects(), vec![sphere]);
+    }
+
+    #[test]
+    fn merging_transform_define() {
+        let source = r#"
+- define: rotation-x
+  value:
+    - [rotate-x, FRAC_PI_3]
+- add: sphere
+  transform:
+  - rotation-x
+  - [rotate-y, FRAC_PI_3]
+"#;
+        let (world, _) = parse(source);
+        let transformation = Matrix::rotation_x(FRAC_PI_3)
+            .rotate_y(FRAC_PI_3)
+            .transformed();
+        let sphere = Object::primitive(Shape::Sphere, Material::default(), transformation);
+        assert_eq!(world.objects(), vec![sphere]);
+    }
+
+    #[test]
+    fn merging_when_defining_add() {
+        let source = r#"
+- define: _sphere
+  value:
+    add: sphere
+    material:
+      color: [ 1, 0, 0 ]
+      ambient: 0.5
+      diffuse: 1
+    transform:
+    - [rotate-x, FRAC_PI_3]
+
+- add: _sphere
+  material:
+    color: [ 0, 1, 0 ]
+    ambient: 1
+  transform:
+    - [rotate-y, FRAC_PI_3]
+"#;
+        let (world, _) = parse(source);
+        let material = Material {
+            pattern: Pattern::Const(Color::green()),
+            ambient: 1.,
+            diffuse: 1.,
+            ..Material::default()
+        };
+        let transformation = Matrix::rotation_x(FRAC_PI_3)
+            .rotate_y(FRAC_PI_3)
+            .transformed();
+        let sphere = Object::primitive(Shape::Sphere, material, transformation);
         assert_eq!(world.objects(), vec![sphere]);
     }
 }
