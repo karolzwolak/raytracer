@@ -36,7 +36,7 @@ pub enum YamlParseError {
 }
 
 const PREDEFINED_DEFINES: &str = r#"
-- define: glass-material
+- define: GLASS_MATERIAL
   value:
     color: [ 0, 0, 0 ]
     ambient: 0.025
@@ -47,13 +47,13 @@ const PREDEFINED_DEFINES: &str = r#"
     transparency: 0.9
     refractive-index: 1.5
 
-- define: mirror-material
-  extend: glass-material
+- define: MIRROR_MATERIAL
+  extend: GLASS_MATERIAL
   value:
     reflective: 0.98
     transparency: 0
 
-- define: air-material
+- define: AIR_MATERIAL
   value:
     color: [ 0, 0, 0 ]
     ambient: 0
@@ -64,13 +64,13 @@ const PREDEFINED_DEFINES: &str = r#"
     transparency: 1
     refractive-index: 1.0
 
-- define: scene-light
+- define: SCENE_LIGHT
   value:
     add: light
     at: [ -10, 10, -10 ]
     intensity: [ 1, 1, 1 ]
 
-- define: scene-camera
+- define: SCENE_CAMERA
   value:
     add: camera
     from: [ 0, 1.5, -5 ]
@@ -1012,11 +1012,11 @@ mod tests {
     fn predefined_materials() {
         let source = r#"
 - add: sphere
-  material: glass-material
+  material: GLASS_MATERIAL
 - add: sphere
-  material: mirror-material
+  material: MIRROR_MATERIAL
 - add: sphere
-  material: air-material
+  material: AIR_MATERIAL
 "#;
         let (world, _) = parse(source);
         let glass_sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
@@ -1030,8 +1030,8 @@ mod tests {
     #[test]
     fn predefined_scene_light_and_camera() {
         let source = r#"
-- add: scene-light
-- add: scene-camera
+- add: SCENE_LIGHT
+- add: SCENE_CAMERA
 "#;
         let (world, camera) = parse(source);
         let expected_camera = Camera::with_transformation(
