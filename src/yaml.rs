@@ -63,6 +63,20 @@ const PREDEFINED_DEFINES: &str = r#"
     reflectivity: 1
     transparency: 1
     refractive-index: 1.0
+
+- define: scene-light
+  value:
+    add: light
+    at: [ -10, 10, -10 ]
+    intensity: [ 1, 1, 1 ]
+
+- define: scene-camera
+  value:
+    add: camera
+    from: [ 0, 1.5, -5 ]
+    to: [ 0, 1, 0 ]
+    up: [ 0, 1, 0 ]
+    fov: 1.0471975511965979 # pi / 3
 "#;
 
 // TODO: Implement rest of the shapes, pattern, groups and .obj models parsing
@@ -240,7 +254,11 @@ impl<'a> YamlParser<'a> {
             .parse_num(&body["height"])
             .map(|w| w as usize)
             .unwrap_or(self.camera.target_height());
-        let fov = self.parse_num(&body["field-of-view"])?;
+        let fov_body = match &body["field-of-view"] {
+            &Yaml::BadValue => &body["fov"],
+            val => val,
+        };
+        let fov = self.parse_num(fov_body)?;
 
         let from = self.parse_point(&body["from"])?;
         let to = self.parse_point(&body["to"])?;
@@ -402,13 +420,8 @@ impl<'a> YamlParser<'a> {
                 let n3 = self.parse_vector(&body["n3"])?;
                 Shape::SmoothTriangle(SmoothTriangle::new(p1, p2, p3, n1, n2, n3))
             }
-            name => {
-                if let Some(def) = self.defines.get(name) {
-                    let kind = def["add"].as_str().ok_or(YamlParseError::InvalidField)?;
-                    let body = self.merge_use_define(def, body)?;
-                    return self.parse_object(&body, kind);
-                }
-                return Err(YamlParseError::UnknownDefine);
+            _ => {
+                return Err(YamlParseError::InvalidField);
             }
         };
         let material = self.parse_material(&body["material"])?;
@@ -436,34 +449,50 @@ impl<'a> YamlParser<'a> {
         Ok(())
     }
 
-    fn parse_add(&mut self, what: &Yaml, body: &Yaml) -> YamlParseResult<()> {
-        if let Yaml::String(str_value) = what {
-            match str_value.as_str() {
-                "light" => {
-                    let light = self.parse_light(body)?;
-                    self.world.add_light(light);
-                }
-                "camera" => {
-                    let camera = self.parse_camera(body)?;
-                    self.camera = camera;
-                }
-                "world" => {
-                    self.parse_world(body)?;
-                }
-                kind => {
-                    let object = self.parse_object(body, kind)?;
-                    self.world.add_obj(object);
+    fn parse_add(&mut self, what: &str, body: &Yaml) -> YamlParseResult<()> {
+        match what {
+            "light" => {
+                let light = self.parse_light(body)?;
+                self.world.add_light(light);
+            }
+            "camera" => {
+                let camera = self.parse_camera(body)?;
+                self.camera = camera;
+            }
+            "world" => {
+                self.parse_world(body)?;
+            }
+            "group" | "obj" | "sphere" | "cube" | "plane" | "cylinder" | "cone" | "triangle"
+            | "smooth-triangle" => {
+                let object = self.parse_object(body, what)?;
+                self.world.add_obj(object);
+            }
+            name => {
+                if let Some(def) = self.defines.get(name) {
+                    let kind = def["add"].as_str().ok_or(YamlParseError::InvalidField)?;
+                    let body = self.merge_use_define(name, def, body)?;
+                    let kind = kind.to_string();
+                    return self.parse_operation(&body);
                 }
             }
-        };
+        }
         Ok(())
     }
 
-    fn merge_use_define(&self, define_body: &Yaml, body: &Yaml) -> YamlParseResult<Yaml> {
+    fn merge_use_define(
+        &self,
+        define_name: &str,
+        define_body: &Yaml,
+        body: &Yaml,
+    ) -> YamlParseResult<Yaml> {
         let extend_hash = define_body.as_hash().ok_or(YamlParseError::InvalidField)?;
         let body_hash = body.as_hash().ok_or(YamlParseError::InvalidField)?;
         let mut new_body = extend_hash.to_owned();
         for (key, value) in body_hash {
+            match &value {
+                &Yaml::String(s) if s == define_name => continue,
+                _ => {}
+            }
             if extend_hash.contains_key(key) {
                 new_body[key] = value.clone();
             } else {
@@ -482,8 +511,10 @@ impl<'a> YamlParser<'a> {
         let extends = extends.map(|s| self.defines[s].clone());
         match extends {
             Some(extend) => {
-                self.defines
-                    .insert(name.to_string(), self.merge_use_define(&extend, body)?);
+                self.defines.insert(
+                    name.to_string(),
+                    self.merge_use_define(name, &extend, body)?,
+                );
             }
             None => {
                 self.defines.insert(name.to_string(), body.clone());
@@ -492,25 +523,29 @@ impl<'a> YamlParser<'a> {
         Ok(())
     }
 
-    fn parse(&mut self) -> YamlParseResult<()> {
-        for yaml_obj in self.yaml.as_vec().unwrap_or(&Vec::new()) {
-            if let Yaml::Hash(hash) = yaml_obj {
-                match hash.front() {
-                    Some((Yaml::String(operation), what)) => match operation.as_str() {
-                        "add" => self.parse_add(what, yaml_obj)?,
-                        "define" => {
-                            let name = what.as_str().ok_or(YamlParseError::InvalidField)?;
-                            let extends = yaml_obj["extend"].as_str();
-                            let body = &yaml_obj["value"];
-                            self.parse_define(name, extends, body)?;
-                        }
-                        _ => {}
-                    },
-                    _ => {
-                        return Err(YamlParseError::UnexpectedValue);
+    fn parse_operation(&mut self, yaml_obj: &Yaml) -> YamlParseResult<()> {
+        if let Yaml::Hash(hash) = yaml_obj {
+            match hash.front() {
+                Some((Yaml::String(operation), Yaml::String(what))) => match operation.as_str() {
+                    "add" => self.parse_add(what, yaml_obj)?,
+                    "define" => {
+                        let extends = yaml_obj["extend"].as_str();
+                        let body = &yaml_obj["value"];
+                        self.parse_define(what, extends, body)?;
                     }
+                    _ => {}
+                },
+                _ => {
+                    return Err(YamlParseError::UnexpectedValue);
                 }
             }
+        }
+        Ok(())
+    }
+
+    fn parse(&mut self) -> YamlParseResult<()> {
+        for yaml_obj in self.yaml.as_vec().unwrap_or(&Vec::new()) {
+            self.parse_operation(yaml_obj)?;
         }
         Ok(())
     }
@@ -536,6 +571,8 @@ pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> (World,
 
 #[cfg(test)]
 mod tests {
+    use std::f64::consts::FRAC_PI_3;
+
     use crate::{
         primitive::matrix::Transform,
         render::object::{cylinder::Cylinder, smooth_triangle::SmoothTriangle, triangle::Triangle},
@@ -988,5 +1025,27 @@ mod tests {
         let air_sphere = Object::primitive(Shape::Sphere, Material::air(), Matrix::identity());
         let expected_objects = vec![glass_sphere, mirror_sphere, air_sphere];
         assert_eq!(world.objects(), expected_objects);
+    }
+
+    #[test]
+    fn predefined_scene_light_and_camera() {
+        let source = r#"
+- add: scene-light
+- add: scene-camera
+"#;
+        let (world, camera) = parse(source);
+        let expected_camera = Camera::with_transformation(
+            WIDTH,
+            HEIGHT,
+            FRAC_PI_3,
+            Matrix::view_tranformation(
+                Point::new(0., 1.5, -5.),
+                Point::new(0., 1., 0.),
+                Vector::new(0., 1., 0.),
+            ),
+        );
+        let light = PointLightSource::new(Point::new(-10., 10., -10.), Color::white());
+        assert_eq!(camera, expected_camera);
+        assert_eq!(world.light_sources().first(), Some(&light));
     }
 }
