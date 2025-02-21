@@ -76,7 +76,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let light_source = PointLightSource::new(Point::new(2. * x, 1., 4.), Color::white());
 
-    let world = World::new(
+    let mut world = World::new(
         vec![
             wall,
             sphere1.into(),

@@ -237,7 +237,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
     let light1 = PointLightSource::new(Point::new(-3., 5., 3.), Color::white());
     let lights = vec![light1];
 
-    let world = World::new(objects, lights, Some(8));
+    let mut world = World::new(objects, lights, Some(8));
     let camera = Camera::with_transformation(
         width,
         height,

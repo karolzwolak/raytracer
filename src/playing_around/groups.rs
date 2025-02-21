@@ -55,7 +55,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let objects = vec![hexagon];
 
-    let world = World::new(objects, vec![light], None);
+    let mut world = World::new(objects, vec![light], None);
     let camera = Camera::new(width, height, consts::FRAC_PI_3);
     world.render(&camera)
 }

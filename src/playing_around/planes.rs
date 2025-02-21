@@ -25,7 +25,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
     objects.push(plane);
     objects.push(plane2);
 
-    let world = World::new(objects, lights, None);
+    let mut world = World::new(objects, lights, None);
     let camera = making_scene::scene_camera(width, height);
 
     world.render(&camera)

@@ -92,7 +92,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
         ),
     );
 
-    let world = World::new(objects, lights, None);
+    let mut world = World::new(objects, lights, None);
 
     world.render(&camera)
 }

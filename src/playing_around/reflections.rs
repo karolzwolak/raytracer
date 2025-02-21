@@ -98,7 +98,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
     objects.push(mirror_wall);
     objects.push(mirror_wall2);
 
-    let world = World::new(objects, lights, Some(8));
+    let mut world = World::new(objects, lights, Some(8));
     let camera = making_scene::scene_camera(width, height);
 
     world.render(&camera)

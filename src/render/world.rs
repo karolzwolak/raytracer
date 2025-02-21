@@ -60,11 +60,7 @@ impl World {
         max_recursive_depth: Option<usize>,
         use_shadow_intensity: bool,
     ) -> Self {
-        let mut objects = ObjectGroup::new(objects);
-
-        let now = std::time::Instant::now();
-        objects.partition();
-        println!("partitioning time: {:?}", now.elapsed());
+        let objects = ObjectGroup::new(objects);
 
         Self {
             objects,
@@ -170,7 +166,11 @@ impl World {
         color / offsets.len().pow(2) as f64
     }
 
-    pub fn render(&self, camera: &Camera) -> Canvas {
+    pub fn render(&mut self, camera: &Camera) -> Canvas {
+        let now = std::time::Instant::now();
+        self.objects.partition();
+        println!("partitioning time: {:?}", now.elapsed());
+
         let mut image = camera.canvas();
 
         let primitive_count = self.objects.primitive_count();

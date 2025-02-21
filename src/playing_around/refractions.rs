@@ -70,7 +70,7 @@ pub fn run(width: usize, height: usize) -> Canvas {
 
     let objects = vec![floor, wall, small_sphere, mid_sphere, mid_sphere_air_pocket];
 
-    let world = World::new(objects, lights, Some(8));
+    let mut world = World::new(objects, lights, Some(8));
 
     let camera = making_scene::scene_camera(width, height);
 
