@@ -209,16 +209,26 @@ impl BoundingBox {
         )
     }
     pub fn split_n(&self, n: usize) -> Vec<BoundingBox> {
-        let (a, b) = self.split_along_longest_axis();
-        let mut result = vec![a, b];
+        assert!(n > 0);
+
+        let cap = 2_usize.pow(n as u32);
+        let mut res = Vec::with_capacity(cap);
+        let mut temp = Vec::with_capacity(cap / 2);
+
+        let (left, right) = self.split_along_longest_axis();
+        res.push(left);
+        res.push(right);
+
         for _ in 1..n {
-            for bb in std::mem::take(&mut result) {
-                let (left, right) = bb.split_along_longest_axis();
-                result.push(left);
-                result.push(right);
+            std::mem::swap(&mut res, &mut temp);
+            for bbox in temp.drain(..) {
+                let (left, right) = bbox.split_along_longest_axis();
+                res.push(left);
+                res.push(right);
             }
         }
-        result
+
+        res
     }
 
     pub fn as_object(&self) -> Object {

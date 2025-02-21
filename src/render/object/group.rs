@@ -23,7 +23,7 @@ pub struct ObjectGroup {
 
 impl ObjectGroup {
     pub const PARTITION_THRESHOLD: usize = 8;
-    const BBOX_SPLIT_POWER: usize = 5;
+    const BBOX_SPLIT_POWER: usize = 6;
     const DIVISION_BBOX_LEN_FACTOR: f64 = 5.0e-3;
 
     fn with_bounding_box(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
@@ -88,6 +88,9 @@ impl ObjectGroup {
     }
     fn divide(&mut self) -> (Vec<BoundingBox>, Vec<Vec<Object>>) {
         let mut boxes = self.bounding_box().split_n(Self::BBOX_SPLIT_POWER);
+        if boxes.is_empty() {
+            return (Vec::new(), Vec::new());
+        }
         let box_len = (boxes[0].max - boxes[0].min).magnitude();
         let min_dist_to_be_divided = box_len * Self::DIVISION_BBOX_LEN_FACTOR;
         let mut vectors = vec![vec![]; boxes.len()];
@@ -157,6 +160,10 @@ impl ObjectGroup {
         }
     }
     pub fn partition(&mut self) {
+        println!(
+            "Partitioning group with {} primitives",
+            self.primitive_count
+        );
         Self::partition_iter(self);
     }
     pub fn into_children(self) -> Vec<Object> {
