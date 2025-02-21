@@ -1,5 +1,9 @@
+use indicatif::ParallelProgressIterator;
 use rayon::prelude::*;
-use std::fs::{self, File};
+use std::{
+    fs::{self, File},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use super::color::Color;
 
@@ -50,9 +54,15 @@ impl Canvas {
         F: Fn(usize, usize) -> Color + std::marker::Sync,
     {
         let width = self.width;
+
+        let style = indicatif::ProgressStyle::with_template(
+            "{spinner:.green} [{elapsed_precise}] {wide_bar:.cyan/blue} pixels shaded:{human_pos}/{human_len} ({eta})",
+        )
+        .unwrap();
         self.pixels
             .par_iter_mut()
             .enumerate()
+            .progress_with_style(style)
             .for_each(|(id, pixel_color)| {
                 let x = id % width;
                 let y = id / width;
