@@ -33,6 +33,7 @@ pub enum YamlParseError {
     FileReadError,
     ObjParsingError,
     InternalError,
+    EmptyGroup, // empty groups don't make sense, it has to a mistake, so we return an error
 }
 
 const PREDEFINED_DEFINES: &str = r#"
@@ -357,7 +358,10 @@ impl<'a> YamlParser<'a> {
     fn parse_group(&self, body: &Yaml) -> YamlParseResult<ObjectGroup> {
         let children_yaml = body["children"]
             .as_vec()
-            .ok_or(YamlParseError::InvalidField)?;
+            .ok_or(YamlParseError::EmptyGroup)?;
+        if children_yaml.is_empty() {
+            return Err(YamlParseError::EmptyGroup);
+        }
         let mut children = Vec::new();
         for child in children_yaml {
             match child.as_hash() {
@@ -437,7 +441,12 @@ impl<'a> YamlParser<'a> {
                 let n3 = self.parse_vector(&body["n3"])?;
                 Shape::SmoothTriangle(SmoothTriangle::new(p1, p2, p3, n1, n2, n3))
             }
-            _ => {
+            name => {
+                if let Some(def) = self.defines.get(name) {
+                    let body = self.merge_use_define(name, def, body)?;
+                    let what = &body["add"].as_str().ok_or(YamlParseError::InvalidField)?;
+                    return self.parse_object(&body, what);
+                }
                 return Err(YamlParseError::InvalidField);
             }
         };
@@ -571,17 +580,17 @@ impl<'a> YamlParser<'a> {
     }
 }
 
-pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> (World, Camera) {
+pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> YamlParserOutput {
     let world = World::empty();
     let camera = Camera::new(width, height, fov);
 
     let yaml_vec = saphyr::Yaml::load_from_str(source).unwrap();
     let Some(yaml) = yaml_vec.last() else {
-        return (world, camera);
+        return Ok((world, camera));
     };
     let parser = YamlParser::new(yaml, world, camera);
 
-    parser.parse_consume().unwrap()
+    parser.parse_consume()
 }
 
 #[cfg(test)]
@@ -600,7 +609,7 @@ mod tests {
     const FOV: f64 = std::f64::consts::PI / 2.0;
 
     fn parse(source: &str) -> (World, Camera) {
-        parse_str(source, WIDTH, HEIGHT, FOV)
+        parse_str(source, WIDTH, HEIGHT, FOV).unwrap()
     }
 
     #[test]
@@ -825,6 +834,27 @@ mod tests {
         let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
 
         assert_eq!(world.objects(), vec![Object::Group(group)]);
+    }
+
+    #[test]
+    fn empty_groups_cause_error() {
+        let sources = vec![
+            r#"
+- add: group
+  children:
+"#,
+            r#"
+- add: group
+"#,
+            r#"
+- add: group
+  children: []
+"#,
+        ];
+        for source in sources {
+            let res = parse_str(source, WIDTH, HEIGHT, FOV);
+            assert!(matches!(res, Err(YamlParseError::EmptyGroup)));
+        }
     }
 
     #[test]
