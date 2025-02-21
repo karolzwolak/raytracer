@@ -36,6 +36,19 @@ pub enum YamlParseError {
 }
 
 const PREDEFINED_DEFINES: &str = r#"
+- define: PI
+  value: 3.141592653589793
+- define: FRAC_PI_2
+  value: 1.5707963267948966
+- define: FRAC_PI_3
+  value: 1.0471975511965979
+- define: FRAC_PI_4
+  value: 0.7853981633974483
+- define: FRAC_PI_6
+  value: 0.5235987755982989
+- define: FRAC_1_SQRT_2
+  value: 0.7071067811865476
+
 - define: GLASS_MATERIAL
   value:
     color: [ 0, 0, 0 ]
@@ -162,6 +175,13 @@ impl<'a> YamlParser<'a> {
         match value {
             Yaml::Integer(value) => Ok(*value as f64),
             Yaml::Real(value) => Ok(value.parse().unwrap()),
+            Yaml::String(name) => {
+                let value = self
+                    .defines
+                    .get(name)
+                    .ok_or(YamlParseError::UnknownDefine)?;
+                self.parse_num(value)
+            }
             _ => Err(YamlParseError::InvalidField),
         }
     }
@@ -1047,5 +1067,32 @@ mod tests {
         let light = PointLightSource::new(Point::new(-10., 10., -10.), Color::white());
         assert_eq!(camera, expected_camera);
         assert_eq!(world.light_sources().first(), Some(&light));
+    }
+
+    #[test]
+    fn predefined_pi_constants() {
+        let source = r#"
+- add: sphere
+  material:
+    color: [ 1, 1, 1 ]
+    ambient: PI
+    diffuse: FRAC_PI_2
+    specular: FRAC_PI_3
+    shininess: FRAC_PI_4
+    reflective: FRAC_PI_6
+    transparency: FRAC_1_SQRT_2
+"#;
+        let (world, _) = parse(source);
+        let material = Material {
+            ambient: std::f64::consts::PI,
+            diffuse: std::f64::consts::FRAC_PI_2,
+            specular: std::f64::consts::FRAC_PI_3,
+            shininess: std::f64::consts::FRAC_PI_4,
+            reflectivity: std::f64::consts::FRAC_PI_6,
+            transparency: std::f64::consts::FRAC_1_SQRT_2,
+            ..Material::default()
+        };
+        let sphere = Object::primitive(Shape::Sphere, material, Matrix::identity());
+        assert_eq!(world.objects(), vec![sphere]);
     }
 }
