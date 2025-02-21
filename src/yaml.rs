@@ -56,6 +56,12 @@ const PREDEFINED_DEFINES: &str = r#"
 - define: air-material
   value:
     color: [ 0, 0, 0 ]
+    ambient: 0
+    diffuse: 0
+    specular: 0
+    shininess: 0
+    reflectivity: 1
+    transparency: 1
     refractive-index: 1.0
 "#;
 
@@ -966,14 +972,21 @@ mod tests {
     }
 
     #[test]
-    fn there_are_predefined_defines() {
+    fn predefined_materials() {
         let source = r#"
 - add: sphere
+  material: glass-material
+- add: sphere
   material: mirror-material
+- add: sphere
+  material: air-material
 "#;
         let (world, _) = parse(source);
-        let sphere = Object::primitive(Shape::Sphere, Material::mirror(), Matrix::identity());
-        let expected_objects = vec![sphere];
+        let glass_sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
+        let mirror_sphere =
+            Object::primitive(Shape::Sphere, Material::mirror(), Matrix::identity());
+        let air_sphere = Object::primitive(Shape::Sphere, Material::air(), Matrix::identity());
+        let expected_objects = vec![glass_sphere, mirror_sphere, air_sphere];
         assert_eq!(world.objects(), expected_objects);
     }
 }
