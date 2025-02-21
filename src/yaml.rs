@@ -92,8 +92,7 @@ const PREDEFINED_DEFINES: &str = r#"
     fov: 1.0471975511965979 # pi / 3
 "#;
 
-// TODO: Implement rest of the shapes, pattern, groups and .obj models parsing
-// TODO: Add supporn for defining anything
+// TODO: Actual errors
 pub struct YamlParser<'a> {
     yaml: &'a Yaml,
     world: World,
@@ -489,9 +488,7 @@ impl<'a> YamlParser<'a> {
             }
             name => {
                 if let Some(def) = self.defines.get(name) {
-                    let kind = def["add"].as_str().ok_or(YamlParseError::InvalidField)?;
                     let body = self.merge_use_define(name, def, body)?;
-                    let kind = kind.to_string();
                     return self.parse_operation(&body);
                 }
             }
