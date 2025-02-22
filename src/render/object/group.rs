@@ -2,13 +2,9 @@ use super::{bounding_box::BoundingBox, Object};
 use crate::{
     primitive::{
         matrix::{Matrix, Transform},
-        point::Point,
+        tuple::Axis,
     },
-    render::{
-        intersection::IntersectionCollector,
-        material::{self, Material},
-        ray::Ray,
-    },
+    render::{intersection::IntersectionCollector, material::Material, ray::Ray},
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -22,10 +18,7 @@ pub struct ObjectGroup {
 }
 
 impl ObjectGroup {
-    pub const PARTITION_THRESHOLD: usize = 8;
-    const BBOX_SPLIT_POWER: usize = 5;
-    const DIVISION_BBOX_LEN_FACTOR: f64 = 5.0e-3;
-
+    const CANDIDATE_POS_NUMBER: usize = 5;
     fn with_bounding_box(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
         let count = children
             .iter()
@@ -86,78 +79,87 @@ impl ObjectGroup {
             self.add_child(child);
         }
     }
-    fn divide(&mut self) -> (Vec<BoundingBox>, Vec<Vec<Object>>) {
-        let mut boxes = self.bounding_box().split_n(Self::BBOX_SPLIT_POWER);
-        let box_len = (boxes[0].max - boxes[0].min).magnitude();
-        let min_dist_to_be_divided = box_len * Self::DIVISION_BBOX_LEN_FACTOR;
-        let mut vectors = vec![vec![]; boxes.len()];
 
-        std::mem::take(&mut self.children)
-            .into_iter()
-            .for_each(|child| {
-                let mut child_box = child.bounding_box();
-                child_box.limit_dimensions();
+    fn choose_split(&self) -> (Axis, f64, f64) {
+        let mut best_axis = Axis::X;
+        let mut best_pos = 0.0;
+        let mut best_cost = f64::INFINITY;
+        let bbox_len_vec = self.bounding_box.length_vec();
 
-                let mut min_id = 0;
-                let mut min_d = f64::INFINITY;
+        for i in 0..Self::CANDIDATE_POS_NUMBER {
+            let coef = (i as f64 + 1.) / (Self::CANDIDATE_POS_NUMBER as f64 + 1.);
+            let pos = self.bounding_box.min + bbox_len_vec * coef;
+            for axis in Axis::iter() {
+                let pos = pos[axis];
 
-                let dist_to_group = self.bounding_box.distance(&child_box);
-                if dist_to_group <= min_dist_to_be_divided {
-                    self.children.push(child);
-                    return;
+                let cost = self.calculate_split_cost(axis, pos);
+                if cost < best_cost {
+                    best_cost = cost;
+                    best_axis = axis;
+                    best_pos = pos;
                 }
-
-                for (id, b) in boxes.iter().enumerate() {
-                    let d = b.distance(&child_box);
-                    if d < min_d {
-                        min_id = id;
-                        min_d = d;
-                    }
-                }
-
-                boxes[min_id].add_bounding_box(&child_box);
-                vectors[min_id].push(child);
-            });
-        (boxes, vectors)
-    }
-    fn partition_iter(root: &mut ObjectGroup) {
-        let mut group_stack = vec![root];
-
-        while let Some(group) = group_stack.pop() {
-            group.bounding_box.limit_dimensions();
-            if group.primitive_count < Self::PARTITION_THRESHOLD {
-                continue;
             }
-
-            let (boxes, vectors) = group.divide();
-
-            group.children.extend(
-                vectors
-                    .into_iter()
-                    .zip(boxes.into_iter())
-                    .filter(|(v, _)| !v.is_empty())
-                    .map(|(children, bounding_box)| {
-                        ObjectGroup::with_bounding_box(children, bounding_box).into()
-                    }),
-            );
-
-            group.children.sort_unstable_by(|a, b| {
-                let p = Point::zero();
-                let time_a = a.bounding_box().intersection_time_from_point(p);
-                let time_b = b.bounding_box().intersection_time_from_point(p);
-                time_a.partial_cmp(&time_b).unwrap()
-            });
-
-            group_stack.extend(
-                group
-                    .children
-                    .iter_mut()
-                    .filter_map(|child| child.as_group_mut().map(|g| g as &mut ObjectGroup)),
-            );
         }
+        (best_axis, best_pos, best_cost)
     }
-    pub fn partition(&mut self) {
-        Self::partition_iter(self);
+    fn calculate_split_cost(&self, axis: Axis, pos: f64) -> f64 {
+        let mut left_bbox = BoundingBox::empty();
+        let mut left_count = 0;
+        let mut right_bbox = BoundingBox::empty();
+        let mut right_count = 0;
+
+        for child in self.children.iter() {
+            let bbox = child.bounding_box();
+            if bbox.center()[axis] < pos {
+                left_bbox.add_bounding_box(&bbox);
+                left_count += child.primitive_count();
+            } else {
+                right_bbox.add_bounding_box(&bbox);
+                right_count += child.primitive_count();
+            }
+        }
+        if left_count == 0 || right_count == 0 {
+            return f64::INFINITY;
+        }
+        left_bbox.half_area() * left_count as f64 + right_bbox.half_area() * right_count as f64
+    }
+
+    fn split(&mut self, axis: Axis, pos: f64) -> (ObjectGroup, ObjectGroup) {
+        let mut left = Self::empty();
+        let mut right = Self::empty();
+        for child in self.children.drain(..) {
+            let child_bbox = child.bounding_box();
+            if child_bbox.center()[axis] < pos {
+                left.add_child(child);
+            } else {
+                right.add_child(child);
+            }
+        }
+        (left, right)
+    }
+    pub fn build_bvh(&mut self) {
+        if self.children.len() <= 2 {
+            for child in self.children.iter_mut() {
+                if let Some(group) = child.as_group_mut() {
+                    group.build_bvh();
+                }
+            }
+            return;
+        }
+        let (axis, pos, cost) = self.choose_split();
+        if cost >= self.sah_cost() {
+            return;
+        }
+        let (mut left, mut right) = self.split(axis, pos);
+
+        if left.primitive_count() > 0 {
+            left.build_bvh();
+            self.children.push(left.into());
+        }
+        if right.primitive_count() > 0 {
+            right.build_bvh();
+            self.children.push(right.into());
+        }
     }
     pub fn into_children(self) -> Vec<Object> {
         self.children
@@ -205,6 +207,10 @@ impl ObjectGroup {
 
     pub fn primitive_count(&self) -> usize {
         self.primitive_count
+    }
+
+    pub fn sah_cost(&self) -> f64 {
+        self.bounding_box.half_area() * self.primitive_count as f64
     }
 }
 

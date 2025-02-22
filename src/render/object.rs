@@ -271,6 +271,9 @@ impl PrimitiveObject {
     pub fn shape(&self) -> &Shape {
         &self.shape
     }
+    pub fn center(&self) -> Point {
+        self.bbox.center()
+    }
     pub fn transformation_inverse(&self) -> Matrix {
         self.transformation_inverse.unwrap_or_default()
     }

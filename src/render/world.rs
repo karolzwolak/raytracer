@@ -168,7 +168,7 @@ impl World {
 
     pub fn render(&mut self, camera: &Camera) -> Canvas {
         let now = std::time::Instant::now();
-        self.objects.partition();
+        self.objects.build_bvh();
         println!("partitioning time: {:?}", now.elapsed());
 
         let mut image = camera.canvas();

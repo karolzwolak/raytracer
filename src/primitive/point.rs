@@ -100,6 +100,30 @@ impl ops::Add<Vector> for Point {
     }
 }
 
+impl ops::Add for Point {
+    type Output = Point;
+
+    fn add(self, rhs: Point) -> Self::Output {
+        Point::new(self.x + rhs.x, self.y + rhs.y, self.z + rhs.z)
+    }
+}
+
+impl ops::Mul<f64> for Point {
+    type Output = Point;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        Point::new(self.x * rhs, self.y * rhs, self.z * rhs)
+    }
+}
+
+impl ops::Div<f64> for Point {
+    type Output = Point;
+
+    fn div(self, rhs: f64) -> Self::Output {
+        Point::new(self.x / rhs, self.y / rhs, self.z / rhs)
+    }
+}
+
 impl ops::Sub for Point {
     type Output = Vector;
 
