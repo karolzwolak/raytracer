@@ -19,7 +19,7 @@ use crate::{
     },
 };
 
-const FILENAME: &str = "samples/dragon.obj";
+const FILENAME: &str = "lunar_lander.obj";
 
 pub fn run(width: usize, height: usize) -> Canvas {
     let light = PointLightSource::new(Point::new(1., 3., 1.), Color::new(1., 1., 1.));

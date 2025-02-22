@@ -276,6 +276,12 @@ impl BoundingBox {
     pub fn distance(&self, other: &BoundingBox) -> f64 {
         (self.center() - other.center()).magnitude()
     }
+    pub fn half_area(&self) -> f64 {
+        let x_len = self.max.x() - self.min.x();
+        let y_len = self.max.y() - self.min.y();
+        let z_len = self.max.z() - self.min.z();
+        x_len * y_len + x_len * z_len + y_len * z_len
+    }
 }
 
 #[cfg(test)]

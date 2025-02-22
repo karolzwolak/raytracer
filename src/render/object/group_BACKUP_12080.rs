@@ -1,10 +1,8 @@
 use super::{bounding_box::BoundingBox, Object};
 use crate::{
-    approx_eq::ApproxEq,
     primitive::{
         matrix::{Matrix, Transform},
         point::Point,
-        tuple::Tuple,
     },
     render::{
         intersection::IntersectionCollector,
@@ -162,6 +160,43 @@ impl ObjectGroup {
         }
     }
     pub fn partition(&mut self) {
+<<<<<<< HEAD
+        println!(
+            "Partitioning group with {} primitives",
+            self.primitive_count
+        );
+        Self::partition_iter(self);
+||||||| 160ea3a
+        if self.children.len() < Self::PARTITION_THRESHOLD {
+            return;
+        }
+        let old_children = std::mem::take(&mut self.children);
+        let (left_box, right_box) = self.bounding_box.split_along_longest_axis();
+
+        let mut left_group = ObjectGroup::from_parts_unchecked(Vec::new(), left_box);
+        let mut right_group = ObjectGroup::from_parts_unchecked(Vec::new(), right_box);
+
+        for child in old_children {
+            let child_box = child.bounding_box();
+            let left_dist = left_group.bounding_box().distance(&child_box);
+            let right_dist = right_group.bounding_box().distance(&child_box);
+
+            if left_dist < right_dist {
+                left_group.add_child_no_merge(child);
+            } else {
+                right_group.add_child_no_merge(child);
+            }
+        }
+
+        if !left_group.children.is_empty() {
+            left_group.partition();
+            self.children.push(left_group.into_object());
+        }
+        if !right_group.children.is_empty() {
+            right_group.partition();
+            self.children.push(right_group.into_object());
+        }
+=======
         if self.children.len() < Self::PARTITION_THRESHOLD {
             return;
         }
@@ -185,20 +220,21 @@ impl ObjectGroup {
             };
 
             if child_pos < pos {
-                left_group.add_child(child);
+                left_group.add_child_no_merge(child);
             } else {
-                right_group.add_child(child);
+                right_group.add_child_no_merge(child);
             }
         }
 
         if !left_group.children.is_empty() {
             left_group.partition();
-            self.children.push(Object::Group(left_group));
+            self.children.push(left_group.into_object());
         }
         if !right_group.children.is_empty() {
             right_group.partition();
-            self.children.push(Object::Group(right_group));
+            self.children.push(right_group.into_object());
         }
+>>>>>>> optimize-vbh
     }
     pub fn determine_partition_axis_pos_cost(&self) -> (char, f64, f64) {
         let axis = ['x', 'y', 'z'];
@@ -244,10 +280,10 @@ impl ObjectGroup {
                 _ => unreachable!(),
             };
             if box_pos < pos {
-                left_box.add_bounding_box(&child_box);
+                left_box.add_bounding_box(child_box);
                 left_count += 1;
             } else {
-                right_box.add_bounding_box(&child_box);
+                right_box.add_bounding_box(child_box);
                 right_count += 1;
             }
         }
