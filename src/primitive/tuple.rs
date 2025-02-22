@@ -1,5 +1,20 @@
+use std::ops::Index;
+
 use super::matrix::{Matrix, Transform};
 use crate::approx_eq::ApproxEq;
+
+#[derive(Copy, Clone, Debug)]
+pub enum Axis {
+    X,
+    Y,
+    Z,
+}
+
+impl Axis {
+    pub fn iter() -> impl Iterator<Item = Axis> {
+        [Axis::X, Axis::Y, Axis::Z].iter().copied()
+    }
+}
 
 pub trait Tuple {
     fn new(x: f64, y: f64, z: f64) -> Self;

@@ -1,7 +1,10 @@
 use crate::approx_eq::ApproxEq;
 
-use super::{point::Point, tuple::Tuple};
-use std::ops;
+use super::{
+    point::Point,
+    tuple::{Axis, Tuple},
+};
+use std::ops::{self, Index};
 
 #[derive(Copy, Clone, Debug)]
 pub struct Vector {
@@ -29,6 +32,18 @@ impl Tuple for Vector {
 
     fn w(&self) -> f64 {
         0.
+    }
+}
+
+impl Index<Axis> for Vector {
+    type Output = f64;
+
+    fn index(&self, index: Axis) -> &Self::Output {
+        match index {
+            Axis::X => &self.x,
+            Axis::Y => &self.y,
+            Axis::Z => &self.z,
+        }
     }
 }
 
