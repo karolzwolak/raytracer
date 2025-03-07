@@ -13,6 +13,7 @@ pub struct Camera {
     pixel_size: f64,
     half_width: f64,
     half_height: f64,
+    field_of_view: f64,
 }
 
 impl Camera {
@@ -34,7 +35,20 @@ impl Camera {
         let inverse_transformation = transformation
             .inverse()
             .expect("transformation matrix must be inversible");
+        Self::with_inverse_transformation(
+            target_width,
+            target_height,
+            field_of_view,
+            inverse_transformation,
+        )
+    }
 
+    pub fn with_inverse_transformation(
+        target_width: usize,
+        target_height: usize,
+        field_of_view: f64,
+        inverse_transformation: Matrix,
+    ) -> Self {
         let half_view = (field_of_view / 2.).tan();
         assert!(target_height > 0);
         let h_v_aspect = target_width as f64 / target_height as f64;
@@ -54,6 +68,7 @@ impl Camera {
             pixel_size,
             half_width,
             half_height,
+            field_of_view,
         }
     }
 
@@ -81,6 +96,14 @@ impl Camera {
 
     pub fn target_height(&self) -> usize {
         self.target_height
+    }
+
+    pub fn field_of_view(&self) -> f64 {
+        self.field_of_view
+    }
+
+    pub fn inverse_transformation(&self) -> Matrix {
+        self.inverse_transformation
     }
 }
 

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Display};
 
 use saphyr::Yaml;
 
@@ -34,6 +34,12 @@ pub enum YamlParseError {
     ObjParsingError,
     InternalError,
     EmptyGroup, // empty groups don't make sense, it has to a mistake, so we return an error
+}
+
+impl Display for YamlParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
+    }
 }
 
 const PREDEFINED_DEFINES: &str = r#"
@@ -150,7 +156,7 @@ macro_rules! parse_transformation {
 }
 
 impl<'a> YamlParser<'a> {
-    fn new(yaml: &'a Yaml, default_world: World, default_camera: Camera) -> Self {
+    fn with_world_and_camera(yaml: &'a Yaml, default_world: World, default_camera: Camera) -> Self {
         let parsed = saphyr::Yaml::load_from_str(PREDEFINED_DEFINES).unwrap();
         let predefined = parsed.first().unwrap();
 
@@ -169,6 +175,10 @@ impl<'a> YamlParser<'a> {
             camera: default_camera,
             defines: predefined_parser.defines,
         }
+    }
+
+    fn new(yaml: &'a Yaml) -> Self {
+        Self::with_world_and_camera(yaml, World::empty(), Camera::new(1, 1, 1.))
     }
 
     fn parse_num(&self, value: &Yaml) -> YamlParseResult<f64> {
@@ -624,7 +634,7 @@ pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> YamlPar
     let Some(yaml) = yaml_vec.last() else {
         return Ok((world, camera));
     };
-    let parser = YamlParser::new(yaml, world, camera);
+    let parser = YamlParser::with_world_and_camera(yaml, world, camera);
 
     parser.parse_consume()
 }

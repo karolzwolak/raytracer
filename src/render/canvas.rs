@@ -1,11 +1,29 @@
+use clap::ValueEnum;
 use indicatif::ParallelProgressIterator;
 use rayon::prelude::*;
 use std::{
+    fmt::Display,
     fs::{self, File},
+    path::{Path, PathBuf},
     sync::atomic::{AtomicUsize, Ordering},
 };
 
 use super::color::Color;
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum)]
+pub enum ImageFormat {
+    Ppm,
+    Png,
+}
+
+impl Display for ImageFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ImageFormat::Ppm => write!(f, "ppm"),
+            ImageFormat::Png => write!(f, "png"),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct Canvas {
@@ -120,11 +138,21 @@ impl Canvas {
             .collect::<String>()
     }
 
-    pub fn save_to_ppm(&self, file: &mut String) -> std::io::Result<()> {
-        if !file.ends_with(".ppm") {
-            file.push_str(".ppm");
+    pub fn save_to_file<P>(&self, path: P, format: ImageFormat) -> std::io::Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        match format {
+            ImageFormat::Ppm => self.save_to_ppm(path),
+            ImageFormat::Png => self.save_to_png(path),
         }
-        fs::write(file, self.ppm_header() + &self.ppm_data())
+    }
+
+    pub fn save_to_ppm<P>(&self, path: P) -> std::io::Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        fs::write(path, self.ppm_header() + &self.ppm_data())
     }
 }
 
@@ -137,12 +165,11 @@ impl Canvas {
             .collect()
     }
 
-    pub fn save_to_png(&self, file: &mut String) -> std::io::Result<()> {
-        if !file.ends_with(".png") {
-            file.push_str(".png");
-        }
-
-        let w = File::create(file)?;
+    pub fn save_to_png<P>(&self, path: P) -> std::io::Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let w = File::create(path)?;
         let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32);
         encoder.set_color(png::ColorType::Rgb);
         encoder.set_depth(png::BitDepth::Eight);
@@ -242,7 +269,7 @@ mod tests {
         canvas.write_pixel(2, 1, Color::new(0., 0.5, 0.));
         canvas.write_pixel(4, 8, Color::new(-1.5, 0., 1.));
 
-        canvas.save_to_ppm(&mut "test.ppm".to_string())
+        canvas.save_to_ppm("test.ppm")
     }
     #[test]
     fn ppm_data_ends_with_newline() {
