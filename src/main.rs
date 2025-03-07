@@ -10,9 +10,8 @@ const DEFAULT_WIDTH: usize = 800;
 const DEFAULT_HEIGHT: usize = 800;
 const DEFAULT_FOV: f64 = std::f64::consts::FRAC_PI_3;
 
-/// Simple raytracer renderer
-/// Renders scenes from yaml files
-/// Supports basic shapes and materials and .obj models
+/// Simple raytracer that renders yaml scenes.
+/// Supports basic shapes and materials and .obj models.
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
 struct Args {
