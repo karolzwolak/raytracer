@@ -29,7 +29,7 @@ pub enum YamlParseError {
     MissingField,
     InvalidField,
     UnexpectedValue,
-    UnknownDefine,
+    UnknownDefine(String),
     FileReadError,
     ObjParsingError,
     InternalError,
@@ -193,7 +193,7 @@ impl<'a> YamlParser<'a> {
                 let value = self
                     .defines
                     .get(name)
-                    .ok_or(YamlParseError::UnknownDefine)?;
+                    .ok_or_else(|| YamlParseError::UnknownDefine(name.to_string()))?;
                 self.parse_num(value)
             }
             _ => Err(YamlParseError::InvalidField),
@@ -218,7 +218,7 @@ impl<'a> YamlParser<'a> {
             let color = self
                 .defines
                 .get(str_value)
-                .ok_or(YamlParseError::UnknownDefine)?;
+                .ok_or_else(|| YamlParseError::UnknownDefine(str_value.to_string()))?;
             return self.parse_color(color);
         }
         let (r, g, b) = self.parse_vec3(value)?;
@@ -306,7 +306,7 @@ impl<'a> YamlParser<'a> {
                 let material = self
                     .defines
                     .get(name)
-                    .ok_or(YamlParseError::UnknownDefine)?;
+                    .ok_or_else(|| YamlParseError::UnknownDefine(name.to_string()))?;
                 return self.parse_material(material);
             }
             _ => {}
@@ -339,7 +339,7 @@ impl<'a> YamlParser<'a> {
             return self.parse_transformation(
                 self.defines
                     .get(str_value)
-                    .ok_or(YamlParseError::UnknownDefine)?,
+                    .ok_or_else(|| YamlParseError::UnknownDefine(str_value.to_string()))?,
             );
         }
         let values = body.as_vec().ok_or(YamlParseError::InvalidField)?;
