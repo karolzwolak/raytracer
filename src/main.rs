@@ -79,6 +79,8 @@ fn main() -> Result<(), String> {
     let canvas = world.render(&camera);
     let output_path = args.output_path.unwrap_or_else(|| {
         let mut path = args.scene_file.clone();
+        path = path.file_name().unwrap().into(); // If scene file is not a file, it would get
+                                                 // picked up before parsing
         path.set_extension(args.image_format.to_string());
         path
     });
