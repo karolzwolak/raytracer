@@ -28,3 +28,10 @@ Options:
   -h, --help
           Print help
 ```
+
+## Sample images
+
+- Cover image render ![Cover image render](samples/images/cover.png)
+- Refraction Chapter![Refraction chapter](samples/images/refractions.png)
+- Cubes Chapter![Cubes chapter](samples/images/cubes.png)
+- Dragons ![Dragons](samples/images/dragons.png)
