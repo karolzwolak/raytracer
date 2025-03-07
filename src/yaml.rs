@@ -447,10 +447,14 @@ impl<'a> YamlParser<'a> {
                 Shape::Cylinder(Cylinder::new(min, max, closed))
             }
             "cone" => {
-                let min = self.parse_num(&body["min"])?;
-                let max = self.parse_num(&body["max"])?;
+                let y_min = self.parse_num(&body["min"])?;
+                let y_max = self.parse_num(&body["max"])?;
                 let closed = self.parse_bool(&body["closed"])?;
-                Shape::Cone(Cone::new(min, max, closed))
+                Shape::Cone(Cone {
+                    y_min,
+                    y_max,
+                    closed,
+                })
             }
             "triangle" => {
                 let p1 = self.parse_point(&body["p1"])?;
@@ -998,7 +1002,11 @@ mod tests {
 "#;
 
         let (world, _) = parse(CONE_YAML);
-        let cylinder_shape = Cone::new(1., 5., true);
+        let cylinder_shape = Cone {
+            y_min: 1.,
+            y_max: 5.,
+            closed: true,
+        };
         let expected_object = Object::primitive_with_shape(Shape::Cone(cylinder_shape));
         assert_eq!(world.objects(), vec![expected_object]);
     }
