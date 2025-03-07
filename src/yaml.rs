@@ -186,6 +186,10 @@ impl<'a> YamlParser<'a> {
             Yaml::Integer(value) => Ok(*value as f64),
             Yaml::Real(value) => Ok(value.parse().unwrap()),
             Yaml::String(name) => {
+                if let Some(string) = name.strip_prefix('-') {
+                    let yaml = Yaml::from_str(string);
+                    return self.parse_num(&yaml).map(|v| -v);
+                }
                 let value = self
                     .defines
                     .get(name)
@@ -1244,6 +1248,22 @@ mod tests {
             .rotate_y(FRAC_PI_3)
             .transformed();
         let sphere = Object::primitive(Shape::Sphere, material, transformation);
+        assert_eq!(world.objects(), vec![sphere]);
+    }
+
+    #[test]
+    fn parsing_negative_nums() {
+        let source = r#"
+- add: sphere
+  transform:
+    - [translate, -1, -0, -5.5]
+"#;
+        let (world, _) = parse(source);
+        let sphere = Object::primitive(
+            Shape::Sphere,
+            Material::default(),
+            Matrix::translation(-1., 0., -5.5).transformed(),
+        );
         assert_eq!(world.objects(), vec![sphere]);
     }
 }
