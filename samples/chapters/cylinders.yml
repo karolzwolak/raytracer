@@ -1,0 +1,85 @@
+- add: world
+
+- define: sky-blue
+  value: [0.2, 0.35, 0.78]
+- define: red
+  value: [0.8, 0.2, 0.2]
+- define: brown
+  value: [0.67, 0.57, 0.38]
+- define: vanilla
+  value: [0.95, 0.89, 0.67]
+- define: chocolate
+  value: [0.48, 0.24, 0.0]
+
+- add: light
+  intensity: WHITE
+  at: [-10, 10, -10]
+
+- add: SCENE_CAMERA
+  from: [0, 1.5, -5]
+  to: [0, 1, 0]
+  up: [0, 1, 0]
+  fov: FRAC_PI_3
+
+# Skybox
+- add: cube
+  material:
+    color: sky-blue
+  transform:
+    - [scale-uniform, 10]
+
+- define: arrow-transform
+  value:
+    - [rotate-z, -FRAC_PI_4]
+    - [translate, -0.5, 0, 0]
+
+# Arrow body
+- add: cylinder
+  min: -0.5
+  max: 0.5
+  closed: true
+  material:
+    color: red
+  transform:
+    - [scale, 0.1, 1, 0.1]
+    - arrow-transform
+
+# Arrow head
+- add: cone
+  min: -1
+  max: 0
+  closed: true
+  material:
+    color: red
+  transform:
+    - [scale, 0.2, 0.5, 0.2]
+    - [translate, 0, 1, 0]
+    - arrow-transform
+
+# Ice cream cone
+- add: cone
+  min: 0
+  max: 1
+  closed: false
+
+  material:
+    color: brown
+  transform:
+    - [scale, 0.5, 1, 0.5]
+    - [translate, 1, -0.15, 0]
+
+# Vanilla scoop
+- add: sphere
+  material:
+    color: vanilla
+  transform:
+    - [scale-uniform, 0.5]
+    - [translate, 1, 1, 0]
+
+# Chocolate scoop
+- add: sphere
+  material:
+    color: chocolate
+  transform:
+    - [scale-uniform, 0.5]
+    - [translate, 1, 1.75, 0]
