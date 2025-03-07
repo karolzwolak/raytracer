@@ -83,7 +83,8 @@ fn main() -> Result<(), String> {
         path
     });
     canvas
-        .save_to_file(output_path, args.image_format)
+        .save_to_file(&output_path, args.image_format)
         .map_err(|e| format!("Failed to save image: {}", e))?;
+    println!("Image saved to {:?}", output_path);
     Ok(())
 }

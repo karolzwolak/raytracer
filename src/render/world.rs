@@ -177,6 +177,11 @@ impl World {
 
         let ray_count = image.width() * image.height() * self.supersampling_offsets.len().pow(2);
 
+        println!(
+            "rendering image with {}x{} resolution",
+            image.width(),
+            image.height()
+        );
         println!("rendering {} objects", primitive_count);
         println!("with {} rays", ray_count);
         println!("with {} maximum reflective depth", self.max_recursive_depth);
