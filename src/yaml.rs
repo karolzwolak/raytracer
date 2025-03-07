@@ -373,12 +373,25 @@ impl<'a> YamlParser<'a> {
     }
 
     fn parse_transformation(&self, body: &Yaml) -> YamlParseResult<Matrix> {
-        let mut res = Matrix::identity();
-        for transformation in body.as_vec().unwrap_or(&Vec::new()) {
-            let matrix = self.parse_matrix(transformation)?;
-            res.transform(&matrix);
+        match body {
+            Yaml::BadValue => Ok(Matrix::identity()),
+            Yaml::String(name) => {
+                let transform = self
+                    .defines
+                    .get(name)
+                    .ok_or_else(|| YamlParseError::UnknownDefine(name.to_string()))?;
+                self.parse_transformation(transform)
+            }
+            Yaml::Array(arr) => {
+                let mut res = Matrix::identity();
+                for transformation in arr {
+                    let matrix = self.parse_matrix(transformation)?;
+                    res.transform(&matrix);
+                }
+                Ok(res)
+            }
+            _ => Err(YamlParseError::InvalidField),
         }
-        Ok(res)
     }
 
     fn parse_group(&self, body: &Yaml) -> YamlParseResult<ObjectGroup> {
@@ -1273,6 +1286,42 @@ mod tests {
             .transformed();
         let sphere = Object::primitive(Shape::Sphere, Material::default(), transformation);
         assert_eq!(world.objects(), vec![sphere]);
+    }
+
+    #[test]
+    fn define_transformation() {
+        let source = r#"
+- define: fancy-transform
+  value:
+    - [rotate-x, FRAC_PI_3]
+    - [scale, 1, 2, 3]
+- add: sphere
+  transform:
+  - [scale-uniform, 2]
+  - fancy-transform
+  - [translate, 1, 2, 3]
+- add: cube
+  transform: fancy-transform
+"#;
+        let (world, _) = parse(source);
+        let fancy_transformation = Matrix::rotation_x(FRAC_PI_3)
+            .scale(1., 2., 3.)
+            .transformed();
+        let transformations = vec![
+            fancy_transformation
+                .clone()
+                .scale_uniform(2.)
+                .translate(1., 2., 3.)
+                .transformed(),
+            fancy_transformation,
+        ];
+        let actual_transformations = world
+            .objects()
+            .iter()
+            .map(|obj| obj.transformation())
+            .collect::<Vec<_>>();
+
+        assert_eq!(transformations, actual_transformations);
     }
 
     #[test]
