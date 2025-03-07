@@ -56,9 +56,20 @@ const PREDEFINED_DEFINES: &str = r#"
 - define: FRAC_1_SQRT_2
   value: 0.7071067811865476
 
+- define: WHITE
+  value: [ 1, 1, 1 ]
+- define: BLACK
+  value: [ 0, 0, 0 ]
+- define: RED
+  value: [ 1, 0, 0 ]
+- define: GREEN
+  value: [ 0, 1, 0 ]
+- define: BLUE
+  value: [ 0, 0, 1 ]
+
 - define: GLASS_MATERIAL
   value:
-    color: [ 0, 0, 0 ]
+    color: BLACK
     ambient: 0.025
     diffuse: 0.2
     specular: 1.0
@@ -75,7 +86,7 @@ const PREDEFINED_DEFINES: &str = r#"
 
 - define: AIR_MATERIAL
   value:
-    color: [ 0, 0, 0 ]
+    color: BLACK
     ambient: 0
     diffuse: 0
     specular: 0
@@ -88,7 +99,7 @@ const PREDEFINED_DEFINES: &str = r#"
   value:
     add: light
     at: [ -10, 10, -10 ]
-    intensity: [ 1, 1, 1 ]
+    intensity: WHITE
 
 - define: SCENE_CAMERA
   value:
@@ -169,6 +180,7 @@ impl<'a> YamlParser<'a> {
         predefined_parser
             .parse()
             .expect("Error parsing predefined defines");
+        // println!("{:?}", predefined_parser.defines);
         Self {
             yaml,
             world: default_world,
@@ -1169,6 +1181,44 @@ mod tests {
         };
         let sphere = Object::primitive(Shape::Sphere, material, Matrix::identity());
         assert_eq!(world.objects(), vec![sphere]);
+    }
+
+    #[test]
+    fn predefined_colors() {
+        let source = r#"
+- add: sphere
+  material:
+    color: WHITE
+- add: sphere
+  material:
+    color: BLACK
+- add: sphere
+  material:
+    color: RED
+- add: sphere
+  material:
+    color: GREEN
+- add: sphere
+  material:
+    color: BLUE
+"#;
+        let (world, _) = parse(source);
+        let colors = vec![
+            Color::white(),
+            Color::black(),
+            Color::red(),
+            Color::green(),
+            Color::blue(),
+        ];
+        let actual_colors = world
+            .objects()
+            .iter()
+            .map(|obj| match obj.material().unwrap().pattern {
+                Pattern::Const(color) => color,
+                _ => panic!("Expected a constant color pattern"),
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(colors, actual_colors);
     }
 
     #[test]
