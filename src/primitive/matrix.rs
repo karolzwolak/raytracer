@@ -1,7 +1,11 @@
 use crate::approx_eq::ApproxEq;
 use std::ops;
 
-use super::{point::Point, tuple::Tuple, vector::Vector};
+use super::{
+    point::Point,
+    tuple::{Axis, Tuple},
+    vector::Vector,
+};
 
 #[derive(Debug, Clone, Copy)]
 /// Simple 4x4 matrix
@@ -16,6 +20,51 @@ impl Transform for Matrix {
 
     fn transform_new(&self, matrix: &Matrix) -> Self {
         matrix * (self as &Matrix)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Transformation {
+    Scaling(f64, f64, f64),
+    Translation(f64, f64, f64),
+    Rotation(Axis, f64),
+    Shearing(f64, f64, f64, f64, f64, f64),
+}
+
+impl From<Transformation> for Matrix {
+    fn from(val: Transformation) -> Self {
+        match val {
+            Transformation::Scaling(x, y, z) => Matrix::scaling(x, y, z),
+            Transformation::Translation(x, y, z) => Matrix::translation(x, y, z),
+            Transformation::Rotation(axis, radians) => match axis {
+                Axis::X => Matrix::rotation_x(radians),
+                Axis::Y => Matrix::rotation_y(radians),
+                Axis::Z => Matrix::rotation_z(radians),
+            },
+            Transformation::Shearing(xpy, xpz, ypx, ypz, zpx, zpy) => {
+                Matrix::shearing(xpy, xpz, ypx, ypz, zpx, zpy)
+            }
+        }
+    }
+}
+
+impl ops::Mul<f64> for Transformation {
+    type Output = Self;
+
+    fn mul(self, rhs: f64) -> Self::Output {
+        match self {
+            Self::Scaling(fx, fy, fz) => Self::Scaling(fx * rhs, fy * rhs, fz * rhs),
+            Self::Translation(x, y, z) => Self::Translation(x * rhs, y * rhs, z * rhs),
+            Self::Rotation(axis, radians) => Self::Rotation(axis, radians * rhs),
+            Self::Shearing(xpy, xpz, ypx, ypz, zpx, zpy) => Self::Shearing(
+                xpy * rhs,
+                xpz * rhs,
+                ypx * rhs,
+                ypz * rhs,
+                zpx * rhs,
+                zpy * rhs,
+            ),
+        }
     }
 }
 
