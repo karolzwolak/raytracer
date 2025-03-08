@@ -9,6 +9,7 @@ pub mod primitive {
 }
 
 pub mod render {
+    pub mod animations;
     pub mod camera;
     pub mod canvas;
     pub mod color;
