@@ -1,4 +1,7 @@
-use crate::primitive::matrix::{Matrix, Transformation};
+use crate::{
+    approx_eq::ApproxEq,
+    primitive::matrix::{Matrix, Transformation},
+};
 
 #[derive(Debug, Clone, Copy)]
 enum AnimationTiming {
@@ -135,6 +138,9 @@ impl TransformAnimation {
     }
 
     fn interpolate(&self, factor: f64) -> Matrix {
+        if factor.approx_eq(&0.) {
+            return Matrix::identity();
+        }
         self.transformations
             .iter()
             .copied()
@@ -175,6 +181,10 @@ mod tests {
         TRANSFORMATIONS
             .iter()
             .fold(Matrix::identity(), |acc, t| acc * Matrix::from(*t))
+    }
+
+    fn transform_animation() -> TransformAnimation {
+        TransformAnimation::new(NORMAL_ANIMATION, TRANSFORMATIONS.to_vec())
     }
 
     #[test]
@@ -237,5 +247,12 @@ mod tests {
 
         assert_eq!(state.clone().update(0.5), 0.0);
         assert_eq!(state.clone().update(1.5), 0.5);
+    }
+
+    #[test]
+    fn zero_interpolation_is_identity() {
+        let animation = transform_animation();
+
+        assert_eq!(animation.interpolate(0.0), Matrix::identity());
     }
 }
