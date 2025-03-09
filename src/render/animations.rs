@@ -26,17 +26,17 @@ impl AnimationDirection {
     fn apply(&self, time: f64, curr_count: u32) -> f64 {
         match self {
             Self::Normal => time,
-            Self::Reverse => -time,
+            Self::Reverse => 1. - time,
             Self::Alternate => {
                 if curr_count % 2 == 0 {
                     time
                 } else {
-                    -time
+                    1. - time
                 }
             }
             Self::AlternateReverse => {
                 if curr_count % 2 == 0 {
-                    -time
+                    1. - time
                 } else {
                     time
                 }
@@ -135,21 +135,10 @@ impl TransformAnimation {
     }
 
     fn interpolate(&self, factor: f64) -> Matrix {
-        let reverse = factor < 0.;
-        let factor = factor.abs();
-
-        let res = self
-            .transformations
+        self.transformations
             .iter()
             .copied()
-            .fold(Matrix::identity(), |acc, t| acc * Matrix::from(t * factor));
-
-        if reverse {
-            res.inverse()
-                .expect("Internal Error: Could not invert transformation matrix")
-        } else {
-            res
-        }
+            .fold(Matrix::identity(), |acc, t| acc * Matrix::from(t * factor))
     }
 
     fn update(&mut self, dt: f64) -> Matrix {
@@ -219,20 +208,20 @@ mod tests {
         let alternate = AnimationDirection::Alternate;
         let alternate_reverse = AnimationDirection::AlternateReverse;
 
-        let time = 0.5;
+        let time = 0.25;
         assert_eq!(normal.apply(time, 0), time);
         assert_eq!(normal.apply(time, 1), time);
 
-        assert_eq!(reverse.apply(time, 0), -time);
-        assert_eq!(reverse.apply(time, 1), -time);
+        assert_eq!(reverse.apply(time, 0), 1. - time);
+        assert_eq!(reverse.apply(time, 1), 1. - time);
 
         assert_eq!(alternate.apply(time, 0), time);
-        assert_eq!(alternate.apply(time, 1), -time);
+        assert_eq!(alternate.apply(time, 1), 1. - time);
         assert_eq!(alternate.apply(time, 2), time);
 
-        assert_eq!(alternate_reverse.apply(time, 0), -time);
+        assert_eq!(alternate_reverse.apply(time, 0), 1. - time);
         assert_eq!(alternate_reverse.apply(time, 1), time);
-        assert_eq!(alternate_reverse.apply(time, 2), -time);
+        assert_eq!(alternate_reverse.apply(time, 2), 1. - time);
     }
 
     #[test]
@@ -248,14 +237,5 @@ mod tests {
 
         assert_eq!(state.clone().update(0.5), 0.0);
         assert_eq!(state.clone().update(1.5), 0.5);
-    }
-
-    #[test]
-    fn neg_interpolation_is_inverted_transform() {
-        let state = TransformAnimation::new(NORMAL_ANIMATION, TRANSFORMATIONS.to_vec());
-        let transform = full_transformation();
-
-        assert_eq!(state.interpolate(1.0), transform);
-        assert_eq!(state.interpolate(-1.0), transform.inverse().unwrap());
     }
 }
