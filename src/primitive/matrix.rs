@@ -29,6 +29,7 @@ pub enum Transformation {
     Translation(f64, f64, f64),
     Rotation(Axis, f64),
     Shearing(f64, f64, f64, f64, f64, f64),
+    Identity,
 }
 
 impl From<Transformation> for Matrix {
@@ -44,7 +45,60 @@ impl From<Transformation> for Matrix {
             Transformation::Shearing(xpy, xpz, ypx, ypz, zpx, zpy) => {
                 Matrix::shearing(xpy, xpz, ypx, ypz, zpx, zpy)
             }
+            Transformation::Identity => Matrix::identity(),
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct TransformationVec {
+    data: Vec<Transformation>,
+}
+
+impl TransformationVec {
+    pub fn new() -> Self {
+        Self { data: Vec::new() }
+    }
+    pub fn vec(&self) -> &Vec<Transformation> {
+        &self.data
+    }
+    pub fn push(&mut self, t: Transformation) {
+        self.data.push(t);
+    }
+    pub fn extend(&mut self, other: &Self) {
+        self.data.extend(other.data.iter().copied());
+    }
+}
+
+impl Default for TransformationVec {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl From<Vec<Transformation>> for TransformationVec {
+    fn from(val: Vec<Transformation>) -> Self {
+        Self { data: val }
+    }
+}
+
+impl From<&[Transformation]> for TransformationVec {
+    fn from(val: &[Transformation]) -> Self {
+        Self { data: val.to_vec() }
+    }
+}
+
+impl From<TransformationVec> for Matrix {
+    fn from(val: TransformationVec) -> Self {
+        val.data.iter().fold(Matrix::identity(), |acc, t| {
+            acc.transform_new(&Matrix::from(*t))
+        })
+    }
+}
+
+impl From<TransformationVec> for Vec<Transformation> {
+    fn from(val: TransformationVec) -> Self {
+        val.data
     }
 }
 
@@ -64,6 +118,7 @@ impl ops::Mul<f64> for Transformation {
                 zpx * rhs,
                 zpy * rhs,
             ),
+            Self::Identity => Self::Identity,
         }
     }
 }
@@ -881,5 +936,26 @@ mod tests {
     #[test]
     fn scaling_uniform_scales_by_same_factor_on_all_dimentions() {
         assert_approx_eq_low_prec!(Matrix::scaling_uniform(2.), Matrix::scaling(2., 2., 2.));
+    }
+
+    #[test]
+    fn transformation_vec_to_matrix() {
+        let transformations = TransformationVec::from(vec![
+            Transformation::Scaling(2., -3.5, 4.),
+            Transformation::Rotation(Axis::X, consts::FRAC_PI_2),
+            Transformation::Shearing(0., 1., 2., -3., 4., 5.),
+            Transformation::Translation(5., 6., 7.),
+            Transformation::Rotation(Axis::Y, consts::FRAC_PI_4),
+            Transformation::Rotation(Axis::Z, -consts::FRAC_PI_6),
+        ]);
+        let expected = Matrix::scaling(2., -3.5, 4.)
+            .rotate_x(consts::FRAC_PI_2)
+            .sheare(0., 1., 2., -3., 4., 5.)
+            .translate(5., 6., 7.)
+            .rotate_y(consts::FRAC_PI_4)
+            .rotate_z(-consts::FRAC_PI_6)
+            .transformed();
+
+        assert_approx_eq_low_prec!(Matrix::from(transformations), expected);
     }
 }

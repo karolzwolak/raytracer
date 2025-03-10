@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::matrix::{Matrix, Transformation},
+    primitive::matrix::{Matrix, TransformationVec},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -126,11 +126,11 @@ impl AnimationState {
 #[derive(Debug, Clone)]
 struct TransformAnimation {
     animation_state: AnimationState,
-    transformations: Vec<Transformation>,
+    transformations: TransformationVec,
 }
 
 impl TransformAnimation {
-    fn new(animation: Animation, transformations: Vec<Transformation>) -> Self {
+    fn new(animation: Animation, transformations: TransformationVec) -> Self {
         Self {
             animation_state: AnimationState::new(animation),
             transformations,
@@ -142,6 +142,7 @@ impl TransformAnimation {
             return Matrix::identity();
         }
         self.transformations
+            .vec()
             .iter()
             .copied()
             .fold(Matrix::identity(), |acc, t| acc * Matrix::from(t * factor))
@@ -157,7 +158,7 @@ impl TransformAnimation {
 mod tests {
     use std::f64::{self};
 
-    use crate::primitive::tuple::Axis;
+    use crate::primitive::{matrix::Transformation, tuple::Axis};
 
     use super::*;
 
@@ -184,7 +185,10 @@ mod tests {
     }
 
     fn transform_animation() -> TransformAnimation {
-        TransformAnimation::new(NORMAL_ANIMATION, TRANSFORMATIONS.to_vec())
+        TransformAnimation::new(
+            NORMAL_ANIMATION,
+            TransformationVec::from(&TRANSFORMATIONS[..]),
+        )
     }
 
     #[test]
@@ -254,5 +258,12 @@ mod tests {
         let animation = transform_animation();
 
         assert_eq!(animation.interpolate(0.0), Matrix::identity());
+    }
+
+    #[test]
+    fn full_interpolation_is_full_transformation() {
+        let animation = transform_animation();
+
+        assert_eq!(animation.interpolate(1.0), full_transformation());
     }
 }
