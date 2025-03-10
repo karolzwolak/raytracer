@@ -17,6 +17,12 @@ impl AnimationTiming {
     }
 }
 
+impl Default for AnimationTiming {
+    fn default() -> Self {
+        Self::Linear
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AnimationDirection {
     Normal,
@@ -48,6 +54,12 @@ impl AnimationDirection {
     }
 }
 
+impl Default for AnimationDirection {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AnimationCount {
     Infinite,
@@ -60,6 +72,12 @@ impl AnimationCount {
             Self::Infinite => true,
             Self::Count(count) => curr_count < *count,
         }
+    }
+}
+
+impl Default for AnimationCount {
+    fn default() -> Self {
+        Self::Infinite
     }
 }
 
