@@ -1,4 +1,4 @@
-use super::{bounding_box::BoundingBox, Object};
+use super::{bounding_box::BoundingBox, Object, ObjectKind};
 use crate::{
     primitive::{
         matrix::{Matrix, Transform},
@@ -178,13 +178,21 @@ impl ObjectGroup {
             if time >= collector.hit_time() {
                 continue;
             }
-            stack.extend(group.children.iter().rev().filter_map(|child| match child {
-                Object::Group(g) => g.bounding_box.intersection_time(world_ray).map(|t| (g, t)),
-                Object::Primitive(_) => {
-                    child.intersect(world_ray, collector);
-                    None
-                }
-            }));
+            stack.extend(
+                group
+                    .children
+                    .iter()
+                    .rev()
+                    .filter_map(|child| match child.kind() {
+                        ObjectKind::Group(g) => {
+                            g.bounding_box.intersection_time(world_ray).map(|t| (g, t))
+                        }
+                        ObjectKind::Primitive(_) => {
+                            child.intersect(world_ray, collector);
+                            None
+                        }
+                    }),
+            );
         }
     }
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {

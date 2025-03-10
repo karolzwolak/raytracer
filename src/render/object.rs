@@ -28,9 +28,14 @@ use super::{
 };
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Object {
+pub enum ObjectKind {
     Primitive(Box<PrimitiveObject>),
     Group(ObjectGroup),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Object {
+    kind: ObjectKind,
 }
 
 impl From<PrimitiveObject> for Object {
@@ -47,9 +52,9 @@ impl From<ObjectGroup> for Object {
 
 impl Transform for Object {
     fn transform(&mut self, matrix: &Matrix) {
-        match self {
-            Self::Primitive(obj) => obj.transform(matrix),
-            Self::Group(group) => group.transform(matrix),
+        match &mut self.kind {
+            ObjectKind::Primitive(obj) => obj.transform(matrix),
+            ObjectKind::Group(group) => group.transform(matrix),
         }
     }
 
@@ -61,16 +66,18 @@ impl Transform for Object {
 }
 
 impl Object {
+    pub fn from_group(group: ObjectGroup) -> Self {
+        Self {
+            kind: ObjectKind::Group(group),
+        }
+    }
+    pub fn from_primitive(obj: PrimitiveObject) -> Self {
+        Self {
+            kind: ObjectKind::Primitive(Box::new(obj)),
+        }
+    }
     pub fn group_with_children(children: Vec<Object>) -> Self {
         Self::from_group(ObjectGroup::new(children))
-    }
-
-    pub fn from_group(group: ObjectGroup) -> Self {
-        Self::Group(group)
-    }
-
-    pub fn from_primitive(obj: PrimitiveObject) -> Self {
-        Self::Primitive(Box::new(obj))
     }
 
     pub fn primitive(shape: Shape, material: Material, transformation: Matrix) -> Self {
@@ -94,19 +101,19 @@ impl Object {
         world_point: Point,
         i: Option<&'a Intersection<'a>>,
     ) -> Vector {
-        match self {
-            Self::Primitive(obj) => obj.normal_vector_at_with_intersection(world_point, i),
-            Self::Group(_) => todo!(),
+        match &self.kind {
+            ObjectKind::Primitive(obj) => obj.normal_vector_at_with_intersection(world_point, i),
+            ObjectKind::Group(_) => todo!(),
         }
     }
 
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
-        match self {
-            Self::Primitive(obj) => {
+        match &self.kind {
+            ObjectKind::Primitive(obj) => {
                 collector.set_next_object(self);
                 obj.intersect(world_ray, collector);
             }
-            Self::Group(group) => group.intersect(world_ray, collector),
+            ObjectKind::Group(group) => group.intersect(world_ray, collector),
         }
     }
 
@@ -136,9 +143,9 @@ impl Object {
     }
 
     pub fn set_material(&mut self, material: Material) {
-        match self {
-            Self::Primitive(obj) => obj.set_material(material),
-            Self::Group(group) => group.set_material(material),
+        match &mut self.kind {
+            ObjectKind::Primitive(obj) => obj.set_material(material),
+            ObjectKind::Group(group) => group.set_material(material),
         }
     }
 
@@ -147,9 +154,9 @@ impl Object {
     }
 
     pub fn primitive_count(&self) -> usize {
-        match self {
-            Self::Primitive(_) => 1,
-            Self::Group(group) => group.primitive_count(),
+        match &self.kind {
+            ObjectKind::Primitive(_) => 1,
+            ObjectKind::Group(group) => group.primitive_count(),
         }
     }
 
@@ -175,52 +182,56 @@ impl Object {
     }
 
     pub fn transformation(&self) -> Matrix {
-        match self {
-            Self::Primitive(obj) => obj
+        match &self.kind {
+            ObjectKind::Primitive(obj) => obj
                 .transformation_inverse
                 .unwrap_or_default()
                 .inverse()
                 .unwrap(),
-            Self::Group(_) => Matrix::identity(),
+            ObjectKind::Group(_) => Matrix::identity(),
         }
     }
 
     pub fn transformation_inverse(&self) -> Matrix {
-        match self {
-            Self::Primitive(obj) => obj.transformation_inverse(),
-            Self::Group(_) => Matrix::identity(),
+        match &self.kind {
+            ObjectKind::Primitive(obj) => obj.transformation_inverse(),
+            ObjectKind::Group(_) => Matrix::identity(),
         }
     }
 
     pub fn bounding_box(&self) -> BoundingBox {
-        match self {
-            Self::Primitive(obj) => obj.bounding_box(),
-            Self::Group(group) => group.bounding_box().clone(),
+        match &self.kind {
+            ObjectKind::Primitive(obj) => obj.bounding_box(),
+            ObjectKind::Group(group) => group.bounding_box().clone(),
         }
     }
     pub fn as_group(&self) -> Option<&ObjectGroup> {
-        match self {
-            Self::Group(group) => Some(group),
+        match &self.kind {
+            ObjectKind::Group(group) => Some(group),
             _ => None,
         }
     }
     pub fn as_group_mut(&mut self) -> Option<&mut ObjectGroup> {
-        match self {
-            Self::Group(group) => Some(group),
+        match &mut self.kind {
+            ObjectKind::Group(group) => Some(group),
             _ => None,
         }
     }
     pub fn as_primitive(&self) -> Option<&PrimitiveObject> {
-        match self {
-            Self::Primitive(obj) => Some(obj),
+        match &self.kind {
+            ObjectKind::Primitive(obj) => Some(obj),
             _ => None,
         }
     }
     pub fn as_primitive_mut(&mut self) -> Option<&mut PrimitiveObject> {
-        match self {
-            Self::Primitive(obj) => Some(obj),
+        match &mut self.kind {
+            ObjectKind::Primitive(obj) => Some(obj),
             _ => None,
         }
+    }
+
+    pub fn kind(&self) -> &ObjectKind {
+        &self.kind
     }
 }
 

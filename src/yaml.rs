@@ -465,7 +465,7 @@ impl<'a> YamlParser<'a> {
                     &Yaml::BadValue => {}
                     val => res.transform(&self.parse_transformation(val)?),
                 }
-                return Ok(Object::Group(res));
+                return Ok(Object::from_group(res));
             }
             "sphere" => Shape::Sphere,
             "cube" => Shape::Cube,
@@ -929,7 +929,7 @@ mod tests {
 
         let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
 
-        assert_eq!(world.objects(), vec![Object::Group(group)]);
+        assert_eq!(world.objects(), vec![Object::from_group(group)]);
     }
 
     #[test]
@@ -964,7 +964,7 @@ mod tests {
         let path = "samples/obj/teapot-low.obj";
         let data = std::fs::read_to_string(path).unwrap();
         let expected_group = parser.parse(data).unwrap();
-        assert_eq!(world.objects(), vec![Object::Group(expected_group)]);
+        assert_eq!(world.objects(), vec![Object::from_group(expected_group)]);
     }
 
     #[test]
