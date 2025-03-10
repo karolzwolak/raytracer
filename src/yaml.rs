@@ -4,9 +4,9 @@ use saphyr::Yaml;
 
 use crate::{
     primitive::{
-        matrix::{Matrix, Transform},
+        matrix::{Matrix, Transform, Transformation, TransformationVec},
         point::Point,
-        tuple::Tuple,
+        tuple::{Axis, Tuple},
         vector::Vector,
     },
     render::{
@@ -134,20 +134,11 @@ macro_rules! parse_optional_field {
 }
 
 macro_rules! call_with_n_first_values {
-    ($values:ident, 0, $func:path) => {
-        $func($values)
-    };
-    ($values:ident, 1, $func:path) => {
-        $func($values[0])
-    };
     ($values:ident, 2, $func:path) => {
         $func($values[0], $values[1])
     };
     ($values:ident, 3, $func:path) => {
         $func($values[0], $values[1], $values[2])
-    };
-    ($values:ident, 4, $func:path) => {
-        $func($values[0], $values[1], $values[2], $values[3])
     };
     ($values:ident, 6, $func:path) => {
         $func(
@@ -157,11 +148,25 @@ macro_rules! call_with_n_first_values {
 }
 
 macro_rules! parse_transformation {
-    ($code_name:ident, $values:ident, $n:tt) => {
+    ($kind:ident, $values:ident, $n:tt) => {
         if $values.len() != $n {
             return Err(YamlParseError::InvalidField);
         } else {
-            Ok(call_with_n_first_values!($values, $n, Matrix::$code_name))
+            Ok(call_with_n_first_values!(
+                $values,
+                $n,
+                Transformation::$kind
+            ))
+        }
+    };
+}
+
+macro_rules! rotation_transformation {
+    ($axis: expr, $values: ident) => {
+        if $values.len() != 1 {
+            return Err(YamlParseError::InvalidField);
+        } else {
+            Ok(Transformation::Rotation($axis, $values[0]))
         }
     };
 }
@@ -346,47 +351,59 @@ impl<'a> YamlParser<'a> {
         Ok(res)
     }
 
-    fn parse_matrix(&self, body: &Yaml) -> YamlParseResult<Matrix> {
-        if let Yaml::String(str_value) = body {
-            return self.parse_transformation(
-                self.defines
-                    .get(str_value)
-                    .ok_or_else(|| YamlParseError::UnknownDefine(str_value.to_string()))?,
-            );
-        }
+    fn parse_matrix(&self, body: &Yaml) -> YamlParseResult<Transformation> {
         let values = body.as_vec().ok_or(YamlParseError::InvalidField)?;
         if values.is_empty() {
-            return Ok(Matrix::identity());
+            return Ok(Transformation::Identity);
         }
         let kind = values[0].as_str().ok_or(YamlParseError::InvalidField)?;
         let vector = self.parse_vec(&values[1..])?;
         match kind {
-            "translate" => parse_transformation!(translation, vector, 3),
-            "scale" => parse_transformation!(scaling, vector, 3),
-            "scale-uniform" => parse_transformation!(scaling_uniform, vector, 1),
-            "rotate-x" => parse_transformation!(rotation_x, vector, 1),
-            "rotate-y" => parse_transformation!(rotation_y, vector, 1),
-            "rotate-z" => parse_transformation!(rotation_z, vector, 1),
-            "shear" => parse_transformation!(shearing, vector, 6),
+            "translate" => parse_transformation!(Translation, vector, 3),
+            "scale" => parse_transformation!(Scaling, vector, 3),
+            "scale-uniform" => {
+                let vector = if let Some(&val) = vector.first() {
+                    vec![val, val, val]
+                } else {
+                    vector
+                };
+                parse_transformation!(Scaling, vector, 3)
+            }
+            "rotate-x" => rotation_transformation!(Axis::X, vector),
+            "rotate-y" => rotation_transformation!(Axis::Y, vector),
+            "rotate-z" => rotation_transformation!(Axis::Z, vector),
+            "shear" => parse_transformation!(Shearing, vector, 6),
             _ => Err(YamlParseError::InvalidField),
         }
     }
 
     fn parse_transformation(&self, body: &Yaml) -> YamlParseResult<Matrix> {
+        Ok(Matrix::from(self.parse_transformations(body)?))
+    }
+
+    fn parse_transformations(&self, body: &Yaml) -> YamlParseResult<TransformationVec> {
         match body {
-            Yaml::BadValue => Ok(Matrix::identity()),
+            Yaml::BadValue => Ok(TransformationVec::new()),
             Yaml::String(name) => {
                 let transform = self
                     .defines
                     .get(name)
                     .ok_or_else(|| YamlParseError::UnknownDefine(name.to_string()))?;
-                self.parse_transformation(transform)
+                self.parse_transformations(transform)
             }
             Yaml::Array(arr) => {
-                let mut res = Matrix::identity();
-                for transformation in arr {
-                    let matrix = self.parse_matrix(transformation)?;
-                    res.transform(&matrix);
+                let mut res = TransformationVec::new();
+                for val in arr {
+                    match val {
+                        Yaml::String(name) => {
+                            let transform = self
+                                .defines
+                                .get(name)
+                                .ok_or_else(|| YamlParseError::UnknownDefine(name.to_string()))?;
+                            res.extend(&self.parse_transformations(transform)?);
+                        }
+                        _ => res.push(self.parse_matrix(val)?),
+                    }
                 }
                 Ok(res)
             }
