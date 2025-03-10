@@ -3,7 +3,7 @@ use std::ops::Index;
 use super::matrix::{Matrix, Transform};
 use crate::approx_eq::ApproxEq;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Axis {
     X,
     Y,

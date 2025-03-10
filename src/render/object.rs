@@ -19,6 +19,8 @@ use crate::{
     },
 };
 
+use crate::render::animations::TransformAnimation;
+
 use self::{bounding_box::BoundingBox, group::ObjectGroup, shape::Shape};
 
 use super::{
@@ -33,9 +35,19 @@ pub enum ObjectKind {
     Group(ObjectGroup),
 }
 
+impl ObjectKind {
+    pub fn group(group: ObjectGroup) -> Self {
+        Self::Group(group)
+    }
+    pub fn primitive(obj: PrimitiveObject) -> Self {
+        Self::Primitive(Box::new(obj))
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
     kind: ObjectKind,
+    animations: Vec<TransformAnimation>,
 }
 
 impl From<PrimitiveObject> for Object {
@@ -66,13 +78,18 @@ impl Transform for Object {
 }
 
 impl Object {
+    pub fn animated(kind: ObjectKind, animations: Vec<TransformAnimation>) -> Self {
+        Self { kind, animations }
+    }
     pub fn from_group(group: ObjectGroup) -> Self {
         Self {
+            animations: vec![],
             kind: ObjectKind::Group(group),
         }
     }
     pub fn from_primitive(obj: PrimitiveObject) -> Self {
         Self {
+            animations: vec![],
             kind: ObjectKind::Primitive(Box::new(obj)),
         }
     }
@@ -232,6 +249,10 @@ impl Object {
 
     pub fn kind(&self) -> &ObjectKind {
         &self.kind
+    }
+
+    pub fn animations(&self) -> &[TransformAnimation] {
+        &self.animations
     }
 }
 

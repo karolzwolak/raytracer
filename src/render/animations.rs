@@ -3,8 +3,8 @@ use crate::{
     primitive::matrix::{Matrix, TransformationVec},
 };
 
-#[derive(Debug, Clone, Copy)]
-enum AnimationTiming {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AnimationTiming {
     Linear,
 }
 
@@ -17,8 +17,8 @@ impl AnimationTiming {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-enum AnimationDirection {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AnimationDirection {
     Normal,
     Reverse,
     Alternate,
@@ -48,8 +48,8 @@ impl AnimationDirection {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-enum AnimationCount {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum AnimationCount {
     Infinite,
     Count(u32),
 }
@@ -63,8 +63,8 @@ impl AnimationCount {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-struct Animation {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Animation {
     delay: f64,
     duration: f64,
     direction: AnimationDirection,
@@ -73,7 +73,7 @@ struct Animation {
 }
 
 impl Animation {
-    fn new(
+    pub fn new(
         delay: f64,
         duration: f64,
         direction: AnimationDirection,
@@ -90,7 +90,7 @@ impl Animation {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct AnimationState {
     animation: Animation,
     time: f64,
@@ -123,14 +123,14 @@ impl AnimationState {
     }
 }
 
-#[derive(Debug, Clone)]
-struct TransformAnimation {
+#[derive(Debug, Clone, PartialEq)]
+pub struct TransformAnimation {
     animation_state: AnimationState,
     transformations: TransformationVec,
 }
 
 impl TransformAnimation {
-    fn new(animation: Animation, transformations: TransformationVec) -> Self {
+    pub fn new(animation: Animation, transformations: TransformationVec) -> Self {
         Self {
             animation_state: AnimationState::new(animation),
             transformations,
@@ -148,7 +148,7 @@ impl TransformAnimation {
             .fold(Matrix::identity(), |acc, t| acc * Matrix::from(t * factor))
     }
 
-    fn update(&mut self, dt: f64) -> Matrix {
+    pub fn update(&mut self, dt: f64) -> Matrix {
         let fraction = self.animation_state.update(dt);
         self.interpolate(fraction)
     }

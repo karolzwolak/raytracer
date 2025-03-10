@@ -23,7 +23,7 @@ impl Transform for Matrix {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Transformation {
     Scaling(f64, f64, f64),
     Translation(f64, f64, f64),
@@ -50,7 +50,7 @@ impl From<Transformation> for Matrix {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct TransformationVec {
     data: Vec<Transformation>,
 }
