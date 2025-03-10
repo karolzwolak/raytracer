@@ -1437,13 +1437,13 @@ mod tests {
         let source = r#"
 - add: sphere
   transform:
-    - [translate, -1, -0, -5.5]
+    - [translate, -1, -FRAC_PI_2, -5.5]
 "#;
         let (world, _) = parse(source);
         let sphere = Object::primitive(
             Shape::Sphere,
             Material::default(),
-            Matrix::translation(-1., 0., -5.5).transformed(),
+            Matrix::translation(-1., -std::f64::consts::FRAC_PI_2, -5.5).transformed(),
         );
         assert_eq!(world.objects(), vec![sphere]);
     }
