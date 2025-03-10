@@ -10,6 +10,10 @@ use crate::{
         vector::Vector,
     },
     render::{
+        animations::{
+            Animation, AnimationCount, AnimationDirection, AnimationTiming, Animations,
+            TransformAnimation,
+        },
         camera::Camera,
         color::Color,
         light::PointLightSource,
@@ -17,7 +21,8 @@ use crate::{
         obj_parser::ObjParser,
         object::{
             cone::Cone, cylinder::Cylinder, group::ObjectGroup, shape::Shape,
-            smooth_triangle::SmoothTriangle, triangle::Triangle, Object,
+            smooth_triangle::SmoothTriangle, triangle::Triangle, Object, ObjectKind,
+            PrimitiveObject,
         },
         pattern::Pattern,
         world::World,
@@ -446,7 +451,58 @@ impl<'a> YamlParser<'a> {
             .map_err(|_| YamlParseError::ObjParsingError)
     }
 
+    fn parse_animation(&self, body: &Yaml) -> YamlParseResult<TransformAnimation> {
+        let transformations = self.parse_transformations(&body["transform"])?;
+        let duration = self.parse_num(&body["duration"])?;
+        let delay = match &body["delay"] {
+            &Yaml::BadValue => 0.,
+            val => self.parse_num(val)?,
+        };
+        let direction = match &body["direction"] {
+            &Yaml::BadValue => Default::default(),
+            val => match val.as_str().ok_or(YamlParseError::InvalidField)? {
+                "normal" => AnimationDirection::Normal,
+                "reverse" => AnimationDirection::Reverse,
+                _ => return Err(YamlParseError::InvalidField),
+            },
+        };
+
+        let timing = match &body["timing"] {
+            &Yaml::BadValue => Default::default(),
+            val => match val.as_str().ok_or(YamlParseError::InvalidField)? {
+                "linear" => AnimationTiming::Linear,
+                _ => return Err(YamlParseError::InvalidField),
+            },
+        };
+
+        let count = match &body["count"] {
+            &Yaml::BadValue => Default::default(),
+            &Yaml::Integer(val) if val >= 0 => AnimationCount::Count(val as u32),
+            Yaml::String(name) if name == "infinite" => AnimationCount::Infinite,
+            _ => return Err(YamlParseError::InvalidField),
+        };
+
+        let anim = Animation::new(delay, duration, direction, timing, count);
+        Ok(TransformAnimation::new(anim, transformations))
+    }
+
+    fn parse_animations(&self, body: &Yaml) -> YamlParseResult<Animations> {
+        let animations = body.as_vec().ok_or(YamlParseError::InvalidField)?;
+        let vec = animations
+            .iter()
+            .map(|yaml| self.parse_animation(yaml))
+            .collect::<YamlParseResult<Vec<TransformAnimation>>>()?;
+        Ok(Animations::with_vec(vec))
+    }
+
     fn parse_object(&self, body: &Yaml, obj_kind: &str) -> YamlParseResult<Object> {
+        let animations = match &body["animate"] {
+            Yaml::BadValue => Animations::empty(),
+            val => self.parse_animations(val)?,
+        };
+        let material = self.parse_material(&body["material"])?;
+        let transformation = self.parse_transformation(&body["transform"])?;
+
         let shape = match obj_kind {
             "group" | "obj" => {
                 let mut res = match obj_kind {
@@ -454,18 +510,14 @@ impl<'a> YamlParser<'a> {
                     "obj" => self.parse_obj_model(body),
                     _ => unreachable!(),
                 }?;
-                match &body["material"] {
-                    &Yaml::BadValue => {}
-                    val => {
-                        let material = self.parse_material(val)?;
-                        res.set_material(material);
-                    }
+                if material != Material::default() {
+                    res.set_material(material);
                 }
-                match &body["transform"] {
-                    &Yaml::BadValue => {}
-                    val => res.transform(&self.parse_transformation(val)?),
+                if transformation != Matrix::identity() {
+                    res.transform(&transformation);
                 }
-                return Ok(Object::from_group(res));
+                let group = ObjectKind::group(res);
+                return Ok(Object::animated(group, animations));
             }
             "sphere" => Shape::Sphere,
             "cube" => Shape::Cube,
@@ -510,9 +562,9 @@ impl<'a> YamlParser<'a> {
                 return Err(YamlParseError::InvalidField);
             }
         };
-        let material = self.parse_material(&body["material"])?;
-        let transformation = self.parse_transformation(&body["transform"])?;
-        Ok(Object::primitive(shape, material, transformation))
+        let obj_kind = ObjectKind::primitive(PrimitiveObject::new(shape, material, transformation));
+
+        Ok(Object::animated(obj_kind, animations))
     }
 
     fn parse_world(&mut self, body: &Yaml) -> YamlParseResult<()> {
@@ -695,7 +747,12 @@ mod tests {
 
     use crate::{
         primitive::matrix::Transform,
-        render::object::{cylinder::Cylinder, smooth_triangle::SmoothTriangle, triangle::Triangle},
+        render::{
+            animations::{
+                Animation, AnimationCount, AnimationDirection, AnimationTiming, TransformAnimation,
+            },
+            object::{cylinder::Cylinder, smooth_triangle::SmoothTriangle, triangle::Triangle},
+        },
     };
 
     use super::*;
@@ -1389,5 +1446,37 @@ mod tests {
             Matrix::translation(-1., 0., -5.5).transformed(),
         );
         assert_eq!(world.objects(), vec![sphere]);
+    }
+
+    #[test]
+    fn object_animations() {
+        let source = r#"
+- add: sphere
+  animate:
+    - delay: 2
+      duration: 5
+      direction: reverse
+      timing: linear
+      count: 1
+      transform:
+        - [translate, 1, -2, 10]
+        - [rotate-y, -FRAC_PI_3]
+"#;
+        let (world, _) = parse(source);
+        let animations = Animations::with_vec(vec![TransformAnimation::new(
+            Animation::new(
+                2.,
+                5.,
+                AnimationDirection::Reverse,
+                AnimationTiming::Linear,
+                AnimationCount::Count(1),
+            ),
+            TransformationVec::from(vec![
+                Transformation::Translation(1., -2., 10.),
+                Transformation::Rotation(Axis::Y, -std::f64::consts::FRAC_PI_3),
+            ]),
+        )]);
+
+        assert_eq!(world.objects().first().unwrap().animations(), &animations);
     }
 }

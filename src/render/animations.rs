@@ -168,6 +168,29 @@ impl TransformAnimation {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Animations {
+    vec: Vec<TransformAnimation>,
+}
+
+impl Animations {
+    pub fn empty() -> Self {
+        Self { vec: Vec::new() }
+    }
+
+    pub fn with_vec(vec: Vec<TransformAnimation>) -> Self {
+        Self { vec }
+    }
+
+    pub fn add(&mut self, animation: TransformAnimation) {
+        self.vec.push(animation);
+    }
+
+    pub fn update(&mut self, dt: f64) -> Vec<Matrix> {
+        self.vec.iter_mut().map(|a| a.update(dt)).collect()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::f64::{self};

@@ -24,6 +24,7 @@ use crate::render::animations::TransformAnimation;
 use self::{bounding_box::BoundingBox, group::ObjectGroup, shape::Shape};
 
 use super::{
+    animations::Animations,
     intersection::{Intersection, IntersectionCollector},
     material::Material,
     ray::Ray,
@@ -47,7 +48,7 @@ impl ObjectKind {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Object {
     kind: ObjectKind,
-    animations: Vec<TransformAnimation>,
+    animations: Animations,
 }
 
 impl From<PrimitiveObject> for Object {
@@ -78,18 +79,18 @@ impl Transform for Object {
 }
 
 impl Object {
-    pub fn animated(kind: ObjectKind, animations: Vec<TransformAnimation>) -> Self {
+    pub fn animated(kind: ObjectKind, animations: Animations) -> Self {
         Self { kind, animations }
     }
     pub fn from_group(group: ObjectGroup) -> Self {
         Self {
-            animations: vec![],
+            animations: Animations::empty(),
             kind: ObjectKind::Group(group),
         }
     }
     pub fn from_primitive(obj: PrimitiveObject) -> Self {
         Self {
-            animations: vec![],
+            animations: Animations::empty(),
             kind: ObjectKind::Primitive(Box::new(obj)),
         }
     }
@@ -251,7 +252,7 @@ impl Object {
         &self.kind
     }
 
-    pub fn animations(&self) -> &[TransformAnimation] {
+    pub fn animations(&self) -> &Animations {
         &self.animations
     }
 }
