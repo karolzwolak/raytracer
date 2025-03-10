@@ -159,11 +159,7 @@ impl TransformAnimation {
         if factor.approx_eq(&0.) {
             return Matrix::identity();
         }
-        self.transformations
-            .vec()
-            .iter()
-            .copied()
-            .fold(Matrix::identity(), |acc, t| acc * Matrix::from(t * factor))
+        Matrix::from(&self.transformations)
     }
 
     pub fn update(&mut self, dt: f64) -> Matrix {
@@ -197,9 +193,7 @@ mod tests {
     ];
 
     fn full_transformation() -> Matrix {
-        TRANSFORMATIONS
-            .iter()
-            .fold(Matrix::identity(), |acc, t| acc * Matrix::from(*t))
+        Matrix::from(&TRANSFORMATIONS[..])
     }
 
     fn transform_animation() -> TransformAnimation {

@@ -378,7 +378,7 @@ impl<'a> YamlParser<'a> {
     }
 
     fn parse_transformation(&self, body: &Yaml) -> YamlParseResult<Matrix> {
-        Ok(Matrix::from(self.parse_transformations(body)?))
+        Ok(Matrix::from(&self.parse_transformations(body)?))
     }
 
     fn parse_transformations(&self, body: &Yaml) -> YamlParseResult<TransformationVec> {

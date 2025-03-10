@@ -23,6 +23,13 @@ impl Transform for Matrix {
     }
 }
 
+impl From<&[Matrix]> for Matrix {
+    fn from(val: &[Matrix]) -> Self {
+        val.iter()
+            .fold(Matrix::identity(), |acc, m| acc.transform_new(m))
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Transformation {
     Scaling(f64, f64, f64),
@@ -59,7 +66,7 @@ impl TransformationVec {
     pub fn new() -> Self {
         Self { data: Vec::new() }
     }
-    pub fn vec(&self) -> &Vec<Transformation> {
+    pub fn vec(&self) -> &[Transformation] {
         &self.data
     }
     pub fn push(&mut self, t: Transformation) {
@@ -87,10 +94,15 @@ impl From<&[Transformation]> for TransformationVec {
         Self { data: val.to_vec() }
     }
 }
+impl From<&TransformationVec> for Matrix {
+    fn from(val: &TransformationVec) -> Self {
+        Matrix::from(val.vec())
+    }
+}
 
-impl From<TransformationVec> for Matrix {
-    fn from(val: TransformationVec) -> Self {
-        val.data.iter().fold(Matrix::identity(), |acc, t| {
+impl From<&[Transformation]> for Matrix {
+    fn from(val: &[Transformation]) -> Self {
+        val.iter().fold(Matrix::identity(), |acc, t| {
             acc.transform_new(&Matrix::from(*t))
         })
     }
@@ -956,6 +968,6 @@ mod tests {
             .rotate_z(-consts::FRAC_PI_6)
             .transformed();
 
-        assert_approx_eq_low_prec!(Matrix::from(transformations), expected);
+        assert_approx_eq_low_prec!(Matrix::from(&transformations), expected);
     }
 }
