@@ -61,21 +61,21 @@ impl Default for AnimationDirection {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum AnimationCount {
+pub enum AnimationRepeat {
     Infinite,
-    Count(u32),
+    Repeat(u32),
 }
 
-impl AnimationCount {
+impl AnimationRepeat {
     fn still_animate(&self, curr_count: u32) -> bool {
         match self {
             Self::Infinite => true,
-            Self::Count(count) => curr_count < *count,
+            Self::Repeat(count) => curr_count < *count,
         }
     }
 }
 
-impl Default for AnimationCount {
+impl Default for AnimationRepeat {
     fn default() -> Self {
         Self::Infinite
     }
@@ -87,7 +87,7 @@ pub struct Animation {
     duration: f64,
     direction: AnimationDirection,
     timing: AnimationTiming,
-    count: AnimationCount,
+    repeat: AnimationRepeat,
 }
 
 impl Animation {
@@ -96,14 +96,14 @@ impl Animation {
         duration: f64,
         direction: AnimationDirection,
         timing: AnimationTiming,
-        count: AnimationCount,
+        repeat: AnimationRepeat,
     ) -> Self {
         Self {
             delay,
             duration,
             direction,
             timing,
-            count,
+            repeat,
         }
     }
 }
@@ -125,7 +125,7 @@ impl AnimationState {
     }
     fn update(&mut self, dt: f64) -> f64 {
         self.time += dt;
-        if self.time < self.animation.delay || !self.animation.count.still_animate(self.curr_count)
+        if self.time < self.animation.delay || !self.animation.repeat.still_animate(self.curr_count)
         {
             return 0.;
         }
@@ -204,7 +204,7 @@ mod tests {
         duration: 1.0,
         direction: AnimationDirection::Normal,
         timing: AnimationTiming::Linear,
-        count: AnimationCount::Infinite,
+        repeat: AnimationRepeat::Infinite,
     };
 
     const TRANSFORMATIONS: [Transformation; 5] = [
@@ -233,21 +233,21 @@ mod tests {
     }
 
     #[test]
-    fn finite_animation_count() {
-        let count = AnimationCount::Count(3);
+    fn finite_animation_repeat() {
+        let repeat = AnimationRepeat::Repeat(3);
 
-        assert!(count.still_animate(0));
-        assert!(count.still_animate(1));
-        assert!(count.still_animate(2));
-        assert!(!count.still_animate(3));
+        assert!(repeat.still_animate(0));
+        assert!(repeat.still_animate(1));
+        assert!(repeat.still_animate(2));
+        assert!(!repeat.still_animate(3));
     }
 
     #[test]
-    fn infinite_animation_count() {
-        let count = AnimationCount::Infinite;
+    fn infinite_animation_repeat() {
+        let repeat = AnimationRepeat::Infinite;
 
-        assert!(count.still_animate(0));
-        assert!(count.still_animate(u32::MAX));
+        assert!(repeat.still_animate(0));
+        assert!(repeat.still_animate(u32::MAX));
     }
 
     #[test]
@@ -280,7 +280,7 @@ mod tests {
             1.0,
             AnimationDirection::Normal,
             AnimationTiming::Linear,
-            AnimationCount::Infinite,
+            AnimationRepeat::Infinite,
         );
         let state = AnimationState::new(animation);
 

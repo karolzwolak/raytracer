@@ -11,7 +11,7 @@ use crate::{
     },
     render::{
         animations::{
-            Animation, AnimationCount, AnimationDirection, AnimationTiming, Animations,
+            Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
             TransformAnimation,
         },
         camera::Camera,
@@ -475,10 +475,10 @@ impl<'a> YamlParser<'a> {
             },
         };
 
-        let count = match &body["count"] {
+        let count = match &body["repeat"] {
             &Yaml::BadValue => Default::default(),
-            &Yaml::Integer(val) if val >= 0 => AnimationCount::Count(val as u32),
-            Yaml::String(name) if name == "infinite" => AnimationCount::Infinite,
+            &Yaml::Integer(val) if val >= 0 => AnimationRepeat::Repeat(val as u32),
+            Yaml::String(name) if name == "infinite" => AnimationRepeat::Infinite,
             _ => return Err(YamlParseError::InvalidField),
         };
 
@@ -749,7 +749,7 @@ mod tests {
         primitive::matrix::Transform,
         render::{
             animations::{
-                Animation, AnimationCount, AnimationDirection, AnimationTiming, TransformAnimation,
+                Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,
             },
             object::{cylinder::Cylinder, smooth_triangle::SmoothTriangle, triangle::Triangle},
         },
@@ -1457,7 +1457,7 @@ mod tests {
       duration: 5
       direction: reverse
       timing: linear
-      count: 1
+      repeat: 1
       transform:
         - [translate, 1, -2, 10]
         - [rotate-y, -FRAC_PI_3]
@@ -1469,7 +1469,7 @@ mod tests {
                 5.,
                 AnimationDirection::Reverse,
                 AnimationTiming::Linear,
-                AnimationCount::Count(1),
+                AnimationRepeat::Repeat(1),
             ),
             TransformationVec::from(vec![
                 Transformation::Translation(1., -2., 10.),
