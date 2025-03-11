@@ -1,6 +1,7 @@
 /target
 *.ppm
 *.png
+*.gif
 !/samples/images/*
 *.svg
 perf*

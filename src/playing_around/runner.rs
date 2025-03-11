@@ -103,8 +103,10 @@ fn run_with_args(
         _ => return Err(format!("no such chapter '{chapter}'")),
     };
 
-    let mut filename = format!("{IMAGES_DIR}/{filename}");
-    match canvas.save_to_png(&mut filename) {
+    let filename = format!("{IMAGES_DIR}/{filename}");
+    let file = std::fs::File::create(&filename)
+        .map_err(|err| format!("failed to create file '{filename}' because '{err}'"))?;
+    match canvas.save_to_png(file) {
         Err(err) => Err(format!("failed to save '{filename}' because '{err}'")),
         Ok(_) => {
             println!("created file: {filename} with size {width}x{height} pixels");

@@ -1,12 +1,7 @@
 use clap::ValueEnum;
 use indicatif::ParallelProgressIterator;
 use rayon::prelude::*;
-use std::{
-    fmt::Display,
-    fs::{self, File},
-    path::{Path, PathBuf},
-    sync::atomic::{AtomicUsize, Ordering},
-};
+use std::{fmt::Display, fs::File, io::Write};
 
 use super::color::Color;
 
@@ -155,21 +150,17 @@ impl Canvas {
             .collect::<String>()
     }
 
-    pub fn save_to_file<P>(&self, path: P, format: ImageFormat) -> std::io::Result<()>
-    where
-        P: AsRef<Path>,
-    {
+    pub fn save_to_file(&self, file: File, format: ImageFormat) -> std::io::Result<()> {
         match format {
-            ImageFormat::Ppm => self.save_to_ppm(path),
-            ImageFormat::Png => self.save_to_png(path),
+            ImageFormat::Ppm => self.save_to_ppm(file),
+            ImageFormat::Png => self.save_to_png(file),
         }
     }
 
-    pub fn save_to_ppm<P>(&self, path: P) -> std::io::Result<()>
-    where
-        P: AsRef<Path>,
-    {
-        fs::write(path, self.ppm_header() + &self.ppm_data())
+    pub fn save_to_ppm(&self, mut file: File) -> std::io::Result<()> {
+        file.write_all(self.ppm_header().as_bytes())?;
+        file.write_all(self.ppm_data().as_bytes())?;
+        Ok(())
     }
 }
 
@@ -182,12 +173,8 @@ impl Canvas {
             .collect()
     }
 
-    pub fn save_to_png<P>(&self, path: P) -> std::io::Result<()>
-    where
-        P: AsRef<Path>,
-    {
-        let w = File::create(path)?;
-        let mut encoder = png::Encoder::new(w, self.width as u32, self.height as u32);
+    pub fn save_to_png(&self, file: File) -> std::io::Result<()> {
+        let mut encoder = png::Encoder::new(file, self.width as u32, self.height as u32);
         encoder.set_color(png::ColorType::Rgb);
         encoder.set_depth(png::BitDepth::Eight);
 
@@ -286,7 +273,8 @@ mod tests {
         canvas.write_pixel(2, 1, Color::new(0., 0.5, 0.));
         canvas.write_pixel(4, 8, Color::new(-1.5, 0., 1.));
 
-        canvas.save_to_ppm("test.ppm")
+        let file = File::create("test.ppm")?;
+        canvas.save_to_ppm(file)
     }
     #[test]
     fn ppm_data_ends_with_newline() {

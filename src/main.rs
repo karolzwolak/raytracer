@@ -1,8 +1,8 @@
-use std::path::PathBuf;
+use std::{fs::File, path::PathBuf};
 
-use clap::Parser;
+use clap::{Args, Parser, Subcommand};
 use raytracer::{
-    render::{camera::Camera, canvas::ImageFormat},
+    render::{animator::AnimationFormat, camera::Camera, canvas::ImageFormat, world::World},
     yaml,
 };
 
@@ -10,17 +10,51 @@ const DEFAULT_WIDTH: usize = 800;
 const DEFAULT_HEIGHT: usize = 800;
 const DEFAULT_FOV: f64 = std::f64::consts::FRAC_PI_3;
 
+#[derive(Args, Debug)]
+struct AnimationCommand {
+    /// The format of the output video
+    #[clap(short = 'f', long, default_value = "gif")]
+    format: AnimationFormat,
+
+    #[clap(short = 'd', long)]
+    duration_sec: f64,
+
+    #[clap(long, default_value = "24")]
+    framerate: u32,
+}
+
+#[derive(Args, Debug)]
+struct ImageCommand {
+    /// The format of the output image
+    #[clap(short = 'f', long, default_value = "png")]
+    format: ImageFormat,
+}
+
+#[derive(Subcommand, Debug)]
+enum Command {
+    Image(ImageCommand),
+    Animate(AnimationCommand),
+}
+
+impl Command {
+    fn extension(&self) -> String {
+        match self {
+            Command::Image(image) => image.format.to_string(),
+            Command::Animate(animation) => animation.format.to_string(),
+        }
+    }
+}
+
 /// Simple raytracer that renders yaml scenes.
 /// Supports basic shapes and materials and .obj models.
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
-struct Args {
+struct Cli {
+    #[command(subcommand)]
+    command: Command,
+
     /// The scene file to render
     scene_file: PathBuf,
-
-    /// The format of the output image
-    #[clap(short = 'f', long, default_value = "png")]
-    image_format: ImageFormat,
 
     /// The output path of the rendered image.
     /// By default it's `./<scene_filename>.<image_format>`
@@ -56,8 +90,7 @@ Overrides the one in the scene file. If not specified anywhere, defaults to {}",
     supersampling_level: Option<usize>,
 }
 
-fn main() -> Result<(), String> {
-    let args = Args::parse();
+fn get_world_camera(args: &Cli) -> Result<(World, Camera), String> {
     let scene_source = std::fs::read_to_string(&args.scene_file)
         .map_err(|e| format!("Failed to read scene file: {}", e))?;
     let (mut world, camera) =
@@ -75,17 +108,70 @@ fn main() -> Result<(), String> {
         args.fov.unwrap_or(camera.field_of_view()),
         camera.inverse_transformation(),
     );
+    Ok((world, camera))
+}
+
+fn render_image(
+    image_args: ImageCommand,
+    file: File,
+    mut world: World,
+    camera: Camera,
+) -> Result<(), String> {
     let canvas = world.render(&camera);
+    canvas
+        .save_to_file(file, image_args.format)
+        .map_err(|e| format!("Failed to save image: {}", e))
+}
+
+fn render_animation(
+    animation_args: AnimationCommand,
+    file: File,
+    world: World,
+    camera: Camera,
+) -> Result<(), String> {
+    let animator = raytracer::render::animator::Animator::new(
+        world,
+        camera,
+        animation_args.framerate,
+        animation_args.duration_sec,
+    )
+    .ok_or_else(|| "Zero framerate or duration".to_string())?;
+    animator.render_to_file(file, animation_args.format);
+
+    // animator.render_to_file(&output_path.to_string_lossy(), animation_args.format);
+    Ok(())
+}
+
+fn render() -> Result<PathBuf, String> {
+    let args = Cli::parse();
+
+    let (world, camera) = get_world_camera(&args)?;
     let output_path = args.output_path.unwrap_or_else(|| {
         let mut path = args.scene_file.clone();
         path = path.file_name().unwrap().into(); // If scene file is not a file, it would get
                                                  // picked up before parsing
-        path.set_extension(args.image_format.to_string());
+        path.set_extension(args.command.extension());
         path
     });
-    canvas
-        .save_to_file(&output_path, args.image_format)
-        .map_err(|e| format!("Failed to save image: {}", e))?;
-    println!("Image saved to {:?}", output_path);
-    Ok(())
+
+    let file = std::fs::File::create(&output_path)
+        .map_err(|e| format!("Failed to create output file: {}", e))?;
+
+    match args.command {
+        Command::Image(image_args) => render_image(image_args, file, world, camera),
+        Command::Animate(animation_args) => render_animation(animation_args, file, world, camera),
+    }?;
+    Ok(output_path)
+}
+
+fn main() {
+    let res = render();
+    match res {
+        Ok(output_path) => {
+            println!("Rendered to {}", output_path.to_string_lossy());
+        }
+        Err(e) => {
+            eprintln!("{}", e);
+        }
+    }
 }

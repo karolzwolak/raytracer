@@ -112,6 +112,9 @@ impl Animation {
             return 0.;
         }
         let curr_count = (time / self.duration) as u32;
+        if !self.repeat.still_animate(curr_count) {
+            return 1.;
+        }
         let normalized_time = time % self.duration;
 
         let fraction = self.timing.apply(normalized_time);
@@ -231,6 +234,19 @@ mod tests {
 
         assert!(repeat.still_animate(0));
         assert!(repeat.still_animate(u32::MAX));
+    }
+
+    #[test]
+    fn after_repeat_animations_stays_fully_transformed() {
+        let animation = Animation::new(
+            1.0,
+            1.0,
+            AnimationDirection::Normal,
+            AnimationTiming::Linear,
+            AnimationRepeat::Repeat(2),
+        );
+
+        assert_eq!(animation.val_at(3.0), 1.0);
     }
 
     #[test]
