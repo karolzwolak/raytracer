@@ -5,6 +5,7 @@ use crate::{
 };
 
 use super::{
+    animations::Animate,
     camera::Camera,
     canvas::Canvas,
     color::Color,
@@ -20,7 +21,7 @@ use super::{
 };
 use super::{object::shape::Shape, pattern::Pattern};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct World {
     objects: ObjectGroup,
     light_sources: Vec<PointLightSource>,
@@ -381,6 +382,14 @@ impl World {
 
     pub fn set_supersampling_level(&mut self, level: usize) {
         self.supersampling_offsets = Self::gen_supersampling_offsets(level);
+    }
+}
+
+impl Animate for World {
+    fn animate(&mut self, time: f64) {
+        for obj in self.objects_mut() {
+            obj.animate(time);
+        }
     }
 }
 

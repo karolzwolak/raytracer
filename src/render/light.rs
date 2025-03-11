@@ -6,7 +6,7 @@ use crate::{
 use super::intersection::IntersecComputations;
 use super::{color::Color, object::Object};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub struct PointLightSource {
     position: Point,
     intensity: Color,

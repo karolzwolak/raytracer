@@ -171,7 +171,7 @@ impl Animations {
 }
 
 pub trait Animate {
-    fn animate(&mut self, dt: f64);
+    fn animate(&mut self, time: f64);
 }
 
 #[cfg(test)]

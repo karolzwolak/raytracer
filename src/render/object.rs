@@ -24,7 +24,7 @@ use crate::render::animations::TransformAnimation;
 use self::{bounding_box::BoundingBox, group::ObjectGroup, shape::Shape};
 
 use super::{
-    animations::Animations,
+    animations::{Animate, Animations},
     intersection::{Intersection, IntersectionCollector},
     material::Material,
     ray::Ray,
@@ -75,6 +75,13 @@ impl Transform for Object {
         let mut new = self.clone();
         new.transform(matrix);
         new
+    }
+}
+
+impl Animate for Object {
+    fn animate(&mut self, dt: f64) {
+        let matrix = self.animations.matrix_at(dt);
+        self.transform(&matrix);
     }
 }
 

@@ -87,6 +87,23 @@ impl Canvas {
                 *pixel_color = fun(x, y);
             })
     }
+
+    pub fn as_u8_rgb(&self) -> Vec<u8> {
+        self.pixels
+            .iter()
+            .flat_map(|color| color.as_scaled_values())
+            .collect()
+    }
+}
+
+impl From<&Canvas> for gif::Frame<'_> {
+    fn from(canvas: &Canvas) -> Self {
+        gif::Frame::from_rgb(
+            canvas.width as u16,
+            canvas.height as u16,
+            &canvas.as_u8_rgb(),
+        )
+    }
 }
 
 /// saving image in ppm format
