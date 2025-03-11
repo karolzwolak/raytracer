@@ -25,8 +25,18 @@ impl Transform for Matrix {
 
 impl From<&[Matrix]> for Matrix {
     fn from(val: &[Matrix]) -> Self {
-        val.iter()
-            .fold(Matrix::identity(), |acc, m| acc.transform_new(m))
+        Matrix::from_iter(val.iter().copied())
+    }
+}
+
+impl<A> FromIterator<A> for Matrix
+where
+    Matrix: From<A>,
+{
+    fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
+        iter.into_iter().fold(Matrix::identity(), |acc, m| {
+            acc.transform_new(&Matrix::from(m))
+        })
     }
 }
 
