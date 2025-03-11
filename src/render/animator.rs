@@ -72,6 +72,7 @@ impl Animator {
                     &[],
                 )
                 .unwrap();
+                encoder.set_repeat(gif::Repeat::Infinite).unwrap();
                 self.render_gif(&mut encoder);
             }
         }
