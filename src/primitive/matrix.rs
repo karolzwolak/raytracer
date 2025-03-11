@@ -67,6 +67,24 @@ impl From<Transformation> for Matrix {
     }
 }
 
+impl Transformation {
+    fn default(&self) -> Self {
+        match self {
+            Self::Scaling(_, _, _) => Self::Scaling(1., 1., 1.),
+            Self::Translation(_, _, _) => Self::Translation(0., 0., 0.),
+            Self::Rotation(axis, _) => Self::Rotation(*axis, 0.),
+            Self::Shearing(_, _, _, _, _, _) => Self::Shearing(0., 0., 0., 0., 0., 0.),
+            Self::Identity => Self::Identity,
+        }
+    }
+    pub fn interpolated(&self, val: f64) -> Self {
+        let start = self.default();
+        let diff = *self - start;
+
+        start + diff * val
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransformationVec {
     data: Vec<Transformation>,
@@ -76,6 +94,9 @@ impl TransformationVec {
     pub fn new() -> Self {
         Self { data: Vec::new() }
     }
+    pub fn with_vec(vec: Vec<Transformation>) -> Self {
+        Self { data: vec }
+    }
     pub fn vec(&self) -> &[Transformation] {
         &self.data
     }
@@ -84,6 +105,14 @@ impl TransformationVec {
     }
     pub fn extend(&mut self, other: &Self) {
         self.data.extend(other.data.iter().copied());
+    }
+    pub fn interpolated(&self, factor: f64) -> Self {
+        Self::with_vec(
+            self.data
+                .iter()
+                .map(|t| t.interpolated(factor))
+                .collect::<Vec<_>>(),
+        )
     }
 }
 
@@ -142,6 +171,46 @@ impl ops::Mul<f64> for Transformation {
             ),
             Self::Identity => Self::Identity,
         }
+    }
+}
+
+impl ops::Add<Transformation> for Transformation {
+    type Output = Transformation;
+
+    fn add(self, rhs: Transformation) -> Self::Output {
+        match (self, rhs) {
+            (Self::Scaling(x1, y1, z1), Self::Scaling(x2, y2, z2)) => {
+                Self::Scaling(x1 + x2, y1 + y2, z1 + z2)
+            }
+            (Self::Translation(x1, y1, z1), Self::Translation(x2, y2, z2)) => {
+                Self::Translation(x1 + x2, y1 + y2, z1 + z2)
+            }
+            (Self::Rotation(axis1, radians1), Self::Rotation(axis2, radians2)) => {
+                assert_eq!(axis1, axis2);
+                Self::Rotation(axis1, radians1 + radians2)
+            }
+            (
+                Self::Shearing(xpy1, xpz1, ypx1, ypz1, zpx1, zpy1),
+                Self::Shearing(xpy2, xpz2, ypx2, ypz2, zpx2, zpy2),
+            ) => Self::Shearing(
+                xpy1 + xpy2,
+                xpz1 + xpz2,
+                ypx1 + ypx2,
+                ypz1 + ypz2,
+                zpx1 + zpx2,
+                zpy1 + zpy2,
+            ),
+            (Self::Identity, Self::Identity) => Self::Identity,
+            _ => panic!("Cannot add different transformations"),
+        }
+    }
+}
+
+impl ops::Sub<Transformation> for Transformation {
+    type Output = Self;
+
+    fn sub(self, rhs: Transformation) -> Self::Output {
+        self + (rhs * -1.)
     }
 }
 
@@ -979,5 +1048,39 @@ mod tests {
             .transformed();
 
         assert_approx_eq_low_prec!(Matrix::from(&transformations), expected);
+    }
+
+    #[test]
+    fn default_interpolate() {
+        let transforms = TransformationVec::from(vec![
+            Transformation::Scaling(1., 2., 3.).default(),
+            Transformation::Translation(4., 5., 6.).default(),
+            Transformation::Rotation(Axis::X, consts::FRAC_PI_2).default(),
+            Transformation::Shearing(1., 2., 3., 4., 5., 6.).default(),
+        ]);
+        let factor = 0.25;
+        let interpolated = transforms.interpolated(factor);
+
+        assert_eq!(transforms, interpolated);
+    }
+
+    #[test]
+    fn interpolate_transform() {
+        let transforms = TransformationVec::from(vec![
+            Transformation::Scaling(1., 2., 3.),
+            Transformation::Translation(4., 5., 6.),
+            Transformation::Rotation(Axis::X, consts::FRAC_PI_2),
+            Transformation::Shearing(1., 2., 3., 4., 5., 6.),
+        ]);
+        let factor = 0.25;
+        let expected = TransformationVec::from(vec![
+            Transformation::Scaling(1., 1.25, 1.5),
+            Transformation::Translation(1., 1.25, 1.5),
+            Transformation::Rotation(Axis::X, consts::FRAC_PI_2 * 0.25),
+            Transformation::Shearing(0.25, 0.5, 0.75, 1., 1.25, 1.5),
+        ]);
+        let interpolated = transforms.interpolated(factor);
+
+        assert_eq!(interpolated, expected);
     }
 }

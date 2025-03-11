@@ -137,16 +137,21 @@ impl TransformAnimation {
         }
     }
 
-    fn interpolate(&self, factor: f64) -> Matrix {
+    fn interpolated(&self, factor: f64) -> Matrix {
         if factor.approx_eq(&0.) {
             return Matrix::identity();
         }
-        Matrix::from(&self.transformations)
+        Matrix::from_iter(
+            self.transformations
+                .vec()
+                .iter()
+                .map(|t| t.interpolated(factor)),
+        )
     }
 
     pub fn matrix_at(&self, time: f64) -> Matrix {
         let fraction = self.animation.val_at(time);
-        self.interpolate(fraction)
+        self.interpolated(fraction)
     }
 }
 
@@ -168,8 +173,8 @@ impl Animations {
         self.vec.push(animation);
     }
 
-    pub fn matrix_at(&self, dt: f64) -> Matrix {
-        Matrix::from_iter(self.vec.iter().map(|a| a.matrix_at(dt)))
+    pub fn matrix_at(&self, time: f64) -> Matrix {
+        Matrix::from_iter(self.vec.iter().map(|a| a.matrix_at(time)))
     }
 }
 
@@ -181,7 +186,10 @@ pub trait Animate {
 mod tests {
     use std::f64::{self};
 
-    use crate::primitive::{matrix::Transformation, tuple::Axis};
+    use crate::primitive::{
+        matrix::{Transform, Transformation},
+        tuple::Axis,
+    };
 
     use super::*;
 
@@ -290,13 +298,29 @@ mod tests {
     fn zero_interpolation_is_identity() {
         let animation = transform_animation();
 
-        assert_eq!(animation.interpolate(0.0), Matrix::identity());
+        assert_eq!(animation.interpolated(0.0), Matrix::identity());
     }
 
     #[test]
     fn full_interpolation_is_full_transformation() {
         let animation = transform_animation();
 
-        assert_eq!(animation.interpolate(1.0), full_transformation());
+        assert_eq!(animation.interpolated(1.0), full_transformation());
+    }
+
+    #[test]
+    fn animation_interpolate() {
+        let transforms = TransformationVec::from(vec![
+            Transformation::Translation(12., 12., 12.),
+            Transformation::Scaling(2., 2., 2.),
+        ]);
+        let animation = TransformAnimation::new(NORMAL_ANIMATION, transforms);
+
+        assert_eq!(
+            animation.matrix_at(0.5),
+            Matrix::translation(6., 6., 6.)
+                .scale(1.5, 1.5, 1.5)
+                .transformed()
+        );
     }
 }

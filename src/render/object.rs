@@ -79,8 +79,11 @@ impl Transform for Object {
 }
 
 impl Animate for Object {
-    fn animate(&mut self, dt: f64) {
-        let matrix = self.animations.matrix_at(dt);
+    fn animate(&mut self, time: f64) {
+        let matrix = self.animations.matrix_at(time);
+        if matrix == Matrix::identity() {
+            return;
+        }
         self.transform(&matrix);
     }
 }
