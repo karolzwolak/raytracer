@@ -106,51 +106,30 @@ impl Animation {
             repeat,
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-struct AnimationState {
-    animation: Animation,
-    time: f64,
-    curr_count: u32,
-}
-
-impl AnimationState {
-    fn new(animation: Animation) -> Self {
-        Self {
-            animation,
-            time: 0.0,
-            curr_count: 0,
-        }
-    }
-    fn update(&mut self, dt: f64) -> f64 {
-        self.time += dt;
-        if self.time < self.animation.delay || !self.animation.repeat.still_animate(self.curr_count)
-        {
+    fn val_at(&self, time: f64) -> f64 {
+        let time = time - self.delay;
+        if time < 0. {
             return 0.;
         }
-        let mut time = self.time - self.animation.delay;
-        if time > self.animation.duration {
-            self.curr_count += 1;
-            time -= self.animation.duration;
-        }
-        let normalized_time = time / self.animation.duration;
-        let fraction = self.animation.timing.apply(normalized_time);
+        let curr_count = (time / self.duration) as u32;
+        let normalized_time = time % self.duration;
 
-        self.animation.direction.apply(fraction, self.curr_count)
+        let fraction = self.timing.apply(normalized_time);
+
+        self.direction.apply(fraction, curr_count)
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransformAnimation {
-    animation_state: AnimationState,
+    animation: Animation,
     transformations: TransformationVec,
 }
 
 impl TransformAnimation {
     pub fn new(animation: Animation, transformations: TransformationVec) -> Self {
         Self {
-            animation_state: AnimationState::new(animation),
+            animation,
             transformations,
         }
     }
@@ -162,8 +141,8 @@ impl TransformAnimation {
         Matrix::from(&self.transformations)
     }
 
-    pub fn update(&mut self, dt: f64) -> Matrix {
-        let fraction = self.animation_state.update(dt);
+    pub fn matrix_at(&self, time: f64) -> Matrix {
+        let fraction = self.animation.val_at(time);
         self.interpolate(fraction)
     }
 }
@@ -186,9 +165,13 @@ impl Animations {
         self.vec.push(animation);
     }
 
-    pub fn update(&mut self, dt: f64) -> Vec<Matrix> {
-        self.vec.iter_mut().map(|a| a.update(dt)).collect()
+    pub fn matrix_at(&self, dt: f64) -> Matrix {
+        Matrix::from_iter(self.vec.iter().map(|a| a.matrix_at(dt)))
     }
+}
+
+pub trait Animate {
+    fn animate(&mut self, dt: f64);
 }
 
 #[cfg(test)]
@@ -282,10 +265,9 @@ mod tests {
             AnimationTiming::Linear,
             AnimationRepeat::Infinite,
         );
-        let state = AnimationState::new(animation);
 
-        assert_eq!(state.clone().update(0.5), 0.0);
-        assert_eq!(state.clone().update(1.5), 0.5);
+        assert_eq!(animation.val_at(0.5), 0.0);
+        assert_eq!(animation.val_at(1.5), 0.5);
     }
 
     #[test]
