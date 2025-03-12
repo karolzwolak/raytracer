@@ -463,6 +463,8 @@ impl<'a> YamlParser<'a> {
             val => match val.as_str().ok_or(YamlParseError::InvalidField)? {
                 "normal" => AnimationDirection::Normal,
                 "reverse" => AnimationDirection::Reverse,
+                "alternate" => AnimationDirection::Alternate,
+                "alternate-reverse" => AnimationDirection::AlternateReverse,
                 _ => return Err(YamlParseError::InvalidField),
             },
         };
