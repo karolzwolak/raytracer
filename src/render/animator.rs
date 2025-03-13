@@ -1,18 +1,25 @@
 use std::{fmt::Display, fs::File};
 
 use clap::ValueEnum;
+use minimp4::Mp4Muxer;
+use openh264::{
+    encoder::Encoder,
+    formats::{RgbSliceU8, YUVBuffer},
+};
 
 use super::{camera::Camera, canvas::Canvas, world::World};
 
 #[derive(Debug, Copy, Clone, PartialEq, ValueEnum)]
 pub enum AnimationFormat {
     Gif,
+    Mp4,
 }
 
 impl Display for AnimationFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             AnimationFormat::Gif => write!(f, "gif"),
+            AnimationFormat::Mp4 => write!(f, "mp4"),
         }
     }
 }
@@ -62,6 +69,28 @@ impl Animator {
         }
     }
 
+    fn render_mp4(&self, file: File) {
+        let mut muxer = Mp4Muxer::new(file);
+        let width = self.camera.target_width();
+        let height = self.camera.target_height();
+
+        muxer.init_video(width as i32, height as i32, false, "title");
+        let frame_duration = self.frame_duration();
+        let mut h264_encoder = Encoder::new().unwrap();
+        for i in 0..self.frame_count() {
+            let time = i as f64 * frame_duration;
+            let canvas = self.render_frame(time);
+            let bytes = canvas.as_u8_rgb();
+
+            let rgb_source = RgbSliceU8::new(&bytes, (width, height));
+            let buf = YUVBuffer::from_rgb_source(rgb_source);
+            let bitstream = h264_encoder.encode(&buf).unwrap();
+
+            muxer.write_video_with_fps(&bitstream.to_vec(), self.framerate);
+        }
+        muxer.close();
+    }
+
     pub fn render_to_file(&self, mut file: File, format: AnimationFormat) {
         match format {
             AnimationFormat::Gif => {
@@ -75,6 +104,7 @@ impl Animator {
                 encoder.set_repeat(gif::Repeat::Infinite).unwrap();
                 self.render_gif(&mut encoder);
             }
+            AnimationFormat::Mp4 => self.render_mp4(file),
         }
     }
 }

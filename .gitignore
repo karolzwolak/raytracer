@@ -2,6 +2,7 @@
 *.ppm
 *.png
 *.gif
+*.mp4
 !/samples/images/*
 *.svg
 perf*
