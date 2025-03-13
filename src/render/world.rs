@@ -5,7 +5,6 @@ use crate::{
 };
 
 use super::{
-    animations::Animate,
     camera::Camera,
     canvas::Canvas,
     color::Color,
@@ -385,11 +384,9 @@ impl World {
     }
 }
 
-impl Animate for World {
-    fn animate(&mut self, time: f64) {
-        for obj in self.objects_mut() {
-            obj.animate(time);
-        }
+impl World {
+    pub fn animate(&mut self, time: f64) {
+        self.objects.animate(time);
     }
 }
 

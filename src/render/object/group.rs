@@ -222,6 +222,27 @@ impl ObjectGroup {
     }
 }
 
+impl ObjectGroup {
+    fn recalculate_bbox(&mut self) {
+        self.bounding_box = BoundingBox::empty();
+        for child in self.children.iter() {
+            self.bounding_box.add_bounding_box(&child.bounding_box());
+        }
+    }
+    pub fn animate(&mut self, time: f64) {
+        for child in self.children.iter_mut() {
+            child.animate(time);
+        }
+        self.recalculate_bbox();
+    }
+    pub fn animate_with(&mut self, time: f64, transform: Matrix) {
+        if transform != Matrix::identity() {
+            self.transform(&transform);
+        }
+        self.animate(time);
+    }
+}
+
 impl Default for ObjectGroup {
     fn default() -> Self {
         Self::empty()
@@ -248,10 +269,19 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        primitive::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
+        primitive::{
+            matrix::{Matrix, Transformation, TransformationVec},
+            point::Point,
+            tuple::Tuple,
+            vector::Vector,
+        },
         render::{
+            animations::{
+                self, Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
+                TransformAnimation,
+            },
             intersection::IntersectionCollection,
-            object::{group::ObjectGroup, shape::Shape, Object, PrimitiveObject},
+            object::{group::ObjectGroup, shape::Shape, Object, ObjectKind, PrimitiveObject},
             ray::Ray,
         },
     };
@@ -314,5 +344,32 @@ mod tests {
             .children[0];
         let normal = sphere.normal_vector_at(Point::new(1.7321, 1.1547, -5.5774));
         assert_approx_eq_low_prec!(normal, Vector::new(0.2857, 0.4286, -0.8571));
+    }
+
+    #[test]
+    fn animating_children_updates_bbox() {
+        let sphere = PrimitiveObject::sphere(Point::zero(), 1.);
+        let translate = Transformation::Translation(5., 2., 10.);
+        let transfom = TransformationVec::from(vec![translate]);
+        let animation = Animation::new(
+            0.,
+            1.,
+            AnimationDirection::Normal,
+            AnimationTiming::Linear,
+            AnimationRepeat::Infinite,
+        );
+        let mut animated_object = Object::animated(
+            ObjectKind::primitive(sphere.clone()),
+            Animations::from(vec![TransformAnimation::new(animation, transfom)]),
+        );
+
+        let mut group = ObjectGroup::new(vec![animated_object.clone()]);
+
+        assert_eq!(group.bounding_box(), &animated_object.bounding_box());
+        assert_eq!(animated_object.bounding_box(), sphere.bounding_box());
+        group.animate(0.5);
+        animated_object.animate(0.5);
+        assert_eq!(group.bounding_box(), &animated_object.bounding_box());
+        assert_ne!(animated_object.bounding_box(), sphere.bounding_box());
     }
 }

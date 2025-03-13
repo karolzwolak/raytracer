@@ -19,12 +19,10 @@ use crate::{
     },
 };
 
-use crate::render::animations::TransformAnimation;
-
 use self::{bounding_box::BoundingBox, group::ObjectGroup, shape::Shape};
 
 use super::{
-    animations::{Animate, Animations},
+    animations::Animations,
     intersection::{Intersection, IntersectionCollector},
     material::Material,
     ray::Ray,
@@ -78,13 +76,19 @@ impl Transform for Object {
     }
 }
 
-impl Animate for Object {
-    fn animate(&mut self, time: f64) {
-        let matrix = self.animations.matrix_at(time);
-        if matrix == Matrix::identity() {
-            return;
+impl Object {
+    pub fn animate(&mut self, time: f64) {
+        let transform = self.animations.matrix_at(time);
+        match &mut self.kind {
+            ObjectKind::Primitive(obj) => {
+                if transform != Matrix::identity() {
+                    obj.transform(&transform);
+                }
+            }
+            ObjectKind::Group(group) => {
+                group.animate_with(time, transform);
+            }
         }
-        self.transform(&matrix);
     }
 }
 

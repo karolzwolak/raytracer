@@ -178,8 +178,10 @@ impl Animations {
     }
 }
 
-pub trait Animate {
-    fn animate(&mut self, time: f64);
+impl From<Vec<TransformAnimation>> for Animations {
+    fn from(vec: Vec<TransformAnimation>) -> Self {
+        Self::with_vec(vec)
+    }
 }
 
 #[cfg(test)]

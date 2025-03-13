@@ -2,7 +2,7 @@ use std::{fmt::Display, fs::File};
 
 use clap::ValueEnum;
 
-use super::{animations::Animate, camera::Camera, canvas::Canvas, world::World};
+use super::{camera::Camera, canvas::Canvas, world::World};
 
 #[derive(Debug, Copy, Clone, PartialEq, ValueEnum)]
 pub enum AnimationFormat {
