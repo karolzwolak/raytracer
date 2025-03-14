@@ -12,27 +12,34 @@ const DEFAULT_FOV: f64 = std::f64::consts::FRAC_PI_3;
 
 #[derive(Args, Debug)]
 struct AnimationCommand {
-    /// The format of the output video
-    #[clap(short = 'f', long, default_value = "gif")]
+    /// The format of the output video.
+    #[clap(short = 'f', long, default_value = "mp4")]
     format: AnimationFormat,
 
+    /// The duration of the output video in seconds.
     #[clap(short = 'd', long)]
     duration_sec: f64,
 
-    #[clap(long, default_value = "24")]
-    framerate: u32,
+    /// Frames per second of the output video.
+    /// Note that not all formats support all framerates.
+    /// Use lower framerates when rendering to gif (about 30).
+    #[clap(long, default_value = "60")]
+    fps: u32,
 }
 
 #[derive(Args, Debug)]
 struct ImageCommand {
-    /// The format of the output image
+    /// The format of the output image.
     #[clap(short = 'f', long, default_value = "png")]
     format: ImageFormat,
 }
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Render a single image.
     Image(ImageCommand),
+    /// Render an animation.
+    /// Use `animate` field on an object to add animation to it.
     Animate(AnimationCommand),
 }
 
@@ -47,45 +54,46 @@ impl Command {
 
 /// Simple raytracer that renders yaml scenes.
 /// Supports basic shapes and materials and .obj models.
+/// Can render single images and animations.
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Command,
 
-    /// The scene file to render
+    /// The scene file to render.
     scene_file: PathBuf,
 
     /// The output path of the rendered image.
-    /// By default it's `./<scene_filename>.<image_format>`
+    /// By default it's `./<scene_filename>.<image_format>`.
     #[clap(short, long)]
     output_path: Option<PathBuf>,
 
     /// Width (in pixels) of the output image.
-    #[clap(long, help = format!("Width (in pixels) of the output image.
+    #[clap(short, long, help = format!("Width (in pixels) of the output image.
 Overrides the one in the scene file. If not specified anywhere, defaults to {}", DEFAULT_WIDTH))]
     width: Option<usize>,
 
     /// Height (in pixels) of the output image.
-    #[clap(long, help = format!("Height (in pixels) of the output image.
+    #[clap(short, long, help = format!("Height (in pixels) of the output image.
 Overrides the one in the scene file. If not specified anywhere, defaults to {}", DEFAULT_HEIGHT))]
-    #[clap(long)]
     height: Option<usize>,
 
     /// Field of view of the camera in radians.
-    /// Overrides the one in the scene file
-    /// If not specified anywhere, defaults to π/3
+    /// Overrides the one in the scene file.
+    /// If not specified anywhere, defaults to π/3.
     #[clap(long)]
     fov: Option<f64>,
 
-    /// Maximum number of times a ray can bounce off a reflective surface.
-    /// Overrides the one in the scene file
+    /// Maximum number of times a ray can bounce (change direction).
+    /// Direction change occurs when a ray hits a reflective or refractive surface.
+    /// Overrides the one in the scene file.
     #[clap(short, long)]
-    max_reflective_depth: Option<usize>,
+    depth: Option<usize>,
 
     /// Controls how many rays are shot per pixel.
     /// In other words, the quality of the anti-aliasing (supersampling).
-    /// Overrides the one in the scene file
+    /// Overrides the one in the scene file.
     #[clap(short, long)]
     supersampling_level: Option<usize>,
 }
@@ -96,7 +104,7 @@ fn get_world_camera(args: &Cli) -> Result<(World, Camera), String> {
     let (mut world, camera) =
         yaml::parse_str(&scene_source, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FOV)
             .map_err(|e| format!("Failed to parse scene: {}", e))?;
-    if let Some(max_reflective_depth) = args.max_reflective_depth {
+    if let Some(max_reflective_depth) = args.depth {
         world.set_max_recursive_depth(max_reflective_depth);
     }
     if let Some(supersampling_level) = args.supersampling_level {
@@ -132,7 +140,7 @@ fn render_animation(
     let animator = raytracer::render::animator::Animator::new(
         world,
         camera,
-        animation_args.framerate,
+        animation_args.fps,
         animation_args.duration_sec,
     )
     .ok_or_else(|| "Zero framerate or duration".to_string())?;

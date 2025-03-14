@@ -576,7 +576,7 @@ impl<'a> YamlParser<'a> {
                 .world
                 .set_supersampling_level(self.parse_num(val)? as usize),
         }
-        match &body["max-reflective-depth"] {
+        match &body["depth"] {
             &Yaml::BadValue => {}
             val => self
                 .world
