@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use saphyr::Yaml;
 
@@ -10,10 +10,7 @@ use crate::{
         vector::Vector,
     },
     render::{
-        animations::{
-            Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
-            TransformAnimation,
-        },
+        animations::{Animation, AnimationRepeat, Animations, TransformAnimation},
         camera::Camera,
         color::Color,
         light::PointLightSource,
@@ -35,6 +32,10 @@ pub enum YamlParseError {
     InvalidField,
     UnexpectedValue,
     UnknownDefine(String),
+    UnknownVariant(String),
+    InvalidType(String),
+    YamlSyntaxError(String),
+    MultipleDocuments,
     FileReadError,
     ObjParsingError,
     InternalError,
@@ -199,10 +200,6 @@ impl<'a> YamlParser<'a> {
             camera: default_camera,
             defines: predefined_parser.defines,
         }
-    }
-
-    fn new(yaml: &'a Yaml) -> Self {
-        Self::with_world_and_camera(yaml, World::empty(), Camera::new(1, 1, 1.))
     }
 
     fn parse_num(&self, value: &Yaml) -> YamlParseResult<f64> {
@@ -453,6 +450,22 @@ impl<'a> YamlParser<'a> {
             .map_err(|_| YamlParseError::ObjParsingError)
     }
 
+    fn parse_str_or_default<T>(yaml: &Yaml, key: &str) -> YamlParseResult<T>
+    where
+        T: FromStr + Default,
+    {
+        match &yaml[key] {
+            &Yaml::BadValue => Ok(Default::default()),
+            Yaml::String(val) => val
+                .parse()
+                .map_err(|_| YamlParseError::UnknownVariant(val.to_owned())),
+            _ => Err(YamlParseError::InvalidType(format!(
+                "{} must be a string",
+                key
+            )))?,
+        }
+    }
+
     fn parse_animation(&self, body: &Yaml) -> YamlParseResult<TransformAnimation> {
         let transformations = self.parse_transformations(&body["transform"])?;
         let duration = self.parse_num(&body["duration"])?;
@@ -460,24 +473,9 @@ impl<'a> YamlParser<'a> {
             &Yaml::BadValue => 0.,
             val => self.parse_num(val)?,
         };
-        let direction = match &body["direction"] {
-            &Yaml::BadValue => Default::default(),
-            val => match val.as_str().ok_or(YamlParseError::InvalidField)? {
-                "normal" => AnimationDirection::Normal,
-                "reverse" => AnimationDirection::Reverse,
-                "alternate" => AnimationDirection::Alternate,
-                "alternate-reverse" => AnimationDirection::AlternateReverse,
-                _ => return Err(YamlParseError::InvalidField),
-            },
-        };
 
-        let timing = match &body["timing"] {
-            &Yaml::BadValue => Default::default(),
-            val => match val.as_str().ok_or(YamlParseError::InvalidField)? {
-                "linear" => AnimationTiming::Linear,
-                _ => return Err(YamlParseError::InvalidField),
-            },
-        };
+        let direction = Self::parse_str_or_default(body, "direction")?;
+        let timing = Self::parse_str_or_default(body, "timing")?;
 
         let count = match &body["repeat"] {
             &Yaml::BadValue => Default::default(),
@@ -732,22 +730,31 @@ impl<'a> YamlParser<'a> {
     }
 }
 
+impl YamlParser<'_> {
+    fn str_to_yaml(source: &str) -> YamlParseResult<Yaml> {
+        let mut docs = saphyr::Yaml::load_from_str(source)
+            .map_err(|_| YamlParseError::YamlSyntaxError(source.to_string()))?;
+        match docs.len() {
+            1 => Ok(std::mem::replace(&mut docs[0], Yaml::BadValue)),
+            0 => Ok(Yaml::Array(vec![])),
+            _ => Err(YamlParseError::MultipleDocuments),
+        }
+    }
+}
+
 pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> YamlParserOutput {
     let world = World::empty();
     let camera = Camera::new(width, height, fov);
 
-    let yaml_vec = saphyr::Yaml::load_from_str(source).unwrap();
-    let Some(yaml) = yaml_vec.last() else {
-        return Ok((world, camera));
-    };
-    let parser = YamlParser::with_world_and_camera(yaml, world, camera);
+    let yaml = YamlParser::str_to_yaml(source)?;
+    let parser = YamlParser::with_world_and_camera(&yaml, world, camera);
 
     parser.parse_consume()
 }
 
 #[cfg(test)]
 mod tests {
-    use std::f64::consts::FRAC_PI_3;
+    use std::{f64::consts::FRAC_PI_3, fmt::Debug};
 
     use crate::{
         primitive::matrix::Transform,
@@ -767,6 +774,32 @@ mod tests {
 
     fn parse(source: &str) -> (World, Camera) {
         parse_str(source, WIDTH, HEIGHT, FOV).unwrap()
+    }
+
+    fn test_field<T, F>(
+        source: &str,
+        field: &str,
+        test_values: Vec<&str>,
+        expected: Vec<T>,
+        field_getter: F,
+    ) where
+        T: PartialEq + Debug,
+        F: Fn(&Object) -> T,
+    {
+        let source = test_values
+            .into_iter()
+            .map(|s| {
+                if s.is_empty() {
+                    String::new()
+                } else {
+                    format!("{}: {}", field, s)
+                }
+            })
+            .map(|s| source.replace("{}", &s))
+            .collect::<String>();
+        let (world, _) = parse(&source);
+        let actual = world.objects().iter().map(field_getter).collect::<Vec<_>>();
+        assert_eq!(actual, expected);
     }
 
     #[test]
@@ -1484,5 +1517,52 @@ mod tests {
         )]);
 
         assert_eq!(world.objects().first().unwrap().animations(), &animations);
+    }
+    #[test]
+    fn parse_animation_timing() {
+        let source = r#"
+- add: sphere
+  animate:
+    - delay: 0
+      duration: 1
+      {}
+"#;
+        let timings_str = vec!["linear", "ease-in", "ease-out", "ease-in-out", ""];
+        let expected_timings = vec![
+            AnimationTiming::Linear,
+            AnimationTiming::EaseIn,
+            AnimationTiming::EaseOut,
+            AnimationTiming::EaseInOut,
+            AnimationTiming::default(),
+        ];
+        test_field(source, "timing", timings_str, expected_timings, |obj| {
+            obj.animations().vec().first().unwrap().animations().timing
+        });
+    }
+    #[test]
+    fn parse_animation_direction() {
+        let source = r#"
+- add: sphere
+  animate:
+    - delay: 0
+      duration: 1
+      {}
+"#;
+        let timings_str = vec!["normal", "reverse", "alternate", "alternate-reverse", ""];
+        let expected_timings = vec![
+            AnimationDirection::Normal,
+            AnimationDirection::Reverse,
+            AnimationDirection::Alternate,
+            AnimationDirection::AlternateReverse,
+            AnimationDirection::default(),
+        ];
+        test_field(source, "direction", timings_str, expected_timings, |obj| {
+            obj.animations()
+                .vec()
+                .first()
+                .unwrap()
+                .animations()
+                .direction
+        });
     }
 }

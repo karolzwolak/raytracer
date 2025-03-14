@@ -1,3 +1,5 @@
+use std::{fmt::Display, str::FromStr};
+
 use crate::{
     approx_eq::ApproxEq,
     primitive::matrix::{Matrix, TransformationVec},
@@ -25,6 +27,21 @@ impl AnimationTiming {
     }
 }
 
+impl FromStr for AnimationTiming {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ease" => Ok(Self::Ease),
+            "ease-in" => Ok(Self::EaseIn),
+            "ease-out" => Ok(Self::EaseOut),
+            "ease-in-out" => Ok(Self::EaseInOut),
+            "linear" => Ok(Self::Linear),
+            _ => Err(()),
+        }
+    }
+}
+
 impl Default for AnimationTiming {
     fn default() -> Self {
         Self::Ease
@@ -37,6 +54,20 @@ pub enum AnimationDirection {
     Reverse,
     Alternate,
     AlternateReverse,
+}
+
+impl FromStr for AnimationDirection {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "normal" => Ok(Self::Normal),
+            "reverse" => Ok(Self::Reverse),
+            "alternate" => Ok(Self::Alternate),
+            "alternate-reverse" => Ok(Self::AlternateReverse),
+            _ => Err(()),
+        }
+    }
 }
 
 impl AnimationDirection {
@@ -174,6 +205,10 @@ impl TransformAnimation {
         let fraction = self.animation.val_at(time);
         self.interpolated(fraction)
     }
+
+    pub fn animations(&self) -> &Animation {
+        &self.animation
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -196,6 +231,10 @@ impl Animations {
 
     pub fn matrix_at(&self, time: f64) -> Matrix {
         Matrix::from_iter(self.vec.iter().map(|a| a.matrix_at(time)))
+    }
+
+    pub fn vec(&self) -> &[TransformAnimation] {
+        &self.vec
     }
 }
 
