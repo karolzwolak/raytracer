@@ -4,7 +4,7 @@
 *.gif
 *.mp4
 *.webp
-!/samples/images/*
+!/samples/renders/*
 *.svg
 perf*
 /images
