@@ -166,6 +166,22 @@ impl World {
         color / offsets.len().pow(2) as f64
     }
 
+    pub fn render_animation_frame(
+        &mut self,
+        camera: &Camera,
+        progressbar: indicatif::ProgressBar,
+    ) -> Canvas {
+        self.objects.build_bvh();
+
+        let mut image = camera.canvas();
+
+        image.set_each_pixel(
+            |x: usize, y: usize| self.color_at_pixel(x, y, camera),
+            progressbar,
+        );
+        image
+    }
+
     pub fn render(&mut self, camera: &Camera) -> Canvas {
         let now = std::time::Instant::now();
         self.objects.build_bvh();
@@ -189,7 +205,13 @@ impl World {
 
         let now = std::time::Instant::now();
 
-        image.set_each_pixel(|x: usize, y: usize| self.color_at_pixel(x, y, camera));
+        let style = indicatif::ProgressStyle::with_template(
+            "{spinner:.green} [{elapsed_precise}] {wide_bar:.cyan/blue} pixels shaded:{human_pos}/{human_len} {percent}% ({eta})",
+        )
+        .unwrap();
+        let pb = indicatif::ProgressBar::new(image.width() as u64 * image.height() as u64);
+        let pb = pb.with_style(style);
+        image.set_each_pixel(|x: usize, y: usize| self.color_at_pixel(x, y, camera), pb);
         println!("render time: {:?}", now.elapsed());
         let rays_per_sec = ray_count as f64 / now.elapsed().as_secs_f64();
         println!("rays per second: {}", rays_per_sec.round());

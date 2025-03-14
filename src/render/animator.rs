@@ -1,11 +1,14 @@
 use std::{fmt::Display, fs::File};
 
 use clap::ValueEnum;
+use indicatif::ProgressIterator;
 use minimp4::Mp4Muxer;
 use openh264::{
     encoder::Encoder,
     formats::{RgbSliceU8, YUVBuffer},
 };
+use std::thread;
+use std::time::Duration;
 
 use super::{camera::Camera, canvas::Canvas, world::World};
 
@@ -44,10 +47,10 @@ impl Animator {
         })
     }
 
-    fn render_frame(&self, time: f64) -> Canvas {
+    fn render_frame(&self, time: f64, progressbar: indicatif::ProgressBar) -> Canvas {
         let mut world = self.world.clone();
         world.animate(time);
-        world.render(&self.camera)
+        world.render_animation_frame(&self.camera, progressbar)
     }
 
     fn frame_count(&self) -> u32 {
@@ -58,15 +61,48 @@ impl Animator {
         1. / self.framerate as f64
     }
 
-    fn render_gif(&self, encoder: &mut gif::Encoder<&mut File>) {
+    fn render_animation<F>(&self, mut encode_fun: F)
+    where
+        F: FnMut(Canvas),
+    {
+        let main_bar = indicatif::ProgressBar::new(self.frame_count() as u64).with_style(indicatif::ProgressStyle::with_template(
+            "[{elapsed_precise}] {wide_bar:.cyan/blue} rendering frame:{human_pos}/{human_len} {percent}% ({eta})",
+        ).unwrap());
+
+        let pixels_count = self.camera.target_width() as u64 * self.camera.target_height() as u64;
+        let frame_bar = indicatif::ProgressBar::new(pixels_count).with_style(indicatif::ProgressStyle::with_template(
+            "[{elapsed_precise}] {bar:.cyan/blue} pixels shaded:{human_pos}/{human_len} {percent}% ({eta})",
+        )
+        .unwrap());
+
+        let multi_bar = indicatif::MultiProgress::new();
+        let main_bar = multi_bar.add(main_bar);
+
+        // Spawn a thread to update the main progress bar's elapsed time
+        let main_bar_clone = main_bar.clone();
+        thread::spawn(move || loop {
+            thread::sleep(Duration::from_millis(100));
+            main_bar_clone.tick();
+        });
+
         let frame_duration = self.frame_duration();
-        for i in 0..self.frame_count() {
-            let time = i as f64 * frame_duration;
-            let canvas = self.render_frame(time);
+        (0..self.frame_count())
+            .progress_with(main_bar)
+            .for_each(|i| {
+                let time = i as f64 * frame_duration;
+                let bar = multi_bar.add(frame_bar.clone());
+                let canvas = self.render_frame(time, bar.clone());
+                bar.reset();
+                encode_fun(canvas);
+            });
+    }
+
+    fn render_gif(&self, encoder: &mut gif::Encoder<&mut File>) {
+        self.render_animation(|canvas| {
             encoder
                 .write_frame(&gif::Frame::<'_>::from(&canvas))
                 .unwrap();
-        }
+        });
     }
 
     fn render_mp4(&self, file: File) {
@@ -75,11 +111,9 @@ impl Animator {
         let height = self.camera.target_height();
 
         muxer.init_video(width as i32, height as i32, false, "title");
-        let frame_duration = self.frame_duration();
         let mut h264_encoder = Encoder::new().unwrap();
-        for i in 0..self.frame_count() {
-            let time = i as f64 * frame_duration;
-            let canvas = self.render_frame(time);
+
+        self.render_animation(|canvas| {
             let bytes = canvas.as_u8_rgb();
 
             let rgb_source = RgbSliceU8::new(&bytes, (width, height));
@@ -87,7 +121,7 @@ impl Animator {
             let bitstream = h264_encoder.encode(&buf).unwrap();
 
             muxer.write_video_with_fps(&bitstream.to_vec(), self.framerate);
-        }
+        });
         muxer.close();
     }
 

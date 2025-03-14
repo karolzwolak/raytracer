@@ -62,20 +62,16 @@ impl Canvas {
         &mut self.pixels
     }
 
-    pub fn set_each_pixel<F>(&mut self, fun: F)
+    pub fn set_each_pixel<F>(&mut self, fun: F, progressbar: indicatif::ProgressBar)
     where
         F: Fn(usize, usize) -> Color + std::marker::Sync,
     {
         let width = self.width;
 
-        let style = indicatif::ProgressStyle::with_template(
-            "{spinner:.green} [{elapsed_precise}] {wide_bar:.cyan/blue} pixels shaded:{human_pos}/{human_len} ({eta})",
-        )
-        .unwrap();
         self.pixels
             .par_iter_mut()
             .enumerate()
-            .progress_with_style(style)
+            .progress_with(progressbar)
             .for_each(|(id, pixel_color)| {
                 let x = id % width;
                 let y = id / width;
