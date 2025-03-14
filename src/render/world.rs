@@ -206,7 +206,7 @@ impl World {
         let now = std::time::Instant::now();
 
         let style = indicatif::ProgressStyle::with_template(
-            "{spinner:.green} [{elapsed_precise}] {wide_bar:.cyan/blue} pixels shaded:{human_pos}/{human_len} {percent}% ({eta})",
+            "{spinner:.green} [{elapsed_precise}] {wide_bar:.cyan/blue} pixels shaded: {human_pos}/{human_len} {percent}% ({eta})",
         )
         .unwrap();
         let pb = indicatif::ProgressBar::new(image.width() as u64 * image.height() as u64);

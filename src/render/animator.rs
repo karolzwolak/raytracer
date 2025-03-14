@@ -66,14 +66,16 @@ impl Animator {
         F: FnMut(Canvas),
     {
         let main_bar = indicatif::ProgressBar::new(self.frame_count() as u64).with_style(indicatif::ProgressStyle::with_template(
-            "[{elapsed_precise}] {wide_bar:.cyan/blue} rendering frame:{human_pos}/{human_len} {percent}% ({eta})",
+            "[{elapsed_precise}] {wide_bar:.cyan/blue} rendering frame: {human_pos}/{human_len} {percent}% ({eta})",
         ).unwrap());
 
         let pixels_count = self.camera.target_width() as u64 * self.camera.target_height() as u64;
         let frame_bar = indicatif::ProgressBar::new(pixels_count).with_style(indicatif::ProgressStyle::with_template(
-            "[{elapsed_precise}] {bar:.cyan/blue} pixels shaded:{human_pos}/{human_len} {percent}% ({eta})",
+            "[{elapsed_precise}] {bar:.cyan/blue} pixels shaded: {human_pos}/{human_len} {percent}% ({eta})",
         )
-        .unwrap());
+        .unwrap()
+            .progress_chars("=>-")
+        );
 
         let multi_bar = indicatif::MultiProgress::new();
         let main_bar = multi_bar.add(main_bar);
