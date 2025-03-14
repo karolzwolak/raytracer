@@ -1,0 +1,41 @@
+- add: SCENE_CAMERA
+- add: SCENE_LIGHT
+
+- add: world
+  max-reflective-depth: 2
+  supersampling-level: 1
+
+- add: cube
+  transform:
+    - [scale-uniform, 10 ]
+    - [translate, 0, 9, 0]
+  material:
+    pattern:
+      type: checkers
+      colors:
+        - [0.62, 0.62, 0.62]
+        - [0.7, 0.7, 0.7]
+      transform:
+        - [scale-uniform, 0.125]
+
+- define: dragon-material
+  value:
+    color: [0, 0.68, 0.32]
+
+- add: obj
+  file: samples/obj/dragon.obj
+  material: dragon-material
+  transform:
+    - [scale-uniform, 0.5]
+  animate:
+    - duration: 0.5
+      delay: 0
+      direction: alternate
+      transform:
+        - [translate, 0, 0.1, 0]
+    - duration: 2
+      delay: 0
+      transform:
+        - [rotate-y, 2_PI]
+
+

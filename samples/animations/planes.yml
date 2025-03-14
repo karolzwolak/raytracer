@@ -23,7 +23,7 @@
 - add: group
   animate:
     - duration: 0.5
-    - transform:
+      transform:
         - [rotate-x, PI]
   children:
   # Floor plane

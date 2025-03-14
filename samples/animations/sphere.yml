@@ -2,11 +2,12 @@
 
 - add: SCENE_LIGHT
 
+
 - add: sphere
   animate:
     - 
-      duration: 1
-      direction: normal
+      duration: 0.5
+      direction: alternate
       timing: linear
       transform:
-        - [translate, 1, -2, 10]
+        - [translate, 0, 2, 0]
