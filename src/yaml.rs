@@ -50,6 +50,8 @@ impl Display for YamlParseError {
 const PREDEFINED_DEFINES: &str = r#"
 - define: PI
   value: 3.141592653589793
+- define: 2_PI
+  value: 6.283185307179586
 - define: FRAC_PI_2
   value: 1.5707963267948966
 - define: FRAC_PI_3
@@ -1265,9 +1267,11 @@ mod tests {
     shininess: FRAC_PI_4
     reflective: FRAC_PI_6
     transparency: FRAC_1_SQRT_2
+    refractive-index: 2_PI
 "#;
         let (world, _) = parse(source);
         let material = Material {
+            refractive_index: 2. * std::f64::consts::PI,
             ambient: std::f64::consts::PI,
             diffuse: std::f64::consts::FRAC_PI_2,
             specular: std::f64::consts::FRAC_PI_3,
