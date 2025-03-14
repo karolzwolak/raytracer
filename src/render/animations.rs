@@ -5,6 +5,10 @@ use crate::{
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AnimationTiming {
+    Ease,
+    EaseIn,
+    EaseOut,
+    EaseInOut,
     Linear,
 }
 
@@ -12,6 +16,10 @@ impl AnimationTiming {
     /// Converts value in range [0, 1] to a value in the same range
     fn apply(&self, pos: f64) -> f64 {
         match self {
+            Self::Ease => 6. * pos.powi(5) - 15. * pos.powi(4) + 10. * pos.powi(3),
+            Self::EaseIn => pos.powi(3),
+            Self::EaseOut => 1. - (1. - pos).powi(3),
+            Self::EaseInOut => 3. * pos.powi(2) - 2. * pos.powi(3),
             Self::Linear => pos,
         }
     }
@@ -19,7 +27,7 @@ impl AnimationTiming {
 
 impl Default for AnimationTiming {
     fn default() -> Self {
-        Self::Linear
+        Self::Ease
     }
 }
 
@@ -344,6 +352,7 @@ mod tests {
         let animation = Animation {
             delay: 0.25,
             duration: 0.5,
+            timing: AnimationTiming::Linear,
             ..Default::default()
         };
 
