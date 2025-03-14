@@ -83,11 +83,23 @@ impl Default for AnimationRepeat {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Animation {
-    delay: f64,
-    duration: f64,
-    direction: AnimationDirection,
-    timing: AnimationTiming,
-    repeat: AnimationRepeat,
+    pub delay: f64,
+    pub duration: f64,
+    pub direction: AnimationDirection,
+    pub timing: AnimationTiming,
+    pub repeat: AnimationRepeat,
+}
+
+impl Default for Animation {
+    fn default() -> Self {
+        Self {
+            delay: 0.0,
+            duration: 1.0,
+            direction: AnimationDirection::default(),
+            timing: AnimationTiming::default(),
+            repeat: AnimationRepeat::default(),
+        }
+    }
 }
 
 impl Animation {
@@ -115,7 +127,8 @@ impl Animation {
         if !self.repeat.still_animate(curr_count) {
             return 1.;
         }
-        let normalized_time = time % self.duration;
+        let curr_time = time - curr_count as f64 * self.duration;
+        let normalized_time = curr_time / self.duration;
 
         let fraction = self.timing.apply(normalized_time);
 
@@ -324,5 +337,16 @@ mod tests {
                 .scale(1.5, 1.5, 1.5)
                 .transformed()
         );
+    }
+
+    #[test]
+    fn not_normalized_duration() {
+        let animation = Animation {
+            delay: 0.25,
+            duration: 0.5,
+            ..Default::default()
+        };
+
+        assert_eq!(animation.val_at(1.5), 0.5);
     }
 }
