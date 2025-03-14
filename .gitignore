@@ -3,7 +3,7 @@
 *.png
 *.gif
 *.mp4
-!/samples/images/*
+!/samples/renders/*
 *.svg
 perf*
 /images

@@ -62,7 +62,8 @@ Options:
 
 ## Sample images
 
-- Cover image render ![Cover image render](samples/images/cover.png)
-- Refraction Chapter![Refraction chapter](samples/images/refractions.png)
-- Cubes Chapter![Cubes chapter](samples/images/cubes.png)
-- Dragons ![Dragons](samples/images/dragons.png)
+- Rotating Dragon ![Rotating Dragon](samples/renders/rotating_dragon.mp4)
+- Cover image render ![Cover image render](samples/renders/cover.png)
+- Refraction Chapter![Refraction chapter](samples/renders/refractions.png)
+- Cubes Chapter![Cubes chapter](samples/renders/cubes.png)
+- Dragons ![Dragons](samples/renders/dragons.png)
