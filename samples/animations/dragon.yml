@@ -1,8 +1,16 @@
 - add: SCENE_CAMERA
+  width: 800
+  height: 600
+
 - add: SCENE_LIGHT
+  intensity: [0.5, 0.5, 0.5]
+
+- add: light
+  at: [ 1, 5, -6 ]
+  intensity: [0.5, 0.5, 0.5]
 
 - add: world
-  max-reflective-depth: 2
+  max-reflective-depth: 1
   supersampling-level: 1
 
 - add: cube
@@ -20,6 +28,9 @@
 
 - define: dragon-material
   value:
+    reflectivity: 0.2
+    shininess: 100
+    specular: 0.95
     color: [0, 0.68, 0.32]
 
 - add: obj

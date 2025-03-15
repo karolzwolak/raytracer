@@ -62,6 +62,7 @@ Options:
 
 ## Sample images
 
+- Rotating dragon ![Rotating dragon](samples/renders/rotating_dragon.webp)
 - Cover image render ![Cover image render](samples/renders/cover.png)
 - Refraction Chapter![Refraction chapter](samples/renders/refractions.png)
 - Cubes Chapter![Cubes chapter](samples/renders/cubes.png)
