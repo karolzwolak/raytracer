@@ -3,6 +3,7 @@
 *.png
 *.gif
 *.mp4
+*.webp
 !/samples/images/*
 *.svg
 perf*

@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File};
+use std::{fmt::Display, fs::File, io::Write, ops::Deref};
 
 use clap::ValueEnum;
 use indicatif::ProgressIterator;
@@ -9,6 +9,7 @@ use openh264::{
 };
 use std::thread;
 use std::time::Duration;
+use webp::WebPConfig;
 
 use super::{camera::Camera, canvas::Canvas, world::World};
 
@@ -16,6 +17,7 @@ use super::{camera::Camera, canvas::Canvas, world::World};
 pub enum AnimationFormat {
     Gif,
     Mp4,
+    Webp,
 }
 
 impl Display for AnimationFormat {
@@ -23,6 +25,7 @@ impl Display for AnimationFormat {
         match self {
             AnimationFormat::Gif => write!(f, "gif"),
             AnimationFormat::Mp4 => write!(f, "mp4"),
+            AnimationFormat::Webp => write!(f, "webp"),
         }
     }
 }
@@ -127,6 +130,29 @@ impl Animator {
         muxer.close();
     }
 
+    fn render_webp(&self, mut file: File) {
+        let width = self.camera.target_width() as u32;
+        let height = self.camera.target_height() as u32;
+        let config = WebPConfig::new().unwrap();
+        let mut encoder = webp::AnimEncoder::new(width, height, &config);
+
+        let mut frame_buffer = Vec::with_capacity(self.frame_count() as usize);
+        self.render_animation(|canvas| {
+            let bytes = canvas.as_u8_rgb();
+            frame_buffer.push(bytes);
+        });
+
+        let frametime_ms = 1000 / self.framerate as usize;
+        frame_buffer.iter().enumerate().for_each(|(id, bytes)| {
+            let timestamp_ms = id * frametime_ms;
+            let frame = webp::AnimFrame::from_rgb(bytes, width, height, timestamp_ms as i32);
+            encoder.add_frame(frame);
+        });
+        println!("Encoding webp...");
+        let res = encoder.encode();
+        file.write_all(res.deref()).unwrap();
+    }
+
     pub fn render_to_file(&self, mut file: File, format: AnimationFormat) {
         match format {
             AnimationFormat::Gif => {
@@ -141,6 +167,7 @@ impl Animator {
                 self.render_gif(&mut encoder);
             }
             AnimationFormat::Mp4 => self.render_mp4(file),
+            AnimationFormat::Webp => self.render_webp(file),
         }
     }
 }
