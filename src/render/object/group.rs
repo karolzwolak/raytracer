@@ -19,16 +19,6 @@ pub struct ObjectGroup {
 
 impl ObjectGroup {
     const CANDIDATE_POS_NUMBER: usize = 5;
-    fn with_bounding_box(children: Vec<Object>, bounding_box: BoundingBox) -> Self {
-        let count = children
-            .iter()
-            .fold(0, |acc, child| acc + child.primitive_count());
-        Self {
-            children,
-            bounding_box,
-            primitive_count: count,
-        }
-    }
 
     pub fn new(children: Vec<Object>) -> Self {
         let mut res = Self::empty();
@@ -277,7 +267,7 @@ mod tests {
         },
         render::{
             animations::{
-                self, Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
+                Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
                 TransformAnimation,
             },
             intersection::IntersectionCollection,

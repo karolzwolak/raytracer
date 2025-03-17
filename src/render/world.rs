@@ -123,7 +123,7 @@ impl World {
         &'a self,
         ray: Ray,
         obj: &'a Object,
-    ) -> IntersectionCollection {
+    ) -> IntersectionCollection<'a> {
         let mut collector = IntersectionCollector::with_dest_obj(&ray, obj);
         self.objects.intersect(&ray, &mut collector);
         IntersectionCollection::from_collector(ray, collector)

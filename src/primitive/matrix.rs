@@ -519,6 +519,7 @@ where
     T: Tuple,
 {
     type Output = T;
+    #[allow(clippy::op_ref)]
     fn mul(self, rhs: T) -> Self::Output {
         &self * rhs
     }

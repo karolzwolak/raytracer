@@ -86,7 +86,7 @@ mod tests {
             Ray::new(Point::new(0.5, 0., -5.), Vector::new(0., 0., 1.)),
             Ray::new(Point::new(0., 0.5, 0.), Vector::new(0., 0., 1.)),
         ];
-        let expected_times = vec![
+        let expected_times = [
             vec![4., 6.],
             vec![4., 6.],
             vec![4., 6.],

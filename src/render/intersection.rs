@@ -18,7 +18,7 @@ pub struct IntersectionCollector<'a> {
     skip_reduntant: bool,
 }
 
-impl<'a> Default for IntersectionCollector<'a> {
+impl Default for IntersectionCollector<'_> {
     fn default() -> Self {
         Self::new(None, true)
     }
@@ -132,7 +132,7 @@ fn same_obj_ref(a: &Object, b: &Object) -> bool {
     std::ptr::eq(a, b)
 }
 
-impl<'a> PartialEq for Intersection<'a> {
+impl PartialEq for Intersection<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.time == other.time && same_obj_ref(self.object(), other.object())
     }
