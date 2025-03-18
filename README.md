@@ -138,21 +138,49 @@ Example:
 
 ### Defines
 
-Reusable components can be defined and referenced using the `define` keyword:
+Reusable components can be defined and referenced using the `define` keyword. You can define:
 
+1. **Colors**:
 ```yaml
-- define: red-material
-  value:
-    color: [1, 0, 0]
-    ambient: 0.5
-    diffuse: 1
+- define: my-red
+  value: [1, 0.2, 0.2]
+```
 
-- add: sphere
-  material: red-material
+2. **Numbers** (including mathematical constants):
+```yaml
+- define: my-scale
+  value: 2.5
+```
+
+3. **Materials**:
+```yaml
+- define: shiny-metal
+  value:
+    ambient: 0.1
+    diffuse: 0.6
+    specular: 0.9
+    shininess: 300
+```
+
+4. **Complete Objects**:
+```yaml
+- define: my-sphere
+  value:
+    add: sphere
+    material: shiny-metal
+    transform:
+      - [scale, 2, 2, 2]
+```
+
+5. **Transformations**:
+```yaml
+- define: spin-and-move
+  value:
+    - [rotate-y, 0.5]
+    - [translate, 1, 0, 0]
 ```
 
 Defines can extend other defines:
-
 ```yaml
 - define: base-material
   value:
@@ -163,6 +191,13 @@ Defines can extend other defines:
   extend: base-material
   value:
     color: [1, 0, 0]
+```
+
+Once defined, you can reference these components anywhere in your scene:
+```yaml
+- add: my-sphere
+  transform:
+    - spin-and-move
 ```
 
 ### Built-in Defines
