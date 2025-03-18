@@ -35,13 +35,13 @@ cargo build --release
 Render a single image:
 
 ```bash
-./target/release/raytracer samples/scenes/dragon.yml image
+cargo run -r -- samples/scenes/dragon.yml image
 ```
 
 Render an animation:
 
 ```bash
-./target/release/raytracer samples/animations/sphere.yml animate -d 2
+cargo run -r -- samples/animations/sphere.yml animate -d 2
 ```
 
 ### General usage
@@ -141,18 +141,21 @@ Example:
 Reusable components can be defined and referenced using the `define` keyword. You can define:
 
 1. **Colors**:
+
 ```yaml
 - define: my-red
   value: [1, 0.2, 0.2]
 ```
 
 2. **Numbers** (including mathematical constants):
+
 ```yaml
 - define: my-scale
   value: 2.5
 ```
 
 3. **Materials**:
+
 ```yaml
 - define: shiny-metal
   value:
@@ -163,6 +166,7 @@ Reusable components can be defined and referenced using the `define` keyword. Yo
 ```
 
 4. **Complete Objects**:
+
 ```yaml
 - define: my-sphere
   value:
@@ -173,6 +177,7 @@ Reusable components can be defined and referenced using the `define` keyword. Yo
 ```
 
 5. **Transformations**:
+
 ```yaml
 - define: spin-and-move
   value:
@@ -181,6 +186,7 @@ Reusable components can be defined and referenced using the `define` keyword. Yo
 ```
 
 Defines can extend other defines:
+
 ```yaml
 - define: base-material
   value:
@@ -194,6 +200,7 @@ Defines can extend other defines:
 ```
 
 Once defined, you can reference these components anywhere in your scene:
+
 ```yaml
 - add: my-sphere
   transform:
@@ -237,9 +244,9 @@ Example usage:
 
 ### Notable Examples
 
-- [Rotating dragon animation](samples/animations/dragon.yaml)
-- [Glass sphere scene](samples/scenes/glass_sphere.yaml)
-- [Refraction demo](samples/scenes/refractions.yaml)
+- [Rotating dragon animation](samples/animations/dragon.yml)
+- [Glass sphere scene](samples/scenes/glass_sphere.yml)
+- [Refraction demo](samples/scenes/refractions.yml)
 
 ## Configuration
 
