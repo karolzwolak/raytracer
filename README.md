@@ -2,8 +2,6 @@
 
 A high-performance raytracer written in Rust that renders 3D scenes defined in YAML files. Supports basic shapes, materials, .obj models, and animations. The project aims to follow test-driven development and clean code principles to ensure maintainability, reliability, and readability.
 
-![Cover image render](samples/renders/cover.png)
-
 ## Features
 
 - YAML scene definition with handy built-in constants like `PI`
@@ -15,6 +13,17 @@ A high-performance raytracer written in Rust that renders 3D scenes defined in Y
 - Multi-threaded rendering
 - Bounding Volume Hierarchies (BVH) for fast ray intersection tests
 - Anti-aliasing through super sampling
+
+## Sample Renders
+
+| Description          | Image                                                              |
+| -------------------- | ------------------------------------------------------------------ |
+| Cover image          | ![Cover image](samples/renders/cover.png)                          |
+| Rotating dragon      | ![Rotating dragon](samples/renders/rotating_dragon.webp)           |
+| Animated refractions | ![Animated refractions](samples/renders/animated_refractions.webp) |
+| Refraction example   | ![Refraction chapter](samples/renders/refractions.png)             |
+| Cubes scene          | ![Cubes chapter](samples/renders/cubes.png)                        |
+| Dragon models        | ![Dragons](samples/renders/dragons.png)                            |
 
 ## Installation
 
@@ -266,13 +275,3 @@ We welcome contributions! Please follow these steps:
 5. Open a Pull Request
 
 Please ensure your code follows Rust best practices and includes appropriate tests.
-
-## Sample Renders
-
-| Description          | Image                                                              |
-| -------------------- | ------------------------------------------------------------------ |
-| Rotating dragon      | ![Rotating dragon](samples/renders/rotating_dragon.webp)           |
-| Animated refractions | ![Animated refractions](samples/renders/animated_refractions.webp) |
-| Refraction example   | ![Refraction chapter](samples/renders/refractions.png)             |
-| Cubes scene          | ![Cubes chapter](samples/renders/cubes.png)                        |
-| Dragon models        | ![Dragons](samples/renders/dragons.png)                            |
