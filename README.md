@@ -1,20 +1,60 @@
-Simple raytracer that renders yaml scenes. Supports basic shapes and materials and .obj models
+# Raytracer
 
-Command line usage:
+A high-performance raytracer written in Rust that renders 3D scenes defined in YAML files. Supports basic shapes, materials, .obj models, and animations. The project aims to follow test-driven development and clean code principles to ensure maintainability, reliability, and readability.
+
+![Cover image render](samples/renders/cover.png)
+
+## Features
+
+- YAML scene definition with handy built-in constants like `PI`
+
+- Render high-quality images and animations
+- Support for .obj 3D models
+- Material properties including reflection and refraction
+- Animation support
+- Multi-threaded rendering
+- Bounding Volume Hierarchies (BVH) for fast ray intersection tests
+- Anti-aliasing through super sampling
+
+## Installation
+
+1. Install [Rust](https://www.rust-lang.org/tools/install).
+
+2. Clone and build the project:
+
+```bash
+git clone https://github.com/karolzwolak/raytracer.git
+cd raytracer
+cargo build --release
+```
+
+## Usage
+
+### Basic Commands
+
+Render a single image:
+
+```bash
+./target/release/raytracer samples/scenes/dragon.yml image
+```
+
+Render an animation:
+
+```bash
+./target/release/raytracer samples/animations/sphere.yml animate -d 2
+```
+
+### General usage
 
 ```
 Simple raytracer that renders yaml scenes. Supports basic shapes and materials and .obj models. Can render single images and animations
-
 Usage: raytracer [OPTIONS] <SCENE_FILE> <COMMAND>
-
 Commands:
   image    Render a single image
   animate  Render an animation. Use `animate` field on an object to add animation to it
   help     Print this message or the help of the given subcommand(s)
-
 Arguments:
   <SCENE_FILE>  The scene file to render
-
 Options:
   -o, --output-path <OUTPUT_PATH>
           The output path of the rendered image. By default it's `./<scene_filename>.<image_format>`
@@ -34,37 +74,60 @@ Options:
           Print help
 ```
 
-Rendering animations:
-
-```
-Render an animation. Use `animate` field on an object to add animation to it
-
-Usage: raytracer <SCENE_FILE> animate [OPTIONS] --duration-sec <DURATION_SEC>
-
-Options:
-  -f, --format <FORMAT>              The format of the output video [default: mp4] [possible values: gif, mp4]
-  -d, --duration-sec <DURATION_SEC>  The duration of the output video in seconds
-      --fps <FPS>                    Frames per second of the output video. Note that not all formats support all framerates. Use lower framerates when rendering to gif (about 30) [default: 60]
-  -h, --help                         Print help
-```
-
-Rendering single images:
+### Rendering images
 
 ```
 Render a single image
-
 Usage: raytracer <SCENE_FILE> image [OPTIONS]
-
 Options:
   -f, --format <FORMAT>  The format of the output image [default: png] [possible values: ppm, png]
   -h, --help             Print help
 ```
 
-## Sample images
+### Rendering animations
 
-- Rotating dragon ![Rotating dragon](samples/renders/rotating_dragon.webp)
-- Animated refractions ![Animated refractions](samples/renders/animated_refractions.webp)
-- Cover image render ![Cover image render](samples/renders/cover.png)
-- Refraction Chapter![Refraction chapter](samples/renders/refractions.png)
-- Cubes Chapter![Cubes chapter](samples/renders/cubes.png)
-- Dragons ![Dragons](samples/renders/dragons.png)
+```
+Render an animation. Use `animate` field on an object to add animation to it
+Usage: raytracer <SCENE_FILE> animate [OPTIONS] --duration-sec <DURATION_SEC>
+Options:
+  -f, --format <FORMAT>              The format of the output video [default: mp4] [possible values: gif, mp4, webp]
+  -d, --duration-sec <DURATION_SEC>  The duration of the output video in seconds
+      --fps <FPS>                    Frames per second of the output video. Note that not all formats support all framerates. Use lower framerates when rendering to gif (about 30) [default: 60]
+  -h, --help                         Print help
+```
+
+## Scene File Format
+
+Scenes are defined in YAML format. The project includes some scenes in [scenes/](scenes/)
+Notable examples:
+
+- [Rotating dragon animation](samples/animations/dragon.yaml)
+
+## Configuration
+
+Configuration options can be set through:
+
+1. Command line arguments (overrides all other options)
+2. Scene YAML file
+
+## Contributing
+
+We welcome contributions! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+Please ensure your code follows Rust best practices and includes appropriate tests.
+
+## Sample Renders
+
+| Description          | Image                                                              |
+| -------------------- | ------------------------------------------------------------------ |
+| Rotating dragon      | ![Rotating dragon](samples/renders/rotating_dragon.webp)           |
+| Animated refractions | ![Animated refractions](samples/renders/animated_refractions.webp) |
+| Refraction example   | ![Refraction chapter](samples/renders/refractions.png)             |
+| Cubes scene          | ![Cubes chapter](samples/renders/cubes.png)                        |
+| Dragon models        | ![Dragons](samples/renders/dragons.png)                            |
