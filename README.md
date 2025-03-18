@@ -98,10 +98,113 @@ Options:
 
 ## Scene File Format
 
-Scenes are defined in YAML format. The project includes some scenes in [scenes/](scenes/)
-Notable examples:
+Scenes are defined in YAML format with support for reusable components through defines. The project includes example scenes in [scenes/](scenes/).
+
+### Basic Structure
+
+A scene file typically contains:
+
+- Camera definition
+- Light sources
+- Objects with materials and transformations
+- Optional world settings (supersampling, recursion depth)
+
+Example:
+
+```yaml
+- add: world
+  max-reflective-depth: 5
+  supersampling-level: 2
+
+- add: light
+  intensity: WHITE
+  at: [-10, 10, -10]
+
+- add: SCENE_CAMERA
+  from: [0, 1.5, -5]
+  to: [0, 1, 0]
+  up: [0, 1, 0]
+  fov: FRAC_PI_3
+
+- add: sphere
+  material:
+    color: BLUE
+    diffuse: 0.7
+    specular: 0.3
+  transform:
+    - [scale-uniform, 0.33]
+    - [translate, -1.5, 0.33, -0.75]
+```
+
+### Defines
+
+Reusable components can be defined and referenced using the `define` keyword:
+
+```yaml
+- define: red-material
+  value:
+    color: [1, 0, 0]
+    ambient: 0.5
+    diffuse: 1
+
+- add: sphere
+  material: red-material
+```
+
+Defines can extend other defines:
+
+```yaml
+- define: base-material
+  value:
+    ambient: 0.5
+    diffuse: 1
+
+- define: red-material
+  extend: base-material
+  value:
+    color: [1, 0, 0]
+```
+
+### Built-in Defines
+
+The raytracer provides several predefined constants and materials:
+
+#### Mathematical Constants
+
+- `PI`, `2_PI`
+- `FRAC_PI_2`, `FRAC_PI_3`, `FRAC_PI_4`, `FRAC_PI_6`
+- `FRAC_1_SQRT_2`
+
+#### Colors
+
+- `WHITE`, `BLACK`
+- `RED`, `GREEN`, `BLUE`
+
+#### Materials
+
+- `GLASS_MATERIAL`
+- `MIRROR_MATERIAL`
+- `AIR_MATERIAL`
+
+#### Scene Components
+
+- `SCENE_LIGHT`
+- `SCENE_CAMERA`
+
+Example usage:
+
+```yaml
+- add: cube
+  material: GLASS_MATERIAL
+  transform:
+    - [rotate-x, FRAC_PI_4]
+```
+
+### Notable Examples
 
 - [Rotating dragon animation](samples/animations/dragon.yaml)
+- [Glass sphere scene](samples/scenes/glass_sphere.yaml)
+- [Refraction demo](samples/scenes/refractions.yaml)
 
 ## Configuration
 
