@@ -23,22 +23,3 @@ pub mod render {
     pub mod ray;
     pub mod world;
 }
-
-pub mod playing_around {
-    pub mod cubes;
-    pub mod cylinders;
-    pub mod groups;
-    pub mod light_and_shading;
-    pub mod making_patterns;
-    pub mod making_scene;
-    pub mod planes;
-    pub mod projectiles;
-    pub mod rays_and_spheres;
-    pub mod reflections;
-    pub mod refractions;
-    pub mod runner;
-    pub mod shadows;
-    pub mod transformations;
-    pub mod triangles;
-    pub mod yaml;
-}
