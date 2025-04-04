@@ -84,6 +84,7 @@ impl<'a> IntersectionCollector<'a> {
         }
     }
     pub fn push(&mut self, inter: Intersection<'a>) {
+        self.next_object = Some(inter.object());
         if !self.skip_intersection(inter.time(), inter) {
             self.vec.push(inter);
         }
