@@ -97,7 +97,7 @@ impl Object {
             ObjectKind::Group(group) => {
                 group.animate_with(time, transform);
             }
-            ObjectKind::Csg(_) => todo!(),
+            ObjectKind::Csg(csg) => csg.animate_with(time, transform),
         }
     }
 }
@@ -145,8 +145,8 @@ impl Object {
     ) -> Vector {
         match &self.kind {
             ObjectKind::Primitive(obj) => obj.normal_vector_at_with_intersection(world_point, i),
-            ObjectKind::Group(_) => todo!(),
-            ObjectKind::Csg(_) => todo!(),
+            ObjectKind::Group(_) => unreachable!(),
+            ObjectKind::Csg(_) => unreachable!(),
         }
     }
 
@@ -190,7 +190,7 @@ impl Object {
         match &mut self.kind {
             ObjectKind::Primitive(obj) => obj.set_material(material),
             ObjectKind::Group(group) => group.set_material(material),
-            ObjectKind::Csg(_) => todo!(),
+            ObjectKind::Csg(csg) => csg.set_material(material),
         }
     }
 
@@ -202,7 +202,7 @@ impl Object {
         match &self.kind {
             ObjectKind::Primitive(_) => 1,
             ObjectKind::Group(group) => group.primitive_count(),
-            ObjectKind::Csg(_) => todo!(),
+            ObjectKind::Csg(_) => 1, // it's a primitive in this context
         }
     }
 
@@ -235,7 +235,7 @@ impl Object {
                 .inverse()
                 .unwrap(),
             ObjectKind::Group(_) => Matrix::identity(),
-            ObjectKind::Csg(_) => todo!(),
+            ObjectKind::Csg(_) => unreachable!(),
         }
     }
 
@@ -243,7 +243,7 @@ impl Object {
         match &self.kind {
             ObjectKind::Primitive(obj) => obj.transformation_inverse(),
             ObjectKind::Group(_) => Matrix::identity(),
-            ObjectKind::Csg(_) => todo!(),
+            ObjectKind::Csg(_) => unreachable!(),
         }
     }
 
@@ -251,7 +251,7 @@ impl Object {
         match &self.kind {
             ObjectKind::Primitive(obj) => obj.bounding_box(),
             ObjectKind::Group(group) => group.bounding_box().clone(),
-            ObjectKind::Csg(_) => todo!(),
+            ObjectKind::Csg(csg) => csg.bounding_box.clone(),
         }
     }
     pub fn as_group(&self) -> Option<&ObjectGroup> {

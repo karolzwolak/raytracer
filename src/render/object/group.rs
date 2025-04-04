@@ -177,11 +177,10 @@ impl ObjectGroup {
                         ObjectKind::Group(g) => {
                             g.bounding_box.intersection_time(world_ray).map(|t| (g, t))
                         }
-                        ObjectKind::Primitive(_) => {
+                        ObjectKind::Primitive(_) | ObjectKind::Csg(_) => {
                             child.intersect(world_ray, collector);
                             None
                         }
-                        ObjectKind::Csg(_) => todo!(),
                     }),
             );
         }

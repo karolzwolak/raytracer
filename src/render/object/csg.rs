@@ -2,11 +2,12 @@ use crate::{
     primitive::matrix::{Matrix, Transform},
     render::{
         intersection::{IntersectionCollection, IntersectionCollector},
+        material::Material,
         ray::Ray,
     },
 };
 
-use super::Object;
+use super::{bounding_box::BoundingBox, Object};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LeftRight {
@@ -52,9 +53,20 @@ pub struct CsgObject {
     pub operation: CsgOperation,
     pub left: Object,
     pub right: Object,
+    pub bounding_box: BoundingBox,
 }
 
 impl CsgObject {
+    pub fn new(operation: CsgOperation, left: Object, right: Object) -> Self {
+        let mut csg = CsgObject {
+            operation,
+            left,
+            right,
+            bounding_box: BoundingBox::empty(),
+        };
+        csg.recalculate_bbox();
+        csg
+    }
     fn filter_intersections(&self, xs: &mut IntersectionCollection) {
         *xs.hit_mut() = None; // we might remove the hit
         xs.sort(); // the intersections have to be sorted to easily determine the `inside_*`
@@ -91,6 +103,32 @@ impl CsgObject {
             collector.push(i);
         });
     }
+
+    pub fn set_material(&mut self, material: Material) {
+        self.left.set_material(material.clone());
+        self.right.set_material(material);
+    }
+}
+
+impl CsgObject {
+    fn recalculate_bbox(&mut self) {
+        self.bounding_box = BoundingBox::empty();
+        self.bounding_box
+            .add_bounding_box(&self.left.bounding_box());
+        self.bounding_box
+            .add_bounding_box(&self.right.bounding_box());
+    }
+    pub fn animate(&mut self, time: f64) {
+        self.left.animate(time);
+        self.right.animate(time);
+        self.recalculate_bbox();
+    }
+    pub fn animate_with(&mut self, time: f64, transform: Matrix) {
+        if transform != Matrix::identity() {
+            self.transform(&transform);
+        }
+        self.animate(time);
+    }
 }
 
 impl Transform for CsgObject {
@@ -113,11 +151,11 @@ mod tests {
 
     #[test]
     fn csg_creation() {
-        let _ = CsgObject {
-            operation: CsgOperation::Union,
-            left: Object::primitive_with_shape(Shape::Sphere),
-            right: Object::primitive_with_shape(Shape::Cube),
-        };
+        let _ = CsgObject::new(
+            CsgOperation::Union,
+            Object::primitive_with_shape(Shape::Sphere),
+            Object::primitive_with_shape(Shape::Cube),
+        );
     }
 
     fn bool_vec_to_intersection_kind(input: &[bool; 3]) -> CsgIntersectionLocation {
@@ -178,11 +216,11 @@ mod tests {
             (CsgOperation::Difference, [0., 1.]),
         ];
         expected.iter().copied().for_each(|(operation, expected)| {
-            let csg = CsgObject {
+            let csg = CsgObject::new(
                 operation,
-                left: Object::primitive_with_shape(Shape::Sphere),
-                right: Object::primitive_with_shape(Shape::Cube),
-            };
+                Object::primitive_with_shape(Shape::Sphere),
+                Object::primitive_with_shape(Shape::Cube),
+            );
             let sphere = &csg.left;
             let cube = &csg.right;
             let mut collection = IntersectionCollection::new(
@@ -208,11 +246,11 @@ mod tests {
 
     #[test]
     fn ray_misses_csg() {
-        let csg = CsgObject {
-            operation: CsgOperation::Union,
-            left: Object::primitive_with_shape(Shape::Sphere),
-            right: Object::primitive_with_shape(Shape::Cube),
-        };
+        let csg = CsgObject::new(
+            CsgOperation::Union,
+            Object::primitive_with_shape(Shape::Sphere),
+            Object::primitive_with_shape(Shape::Cube),
+        );
         let ray = Ray::new(Point::new(0., 2., -5.), Vector::new(0., 1., 0.));
         let mut collector = IntersectionCollector::default();
         csg.intersect(&ray, &mut collector);
@@ -221,14 +259,11 @@ mod tests {
 
     #[test]
     fn ray_hits_csg() {
-        let csg = CsgObject {
-            operation: CsgOperation::Union,
-            left: Object::primitive_with_shape(Shape::Sphere),
-            right: Object::primitive_with_transformation(
-                Shape::Sphere,
-                Matrix::translation(0., 0., 0.5),
-            ),
-        };
+        let csg = CsgObject::new(
+            CsgOperation::Union,
+            Object::primitive_with_shape(Shape::Sphere),
+            Object::primitive_with_transformation(Shape::Sphere, Matrix::translation(0., 0., 0.5)),
+        );
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let mut collector = IntersectionCollector::new_keep_redundant();
         csg.intersect(&ray, &mut collector);
