@@ -210,6 +210,12 @@ impl ObjectGroup {
     pub fn sah_cost(&self) -> f64 {
         self.bounding_box.half_area() * self.primitive_count as f64
     }
+
+    pub fn includes(&self, other: &Object) -> bool {
+        self.children.iter().any(|child| {
+            child.includes(other)
+        })
+    }
 }
 
 impl ObjectGroup {

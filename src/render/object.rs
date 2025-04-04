@@ -72,6 +72,16 @@ impl Transform for Object {
 }
 
 impl Object {
+    pub fn includes(&self, other: &Object) -> bool {
+        self == other
+            || match &self.kind {
+                ObjectKind::Group(group) => group.includes(other),
+                _ => false,
+            }
+    }
+}
+
+impl Object {
     pub fn animate(&mut self, time: f64) {
         let transform = self.animations.matrix_at(time);
         match &mut self.kind {
