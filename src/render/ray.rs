@@ -5,7 +5,7 @@ use crate::primitive::{
     vector::Vector,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Ray {
     origin: Point,
     direction: Vector,

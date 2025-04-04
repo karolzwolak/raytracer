@@ -181,6 +181,7 @@ impl ObjectGroup {
                             child.intersect(world_ray, collector);
                             None
                         }
+                        ObjectKind::Csg(_) => todo!(),
                     }),
             );
         }
@@ -212,9 +213,7 @@ impl ObjectGroup {
     }
 
     pub fn includes(&self, other: &Object) -> bool {
-        self.children.iter().any(|child| {
-            child.includes(other)
-        })
+        self.children.iter().any(|child| child.includes(other))
     }
 }
 

@@ -10,6 +10,8 @@ pub mod smooth_triangle;
 pub mod sphere;
 pub mod triangle;
 
+use csg::CsgObject;
+
 use crate::{
     approx_eq::ApproxEq,
     primitive::{
@@ -33,6 +35,7 @@ use super::{
 pub enum ObjectKind {
     Primitive(Box<PrimitiveObject>),
     Group(ObjectGroup),
+    Csg(Box<CsgObject>),
 }
 
 impl ObjectKind {
@@ -67,6 +70,7 @@ impl Transform for Object {
         match &mut self.kind {
             ObjectKind::Primitive(obj) => obj.transform(matrix),
             ObjectKind::Group(group) => group.transform(matrix),
+            ObjectKind::Csg(csg) => csg.transform(matrix),
         }
     }
 }
@@ -93,6 +97,7 @@ impl Object {
             ObjectKind::Group(group) => {
                 group.animate_with(time, transform);
             }
+            ObjectKind::Csg(_) => todo!(),
         }
     }
 }
@@ -141,6 +146,7 @@ impl Object {
         match &self.kind {
             ObjectKind::Primitive(obj) => obj.normal_vector_at_with_intersection(world_point, i),
             ObjectKind::Group(_) => todo!(),
+            ObjectKind::Csg(_) => todo!(),
         }
     }
 
@@ -151,6 +157,7 @@ impl Object {
                 obj.intersect(world_ray, collector);
             }
             ObjectKind::Group(group) => group.intersect(world_ray, collector),
+            ObjectKind::Csg(_) => todo!(),
         }
     }
 
@@ -183,6 +190,7 @@ impl Object {
         match &mut self.kind {
             ObjectKind::Primitive(obj) => obj.set_material(material),
             ObjectKind::Group(group) => group.set_material(material),
+            ObjectKind::Csg(_) => todo!(),
         }
     }
 
@@ -194,6 +202,7 @@ impl Object {
         match &self.kind {
             ObjectKind::Primitive(_) => 1,
             ObjectKind::Group(group) => group.primitive_count(),
+            ObjectKind::Csg(_) => todo!(),
         }
     }
 
@@ -226,6 +235,7 @@ impl Object {
                 .inverse()
                 .unwrap(),
             ObjectKind::Group(_) => Matrix::identity(),
+            ObjectKind::Csg(_) => todo!(),
         }
     }
 
@@ -233,6 +243,7 @@ impl Object {
         match &self.kind {
             ObjectKind::Primitive(obj) => obj.transformation_inverse(),
             ObjectKind::Group(_) => Matrix::identity(),
+            ObjectKind::Csg(_) => todo!(),
         }
     }
 
@@ -240,6 +251,7 @@ impl Object {
         match &self.kind {
             ObjectKind::Primitive(obj) => obj.bounding_box(),
             ObjectKind::Group(group) => group.bounding_box().clone(),
+            ObjectKind::Csg(_) => todo!(),
         }
     }
     pub fn as_group(&self) -> Option<&ObjectGroup> {

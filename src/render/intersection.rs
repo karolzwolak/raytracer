@@ -83,23 +83,24 @@ impl<'a> IntersectionCollector<'a> {
             }
         }
     }
+    pub fn push(&mut self, inter: Intersection<'a>) {
+        if !self.skip_intersection(inter.time(), inter) {
+            self.vec.push(inter);
+        }
+    }
     /// Will panic if next_object is None
     pub fn add(&mut self, time: f64) {
         let obj = self.get_next_object_expect();
         let inter = Intersection::new(time, obj);
 
-        if !self.skip_intersection(time, inter) {
-            self.vec.push(inter);
-        }
+        self.push(inter);
     }
     /// Will panic if next_object is None
     pub fn add_uv(&mut self, time: f64, u: f64, v: f64) {
         let obj = self.get_next_object_expect();
         let inter = Intersection::new_with_uv(time, obj, u, v);
 
-        if !self.skip_intersection(time, inter) {
-            self.vec.push(inter);
-        }
+        self.push(inter);
     }
     pub fn collect_sorted(mut self) -> Vec<Intersection<'a>> {
         self.vec
@@ -117,6 +118,10 @@ impl<'a> IntersectionCollector<'a> {
     }
     pub fn shadow_intensity(&self) -> Option<f64> {
         self.shadow_intensity.map(|intensity| intensity.min(1.))
+    }
+
+    pub fn vec(&self) -> &[Intersection<'a>] {
+        &self.vec
     }
 }
 
@@ -373,6 +378,14 @@ impl<'a> IntersectionCollection<'a> {
             .sort_unstable_by(|a, b| a.time().partial_cmp(&b.time()).unwrap());
         self.is_sorted = true;
     }
+    pub fn calculate_hit(&mut self) {
+        self.sort();
+        self.hit = self
+            .vec
+            .iter()
+            .find(|inter| inter.time().is_sign_positive())
+            .copied();
+    }
     pub fn new(
         ray: Ray,
         vec: Vec<Intersection<'a>>,
@@ -392,19 +405,14 @@ impl<'a> IntersectionCollection<'a> {
         res
     }
     pub fn new_with_sorted_vec(ray: Ray, vec: Vec<Intersection<'a>>) -> Self {
-        let mut hit = None;
-        for inter in &vec {
-            if inter.time().is_sign_positive() {
-                hit = Some(*inter);
-                break;
-            }
-        }
-        Self {
+        let mut res = Self {
             ray,
             vec,
-            hit,
+            hit: None,
             is_sorted: true,
-        }
+        };
+        res.calculate_hit();
+        res
     }
     pub fn from_times_and_obj(ray: Ray, times: Vec<f64>, object: &'a Object) -> Self {
         let xs: Vec<Intersection<'a>> = times
@@ -491,6 +499,22 @@ impl<'a> IntersectionCollection<'a> {
             return None;
         }
         Some(self.vec.iter().map(|inter| inter.time()).collect())
+    }
+
+    pub fn vec_mut(&mut self) -> &mut Vec<Intersection<'a>> {
+        &mut self.vec
+    }
+
+    pub fn hit_mut(&mut self) -> &mut Option<Intersection<'a>> {
+        &mut self.hit
+    }
+
+    pub fn into_vec(self) -> Vec<Intersection<'a>> {
+        self.vec
+    }
+
+    pub fn vec(&self) -> &[Intersection<'a>] {
+        &self.vec
     }
 }
 

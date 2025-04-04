@@ -5,7 +5,7 @@ use super::{
 use crate::approx_eq::ApproxEq;
 use std::ops::{self, Index};
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub struct Point {
     x: f64,
     y: f64,
