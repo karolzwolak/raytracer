@@ -17,9 +17,14 @@ use crate::{
         material::Material,
         obj_parser::ObjParser,
         object::{
-            cone::Cone, cylinder::Cylinder, group::ObjectGroup, shape::Shape,
-            smooth_triangle::SmoothTriangle, triangle::Triangle, Object, ObjectKind,
-            PrimitiveObject,
+            cone::Cone,
+            csg::{CsgObject, CsgOperation},
+            cylinder::Cylinder,
+            group::ObjectGroup,
+            shape::Shape,
+            smooth_triangle::SmoothTriangle,
+            triangle::Triangle,
+            Object, ObjectKind, PrimitiveObject,
         },
         pattern::Pattern,
         world::World,
@@ -422,23 +427,11 @@ impl<'a> YamlParser<'a> {
         if children_yaml.is_empty() {
             return Err(YamlParseError::EmptyGroup);
         }
-        let mut children = Vec::new();
-        for child in children_yaml {
-            match child.as_hash() {
-                Some(hash) => {
-                    let pair = hash.front().ok_or(YamlParseError::InvalidField)?;
-                    match pair {
-                        (Yaml::String(op), Yaml::String(kind)) if op == "add" => {
-                            let object = self.parse_object(child, kind)?;
-                            children.push(object);
-                        }
-                        _ => return Err(YamlParseError::UnexpectedValue),
-                    }
-                }
-                None => return Err(YamlParseError::UnexpectedValue),
-            }
-        }
-        Ok(ObjectGroup::new(children))
+        children_yaml
+            .iter()
+            .map(|yaml| self.parse_object(yaml))
+            .collect::<YamlParseResult<Vec<Object>>>()
+            .map(ObjectGroup::new)
     }
 
     fn parse_obj_model(&self, body: &Yaml) -> YamlParseResult<ObjectGroup> {
@@ -497,7 +490,26 @@ impl<'a> YamlParser<'a> {
         Ok(Animations::with_vec(vec))
     }
 
-    fn parse_object(&self, body: &Yaml, obj_kind: &str) -> YamlParseResult<Object> {
+    fn parse_object(&self, body: &Yaml) -> YamlParseResult<Object> {
+        let kind = body["add"].as_str().ok_or(YamlParseError::InvalidField)?;
+        self.parse_object_with_kind(body, kind)
+    }
+
+    fn parse_csg_object(&self, body: &Yaml) -> YamlParseResult<CsgObject> {
+        let left = self.parse_object(&body["left"])?;
+        let right = self.parse_object(&body["right"])?;
+        let operation = body["operation"]
+            .as_str()
+            .ok_or(YamlParseError::InvalidField)?
+            .parse::<CsgOperation>()
+            .map_err(|_| {
+                YamlParseError::UnknownVariant(body["operation"].as_str().unwrap().to_string())
+            })
+            .unwrap();
+        Ok(CsgObject::new(operation, left, right))
+    }
+
+    fn parse_object_with_kind(&self, body: &Yaml, obj_kind: &str) -> YamlParseResult<Object> {
         let animations = match &body["animate"] {
             Yaml::BadValue => Animations::empty(),
             val => self.parse_animations(val)?,
@@ -506,20 +518,24 @@ impl<'a> YamlParser<'a> {
         let transformation = self.parse_transformation(&body["transform"])?;
 
         let shape = match obj_kind {
-            "group" | "obj" => {
-                let mut res = match obj_kind {
-                    "group" => self.parse_group(body),
-                    "obj" => self.parse_obj_model(body),
+            "group" | "obj" | "csg" => {
+                let kind = match obj_kind {
+                    "group" => self.parse_group(body).map(ObjectKind::Group),
+                    "obj" => self.parse_obj_model(body).map(ObjectKind::Group),
+                    "csg" => self
+                        .parse_csg_object(body)
+                        .map(Box::new)
+                        .map(ObjectKind::Csg),
                     _ => unreachable!(),
                 }?;
+                let mut res = Object::animated(kind, animations);
                 if material != Material::default() {
                     res.set_material(material);
                 }
                 if transformation != Matrix::identity() {
                     res.transform(&transformation);
                 }
-                let group = ObjectKind::group(res);
-                return Ok(Object::animated(group, animations));
+                return Ok(res);
             }
             "sphere" => Shape::Sphere,
             "cube" => Shape::Cube,
@@ -559,7 +575,7 @@ impl<'a> YamlParser<'a> {
                 if let Some(def) = self.defines.get(name) {
                     let body = self.merge_use_define(name, def, body)?;
                     let what = &body["add"].as_str().ok_or(YamlParseError::InvalidField)?;
-                    return self.parse_object(&body, what);
+                    return self.parse_object_with_kind(&body, what);
                 }
                 return Err(YamlParseError::InvalidField);
             }
@@ -603,8 +619,8 @@ impl<'a> YamlParser<'a> {
                 self.parse_world(body)?;
             }
             "group" | "obj" | "sphere" | "cube" | "plane" | "cylinder" | "cone" | "triangle"
-            | "smooth-triangle" => {
-                let object = self.parse_object(body, what)?;
+            | "smooth-triangle" | "csg" => {
+                let object = self.parse_object_with_kind(body, what)?;
                 self.world.add_obj(object);
             }
             name => {
@@ -1564,5 +1580,52 @@ mod tests {
                 .animations()
                 .direction
         });
+    }
+    #[test]
+    fn parse_csg() {
+        let source = r#"
+- add: csg
+  operation: union
+  left:
+    add: sphere
+  right:
+    add: cube
+    transform:
+      - [translate, 1, 2, 3]
+"#;
+        let kind = ObjectKind::Csg(Box::new(CsgObject::new(
+            CsgOperation::Union,
+            Object::primitive_with_shape(Shape::Sphere),
+            Object::primitive_with_transformation(Shape::Cube, Matrix::translation(1., 2., 3.)),
+        )));
+        let expected_object = Object::animated(kind, Animations::default());
+        let (world, _) = parse(source);
+        assert_eq!(world.objects(), vec![expected_object]);
+    }
+
+    #[test]
+    fn parse_csg_operations() {
+        let source = r#"
+- add: csg
+  {}
+  left:
+    add: sphere
+  right:
+    add: cube
+"#;
+        test_field(
+            source,
+            "operation",
+            vec!["union", "intersection", "difference"],
+            vec![
+                CsgOperation::Union,
+                CsgOperation::Intersection,
+                CsgOperation::Difference,
+            ],
+            |obj| match obj.kind() {
+                ObjectKind::Csg(csg) => csg.operation,
+                _ => panic!("Expected CSG object"),
+            },
+        );
     }
 }

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     primitive::matrix::{Matrix, Transform},
     render::{
@@ -27,6 +29,19 @@ pub enum CsgOperation {
     Union,
     Intersection,
     Difference,
+}
+
+impl FromStr for CsgOperation {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "union" => Ok(CsgOperation::Union),
+            "intersection" => Ok(CsgOperation::Intersection),
+            "difference" => Ok(CsgOperation::Difference),
+            _ => Err(format!("Invalid CSG operation: {}", s)),
+        }
+    }
 }
 
 impl CsgOperation {
