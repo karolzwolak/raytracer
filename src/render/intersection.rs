@@ -123,6 +123,10 @@ impl<'a> IntersectionCollector<'a> {
     pub fn vec(&self) -> &[Intersection<'a>] {
         &self.vec
     }
+
+    pub fn skip_reduntant(&self) -> bool {
+        self.skip_reduntant
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

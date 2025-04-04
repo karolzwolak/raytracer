@@ -157,7 +157,7 @@ impl Object {
                 obj.intersect(world_ray, collector);
             }
             ObjectKind::Group(group) => group.intersect(world_ray, collector),
-            ObjectKind::Csg(_) => todo!(),
+            ObjectKind::Csg(csg) => csg.intersect(world_ray, collector),
         }
     }
 

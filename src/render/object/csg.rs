@@ -81,7 +81,7 @@ impl CsgObject {
         // note: the collection is temporary so we don't care about calculating hit
     }
     pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
-        let mut temp_collector = IntersectionCollector::default();
+        let mut temp_collector = IntersectionCollector::new(None, collector.skip_reduntant());
         self.left.intersect(world_ray, &mut temp_collector);
         self.right.intersect(world_ray, &mut temp_collector);
         let mut collection =
@@ -102,6 +102,9 @@ impl Transform for CsgObject {
 
 #[cfg(test)]
 mod tests {
+    use crate::primitive::point::Point;
+    use crate::primitive::tuple::Tuple;
+    use crate::primitive::vector::Vector;
     use crate::render::intersection::Intersection;
     use crate::render::object::shape::Shape;
 
@@ -201,5 +204,42 @@ mod tests {
                 .collect::<Vec<_>>();
             assert_eq!(times, expected);
         })
+    }
+
+    #[test]
+    fn ray_misses_csg() {
+        let csg = CsgObject {
+            operation: CsgOperation::Union,
+            left: Object::primitive_with_shape(Shape::Sphere),
+            right: Object::primitive_with_shape(Shape::Cube),
+        };
+        let ray = Ray::new(Point::new(0., 2., -5.), Vector::new(0., 1., 0.));
+        let mut collector = IntersectionCollector::default();
+        csg.intersect(&ray, &mut collector);
+        assert_eq!(collector.vec(), vec![]);
+    }
+
+    #[test]
+    fn ray_hits_csg() {
+        let csg = CsgObject {
+            operation: CsgOperation::Union,
+            left: Object::primitive_with_shape(Shape::Sphere),
+            right: Object::primitive_with_transformation(
+                Shape::Sphere,
+                Matrix::translation(0., 0., 0.5),
+            ),
+        };
+        let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
+        let mut collector = IntersectionCollector::new_keep_redundant();
+        csg.intersect(&ray, &mut collector);
+        assert_eq!(collector.vec().len(), 2);
+        assert_eq!(
+            collector
+                .vec()
+                .iter()
+                .map(|i| (i.time(), i.object()))
+                .collect::<Vec<_>>(),
+            vec![(4.0, &csg.left), (6.5, &csg.right),]
+        );
     }
 }
