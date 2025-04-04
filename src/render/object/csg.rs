@@ -150,6 +150,7 @@ impl Transform for CsgObject {
     fn transform(&mut self, matrix: &Matrix) {
         self.left.transform(matrix);
         self.right.transform(matrix);
+        self.recalculate_bbox();
     }
 }
 
