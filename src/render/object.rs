@@ -69,12 +69,6 @@ impl Transform for Object {
             ObjectKind::Group(group) => group.transform(matrix),
         }
     }
-
-    fn transform_new(&self, matrix: &Matrix) -> Self {
-        let mut new = self.clone();
-        new.transform(matrix);
-        new
-    }
 }
 
 impl Object {
@@ -380,12 +374,6 @@ impl Transform for PrimitiveObject {
                 self.transformation_inverse = Some(matrix.inverse().unwrap());
             }
         }
-    }
-
-    fn transform_new(&self, matrix: &Matrix) -> Self {
-        let mut new = self.clone();
-        new.transform(matrix);
-        new
     }
 }
 

@@ -246,12 +246,6 @@ impl Transform for ObjectGroup {
         }
         self.bounding_box.transform(matrix);
     }
-
-    fn transform_new(&self, matrix: &Matrix) -> Self {
-        let mut new = self.clone();
-        new.transform(matrix);
-        new
-    }
 }
 
 #[cfg(test)]

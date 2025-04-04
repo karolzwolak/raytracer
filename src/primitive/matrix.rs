@@ -525,9 +525,13 @@ where
     }
 }
 
-pub trait Transform: Sized {
+pub trait Transform: Sized + Clone{
     fn transform(&mut self, matrix: &Matrix);
-    fn transform_new(&self, matrix: &Matrix) -> Self;
+    fn transform_new(&self, matrix: &Matrix) -> Self{
+        let mut copy = self.clone();
+        copy.transform(matrix);
+        copy
+    }
 
     fn transformed(self) -> Self {
         self
