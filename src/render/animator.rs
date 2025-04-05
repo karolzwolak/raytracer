@@ -133,7 +133,12 @@ impl Animator {
     fn render_webp(&self, mut file: File) {
         let width = self.camera.target_width() as u32;
         let height = self.camera.target_height() as u32;
-        let config = WebPConfig::new().unwrap();
+        let mut config =
+            WebPConfig::new_with_preset(libwebp_sys::WebPPreset::WEBP_PRESET_PICTURE, 95.).unwrap();
+        config.method = 6;
+        config.segments = 1;
+        config.filter_strength = 10;
+        config.autofilter = 0;
         let mut encoder = webp::AnimEncoder::new(width, height, &config);
 
         let mut frame_buffer = Vec::with_capacity(self.frame_count() as usize);

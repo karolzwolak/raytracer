@@ -20,6 +20,7 @@ A high-performance raytracer written in Rust that renders 3D scenes defined in Y
 | -------------------- | ------------------------------------------------------------------ |
 | Cover image          | ![Cover image](samples/renders/cover.png)                          |
 | Rotating dragon      | ![Rotating dragon](samples/renders/rotating_dragon.webp)           |
+| Animated lens        | ![Animated lens](samples/renders/csg.webp)                         |
 | Animated refractions | ![Animated refractions](samples/renders/animated_refractions.webp) |
 | Refraction example   | ![Refraction chapter](samples/renders/refractions.png)             |
 | Cubes scene          | ![Cubes chapter](samples/renders/cubes.png)                        |

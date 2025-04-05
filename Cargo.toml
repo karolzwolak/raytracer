@@ -16,6 +16,7 @@ codegen-units = 1
 clap = { version = "4.5.31", features = ["derive"] }
 gif = "0.13.1"
 indicatif = { version = "0.17.11", features = ["rayon"] }
+libwebp-sys = "0.9.6"
 minimp4 = "0.1.2"
 openh264 = "0.8.0"
 png = "0.17.11"

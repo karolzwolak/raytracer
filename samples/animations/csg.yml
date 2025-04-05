@@ -43,11 +43,11 @@
     - duration: 1
       direction: alternate
       transform:
-        - [translate, 0, 1, 0]
+        - [translate, 0, 0.75, 0]
   transform:
     - [rotate-x, -FRAC_PI_6]
     - [scale-uniform, 3]
-    - [translate, 0, 0.5, 0.5]
+    - [translate, 0, 0.4, 0.5]
   operation: intersection
   right:
     add: sphere
