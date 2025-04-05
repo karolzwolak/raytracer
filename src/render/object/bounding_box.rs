@@ -3,7 +3,7 @@ use crate::{
     primitive::{
         matrix::{Matrix, Transform},
         point::Point,
-        tuple::Tuple,
+        tuple::{Axis, Tuple},
         vector::Vector,
     },
     render::{
@@ -15,6 +15,10 @@ use crate::{
         world::World,
     },
 };
+
+pub trait Bounded {
+    fn bounding_box(&self) -> &BoundingBox;
+}
 
 #[derive(Clone, Debug, PartialEq)]
 /// Axis-aligned bounding box
@@ -176,26 +180,45 @@ impl BoundingBox {
         let ray = Ray::new(point, (self.center() - point).normalize());
         self.intersection_time(&ray)
     }
+
+    // Returns Vector for easy and explicit access to each axis
+    pub fn size(&self) -> Vector {
+        self.max - self.min
+    }
+
+    pub fn longest_axis(&self) -> (Axis, f64) {
+        let size = self.size();
+        let longest_len = size.x().max(size.y()).max(size.z());
+
+        let axis = match longest_len {
+            len if len == size.x() => Axis::X,
+            len if len == size.y() => Axis::Y,
+            len if len == size.z() => Axis::Z,
+            _ => unreachable!(),
+        };
+
+        (axis, longest_len)
+    }
+
     pub fn split_along_longest_axis(&self) -> (BoundingBox, BoundingBox) {
-        let x_len = self.max.x() - self.min.x();
-        let y_len = self.max.y() - self.min.y();
-        let z_len = self.max.z() - self.min.z();
-
-        let longest_axis = x_len.max(y_len).max(z_len);
-
         let (mut x0, mut y0, mut z0) = (self.min.x(), self.min.y(), self.min.z());
         let (mut x1, mut y1, mut z1) = (self.max.x(), self.max.y(), self.max.z());
 
-        if longest_axis.approx_eq(&x_len) {
-            x0 += x_len / 2.;
-            x1 = x0;
-        } else if longest_axis.approx_eq(&y_len) {
-            y0 += y_len / 2.;
-            y1 = y0;
-        } else {
-            z0 += z_len / 2.;
-            z1 = z0;
-        }
+        let (axis, len) = self.longest_axis();
+        match axis {
+            Axis::X => {
+                x0 += len / 2.;
+                x1 = x0;
+            }
+            Axis::Y => {
+                y0 += len / 2.;
+                y1 = y0;
+            }
+            Axis::Z => {
+                z0 += len / 2.;
+                z1 = z0;
+            }
+        };
         let mid_min = Point::new(x0, y0, z0);
         let mid_max = Point::new(x1, y1, z1);
         (

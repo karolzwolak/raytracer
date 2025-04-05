@@ -1,4 +1,4 @@
-use crate::approx_eq::ApproxEq;
+use crate::{approx_eq::ApproxEq, render::object::bounding_box::Bounded};
 use std::ops;
 
 use super::{
@@ -37,6 +37,67 @@ where
         iter.into_iter().fold(Matrix::identity(), |acc, m| {
             acc.transform_new(&Matrix::from(m))
         })
+    }
+}
+
+/// An object that can be transformed via LocalTransformation
+pub trait LocalTransform: Transform + Bounded {}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum LocalTransformation {
+    /// Translates the object so it's center is at origin
+    Center,
+    /// Translates the object so it's center is at origin plus nudges it in the direction of the
+    /// axis such that it's bounding box is sitting at the axis
+    CenterAt(Axis),
+    /// Scales the object so that it's bounding box is a cube of side 1
+    NormalizeAllAxes,
+    /// Scales the object uniformly in all axes such that lenght of the longest side becomes 1
+    NormalizeToLongestAxis,
+    /// Pivots the object along it's local axis
+    Pivot(Axis, f64),
+    /// Regular transformation
+    Transformation(Transformation),
+}
+
+impl LocalTransformation {
+    pub fn into_matrix<T: LocalTransform>(&self, local_obj: &T) -> Matrix {
+        let bbox = local_obj.bounding_box();
+        match self {
+            Self::Center => {
+                let center = bbox.center();
+                Matrix::translation(-center.x(), -center.y(), -center.z())
+            }
+            Self::CenterAt(axis) => {
+                let nudge = match axis {
+                    Axis::X => Point::new(bbox.min.x(), 0., 0.),
+                    Axis::Y => Point::new(0., bbox.min.y(), 0.),
+                    Axis::Z => Point::new(0., 0., bbox.min.z()),
+                };
+                let translate = bbox.center() - nudge;
+                Matrix::translation(-translate.x(), -translate.y(), -translate.z())
+            }
+            Self::NormalizeToLongestAxis => {
+                let (_, len) = bbox.longest_axis();
+                Matrix::scaling_uniform(1. / len)
+            }
+            Self::NormalizeAllAxes => {
+                let size = bbox.size();
+                Matrix::scaling(1. / size.x(), 1. / size.y(), 1. / size.z())
+            }
+            // Pivoting is just translating to origin, rotating and then translating in back
+            Self::Pivot(axis, radians) => {
+                let rotation = Matrix::from(Transformation::Rotation(*axis, *radians));
+                let center = bbox.center();
+                let put_back = Matrix::translation(center.x(), center.y(), center.z());
+                let mut res = LocalTransformation::Center.into_matrix(local_obj);
+                res.transform(&rotation);
+                res.transform(&put_back);
+                res
+            }
+
+            Self::Transformation(t) => Matrix::from(*t),
+        }
     }
 }
 
@@ -525,9 +586,9 @@ where
     }
 }
 
-pub trait Transform: Sized + Clone{
+pub trait Transform: Sized + Clone {
     fn transform(&mut self, matrix: &Matrix);
-    fn transform_new(&self, matrix: &Matrix) -> Self{
+    fn transform_new(&self, matrix: &Matrix) -> Self {
         let mut copy = self.clone();
         copy.transform(matrix);
         copy
