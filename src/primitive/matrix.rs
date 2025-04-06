@@ -2,7 +2,7 @@ use crate::{
     approx_eq::ApproxEq,
     render::{
         animations::{Base, Interpolate, SelfInterpolate},
-        object::bounding_box::Bounded,
+        object::bounding_box::{Bounded, BoundingBox},
     },
 };
 use std::ops;
@@ -145,6 +145,52 @@ mod local_transform_tests {
         assert_approx_eq_low_prec!(new_min, Point::new(2., 4., 6.));
         assert_approx_eq_low_prec!(new_max, Point::new(5., 7., 9.));
     }
+
+    #[test]
+    fn local_scale_keeps_center() {
+        let obj = bbox((1., 2., 3.), (4., 5., 6.));
+
+        let transform = LocalTransformation::LocalScale(-1., 2., -3.);
+
+        let scaled = obj.transform_new(&transform.interpolated_with(&obj, 1.).into());
+
+        assert_eq!(obj.center(), scaled.center());
+    }
+
+    #[test]
+    fn local_transformations() {
+        let bbox = bbox((0., 0., 0.), (2., 4., 8.));
+
+        let local_transformations = LocalTransformations::from(vec![
+            LocalTransformation::Center,
+            LocalTransformation::Transformation(Transformation::Translation(1., 2., 3.)),
+            LocalTransformation::Pivot(Axis::X, std::f64::consts::FRAC_PI_2),
+            LocalTransformation::NormalizeToLongestAxis,
+            LocalTransformation::NormalizeAllAxes,
+            LocalTransformation::TranslateAbove(Axis::X),
+            LocalTransformation::TranslateBelow(Axis::Y),
+            LocalTransformation::LocalScale(1., -2., 3.),
+        ]);
+        let expected = Transformations::from(vec![
+            Transformation::Translation(-1., -2., -4.),
+            Transformation::Translation(1., 2., 3.),
+            Transformation::Translation(-1., -2., -3.),
+            Transformation::Rotation(Axis::X, std::f64::consts::FRAC_PI_2),
+            Transformation::Translation(1., 2., 3.),
+            Transformation::Translation(-1., -2., -3.),
+            Transformation::scaling_uniform(1. / 8.),
+            Transformation::Translation(1., 2., 3.),
+            Transformation::Translation(-1., -2., -3.),
+            Transformation::Scaling(4., 1., 2.),
+            Transformation::Translation(1., 2., 3.),
+            Transformation::Translation(-0.5, 0., 0.),
+            Transformation::Translation(0., -2.5, 0.),
+            Transformation::Translation(-0.5, 0.5, -3.),
+            Transformation::Scaling(1., -2., 3.),
+            Transformation::Translation(0.5, -0.5, 3.),
+        ]);
+        assert_eq!(local_transformations.interpolated_with(&bbox, 1.), expected);
+    }
 }
 
 impl Transform for Matrix {
@@ -193,6 +239,8 @@ pub enum LocalTransformation {
     NormalizeToLongestAxis,
     /// Pivots the object along it's local axis
     Pivot(Axis, f64),
+    /// Scales the object without moving it's center
+    LocalScale(f64, f64, f64),
     /// Regular transformation
     Transformation(Transformation),
 }
@@ -208,6 +256,18 @@ where
 }
 
 impl LocalTransformation {
+    // Local transform is just translating to origin, transforming and then translating back
+    fn local_transform(
+        &self,
+        bbox: &BoundingBox,
+        transform: Transformation,
+    ) -> Vec<Transformation> {
+        let mut res = LocalTransformation::Center.into_transformations(bbox);
+        let put_back = res[0].interpolated(-1.);
+        res.push(transform);
+        res.push(put_back);
+        res
+    }
     // Because pivoting is a few transformations combined and the fact that matrices are not
     // interpolatable we are opt to return a type which is interpolatable
     pub fn into_transformations<T: LocalTransform>(&self, local_obj: &T) -> Vec<Transformation> {
@@ -237,23 +297,21 @@ impl LocalTransformation {
             }
             Self::NormalizeToLongestAxis => {
                 let (_, len) = bbox.longest_axis();
-                vec![Transformation::scaling_uniform(1. / len)]
+                self.local_transform(bbox, Transformation::scaling_uniform(1. / len))
             }
             Self::NormalizeAllAxes => {
                 let size = bbox.size();
-                vec![Transformation::Scaling(
-                    1. / size.x(),
-                    1. / size.y(),
-                    1. / size.z(),
-                )]
+                self.local_transform(
+                    bbox,
+                    Transformation::Scaling(1. / size.x(), 1. / size.y(), 1. / size.z()),
+                )
             }
-            // Pivoting is just translating to origin, rotating and then translating in back
             Self::Pivot(axis, radians) => {
-                let mut res = LocalTransformation::Center.into_transformations(local_obj);
-                let put_back = res[0].interpolated(-1.);
-                res.push(Transformation::Rotation(*axis, *radians));
-                res.push(put_back);
-                res
+                self.local_transform(bbox, Transformation::Rotation(*axis, *radians))
+            }
+
+            Self::LocalScale(x, y, z) => {
+                self.local_transform(bbox, Transformation::Scaling(*x, *y, *z))
             }
 
             Self::Transformation(t) => vec![*t],
@@ -309,12 +367,77 @@ impl Base for Transformation {
     }
 }
 
+pub struct LocalTransformations {
+    data: Vec<LocalTransformation>,
+}
+
+impl LocalTransformations {
+    pub fn new() -> Self {
+        Self { data: Vec::new() }
+    }
+    pub fn with_vec(vec: Vec<LocalTransformation>) -> Self {
+        Self { data: vec }
+    }
+    pub fn vec(&self) -> &[LocalTransformation] {
+        &self.data
+    }
+    pub fn push(&mut self, t: LocalTransformation) {
+        self.data.push(t);
+    }
+    pub fn extend(&mut self, other: &Self) {
+        self.data.extend(other.data.iter().copied());
+    }
+}
+
+impl From<Vec<LocalTransformation>> for LocalTransformations {
+    fn from(value: Vec<LocalTransformation>) -> Self {
+        Self::with_vec(value)
+    }
+}
+
+impl<T: Bounded> Interpolate<T, Transformations> for LocalTransformations {
+    fn interpolated_with(&self, with: &T, at: f64) -> Transformations {
+        let mut bbox = with.bounding_box().clone();
+        let mut buf_matrix = Matrix::identity();
+
+        // Because the local transformations depend on the current state of the object, we simulate
+        // transformations done to it. To optimize, we limit the transformations of bounding boxes,
+        // and instead just transform the matrix, and lazily calculate the actual bbox only upon
+        // encountering a local transform.
+        Transformations::with_vec(
+            self.data
+                .iter()
+                .flat_map(|t| {
+                    match t {
+                        LocalTransformation::Transformation(_) => {}
+                        _ => {
+                            bbox.transform(&buf_matrix);
+                            buf_matrix = Matrix::identity();
+                        }
+                    }
+                    let res = t.interpolated_with(&bbox, at);
+                    let m = Matrix::from(&res[..]);
+                    buf_matrix.transform(&m);
+
+                    res
+                })
+                .collect(),
+        )
+    }
+}
+
+impl Default for LocalTransformations {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
-pub struct TransformationVec {
+pub struct Transformations {
     data: Vec<Transformation>,
 }
 
-impl TransformationVec {
+impl Transformations {
     pub fn new() -> Self {
         Self { data: Vec::new() }
     }
@@ -332,31 +455,31 @@ impl TransformationVec {
     }
 }
 
-impl SelfInterpolate for TransformationVec {
+impl SelfInterpolate for Transformations {
     fn interpolated(&self, at: f64) -> Self {
         Self::with_vec(self.data.interpolated(at))
     }
 }
 
-impl Default for TransformationVec {
+impl Default for Transformations {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl From<Vec<Transformation>> for TransformationVec {
+impl From<Vec<Transformation>> for Transformations {
     fn from(val: Vec<Transformation>) -> Self {
         Self { data: val }
     }
 }
 
-impl From<&[Transformation]> for TransformationVec {
+impl From<&[Transformation]> for Transformations {
     fn from(val: &[Transformation]) -> Self {
         Self { data: val.to_vec() }
     }
 }
-impl From<&TransformationVec> for Matrix {
-    fn from(val: &TransformationVec) -> Self {
+impl From<&Transformations> for Matrix {
+    fn from(val: &Transformations) -> Self {
         Matrix::from(val.vec())
     }
 }
@@ -375,8 +498,8 @@ impl From<&[Transformation]> for Matrix {
     }
 }
 
-impl From<TransformationVec> for Vec<Transformation> {
-    fn from(val: TransformationVec) -> Self {
+impl From<Transformations> for Vec<Transformation> {
+    fn from(val: Transformations) -> Self {
         val.data
     }
 }
@@ -1265,7 +1388,7 @@ mod tests {
 
     #[test]
     fn transformation_vec_to_matrix() {
-        let transformations = TransformationVec::from(vec![
+        let transformations = Transformations::from(vec![
             Transformation::Scaling(2., -3.5, 4.),
             Transformation::Rotation(Axis::X, consts::FRAC_PI_2),
             Transformation::Shearing(0., 1., 2., -3., 4., 5.),
@@ -1286,7 +1409,7 @@ mod tests {
 
     #[test]
     fn default_interpolate() {
-        let transforms = TransformationVec::from(vec![
+        let transforms = Transformations::from(vec![
             Transformation::Scaling(1., 2., 3.).base(),
             Transformation::Translation(4., 5., 6.).base(),
             Transformation::Rotation(Axis::X, consts::FRAC_PI_2).base(),
@@ -1300,14 +1423,14 @@ mod tests {
 
     #[test]
     fn interpolate_transform() {
-        let transforms = TransformationVec::from(vec![
+        let transforms = Transformations::from(vec![
             Transformation::Scaling(1., 2., 3.),
             Transformation::Translation(4., 5., 6.),
             Transformation::Rotation(Axis::X, consts::FRAC_PI_2),
             Transformation::Shearing(1., 2., 3., 4., 5., 6.),
         ]);
         let factor = 0.25;
-        let expected = TransformationVec::from(vec![
+        let expected = Transformations::from(vec![
             Transformation::Scaling(1., 1.25, 1.5),
             Transformation::Translation(1., 1.25, 1.5),
             Transformation::Rotation(Axis::X, consts::FRAC_PI_2 * 0.25),

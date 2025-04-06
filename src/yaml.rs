@@ -4,7 +4,7 @@ use saphyr::Yaml;
 
 use crate::{
     primitive::{
-        matrix::{Matrix, Transform, Transformation, TransformationVec},
+        matrix::{Matrix, Transform, Transformation, Transformations},
         point::Point,
         tuple::{Axis, Tuple},
         vector::Vector,
@@ -390,9 +390,9 @@ impl<'a> YamlParser<'a> {
         Ok(Matrix::from(&self.parse_transformations(body)?))
     }
 
-    fn parse_transformations(&self, body: &Yaml) -> YamlParseResult<TransformationVec> {
+    fn parse_transformations(&self, body: &Yaml) -> YamlParseResult<Transformations> {
         match body {
-            Yaml::BadValue => Ok(TransformationVec::new()),
+            Yaml::BadValue => Ok(Transformations::new()),
             Yaml::String(name) => {
                 let transform = self
                     .defines
@@ -401,7 +401,7 @@ impl<'a> YamlParser<'a> {
                 self.parse_transformations(transform)
             }
             Yaml::Array(arr) => {
-                let mut res = TransformationVec::new();
+                let mut res = Transformations::new();
                 for val in arr {
                     match val {
                         Yaml::String(name) => {
@@ -1526,7 +1526,7 @@ mod tests {
                 AnimationTiming::Linear,
                 AnimationRepeat::Repeat(1),
             ),
-            TransformationVec::from(vec![
+            Transformations::from(vec![
                 Transformation::Translation(1., -2., 10.),
                 Transformation::Rotation(Axis::Y, -std::f64::consts::FRAC_PI_3),
             ]),

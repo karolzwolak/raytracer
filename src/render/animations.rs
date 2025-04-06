@@ -2,7 +2,7 @@ use std::{ops, str::FromStr};
 
 use crate::{
     approx_eq::ApproxEq,
-    primitive::matrix::{Matrix, TransformationVec},
+    primitive::matrix::{Matrix, Transformations},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -178,11 +178,11 @@ impl Animation {
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransformAnimation {
     animation: Animation,
-    transformations: TransformationVec,
+    transformations: Transformations,
 }
 
 impl TransformAnimation {
-    pub fn new(animation: Animation, transformations: TransformationVec) -> Self {
+    pub fn new(animation: Animation, transformations: Transformations) -> Self {
         Self {
             animation,
             transformations,
@@ -318,7 +318,7 @@ mod tests {
     fn transform_animation() -> TransformAnimation {
         TransformAnimation::new(
             NORMAL_ANIMATION,
-            TransformationVec::from(&TRANSFORMATIONS[..]),
+            Transformations::from(&TRANSFORMATIONS[..]),
         )
     }
 
@@ -412,7 +412,7 @@ mod tests {
 
     #[test]
     fn animation_interpolate() {
-        let transforms = TransformationVec::from(vec![
+        let transforms = Transformations::from(vec![
             Transformation::Translation(12., 12., 12.),
             Transformation::Scaling(2., 2., 2.),
         ]);
