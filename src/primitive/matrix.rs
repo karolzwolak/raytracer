@@ -1,7 +1,7 @@
 use crate::{
     approx_eq::ApproxEq,
     render::{
-        animations::{Base, SelfInterpolate},
+        animations::{Base, Interpolate, SelfInterpolate},
         object::bounding_box::Bounded,
     },
 };
@@ -68,13 +68,29 @@ pub enum LocalTransformation {
     Transformation(Transformation),
 }
 
+impl<T> Interpolate<T, Vec<Transformation>> for LocalTransformation
+where
+    T: LocalTransform,
+{
+    fn interpolated_with(&self, local_obj: &T, at: f64) -> Vec<Transformation> {
+        let transformations = self.into_transformations(local_obj);
+        transformations.interpolated(at)
+    }
+}
+
 impl LocalTransformation {
-    pub fn into_matrix<T: LocalTransform>(&self, local_obj: &T) -> Matrix {
+    // Because pivoting is a few transformations combined and the fact that matrices are not
+    // interpolatable we are opt to return a type which is interpolatable
+    pub fn into_transformations<T: LocalTransform>(&self, local_obj: &T) -> Vec<Transformation> {
         let bbox = local_obj.bounding_box();
         match self {
             Self::Center => {
                 let center = bbox.center();
-                Matrix::translation(-center.x(), -center.y(), -center.z())
+                vec![Transformation::Translation(
+                    -center.x(),
+                    -center.y(),
+                    -center.z(),
+                )]
             }
             Self::CenterAt(axis) => {
                 let nudge = match axis {
@@ -83,28 +99,34 @@ impl LocalTransformation {
                     Axis::Z => Point::new(0., 0., bbox.min.z()),
                 };
                 let translate = bbox.center() - nudge;
-                Matrix::translation(-translate.x(), -translate.y(), -translate.z())
+                vec![Transformation::Translation(
+                    -translate.x(),
+                    -translate.y(),
+                    -translate.z(),
+                )]
             }
             Self::NormalizeToLongestAxis => {
                 let (_, len) = bbox.longest_axis();
-                Matrix::scaling_uniform(1. / len)
+                vec![Transformation::scaling_uniform(1. / len)]
             }
             Self::NormalizeAllAxes => {
                 let size = bbox.size();
-                Matrix::scaling(1. / size.x(), 1. / size.y(), 1. / size.z())
+                vec![Transformation::Scaling(
+                    1. / size.x(),
+                    1. / size.y(),
+                    1. / size.z(),
+                )]
             }
             // Pivoting is just translating to origin, rotating and then translating in back
             Self::Pivot(axis, radians) => {
-                let rotation = Matrix::from(Transformation::Rotation(*axis, *radians));
-                let center = bbox.center();
-                let put_back = Matrix::translation(center.x(), center.y(), center.z());
-                let mut res = LocalTransformation::Center.into_matrix(local_obj);
-                res.transform(&rotation);
-                res.transform(&put_back);
+                let mut res = LocalTransformation::Center.into_transformations(local_obj);
+                let put_back = res[0].interpolated(-1.);
+                res.push(Transformation::Rotation(*axis, *radians));
+                res.push(put_back);
                 res
             }
 
-            Self::Transformation(t) => Matrix::from(*t),
+            Self::Transformation(t) => vec![*t],
         }
     }
 }
