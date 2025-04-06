@@ -27,6 +27,12 @@ pub struct BoundingBox {
     pub max: Point,
 }
 
+impl Bounded for BoundingBox {
+    fn bounding_box(&self) -> &BoundingBox {
+        self
+    }
+}
+
 impl Transform for BoundingBox {
     fn transform(&mut self, matrix: &Matrix) {
         *self = self.transform_new(matrix);
