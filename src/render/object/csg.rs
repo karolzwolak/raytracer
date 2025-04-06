@@ -9,7 +9,10 @@ use crate::{
     },
 };
 
-use super::{bounding_box::BoundingBox, Object};
+use super::{
+    bounding_box::{Bounded, BoundingBox},
+    Object,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LeftRight {
@@ -128,10 +131,9 @@ impl CsgObject {
 impl CsgObject {
     fn recalculate_bbox(&mut self) {
         self.bounding_box = BoundingBox::empty();
+        self.bounding_box.add_bounding_box(self.left.bounding_box());
         self.bounding_box
-            .add_bounding_box(&self.left.bounding_box());
-        self.bounding_box
-            .add_bounding_box(&self.right.bounding_box());
+            .add_bounding_box(self.right.bounding_box());
     }
     pub fn animate(&mut self, time: f64) {
         self.left.animate(time);
@@ -151,6 +153,12 @@ impl Transform for CsgObject {
         self.left.transform(matrix);
         self.right.transform(matrix);
         self.recalculate_bbox();
+    }
+}
+
+impl Bounded for CsgObject {
+    fn bounding_box(&self) -> &BoundingBox {
+        &self.bounding_box
     }
 }
 

@@ -1,4 +1,7 @@
-use super::{bounding_box::BoundingBox, Object, ObjectKind};
+use super::{
+    bounding_box::{Bounded, BoundingBox},
+    Object, ObjectKind,
+};
 use crate::{
     primitive::{
         matrix::{Matrix, Transform},
@@ -15,6 +18,12 @@ pub struct ObjectGroup {
     children: Vec<Object>,
     bounding_box: BoundingBox,
     primitive_count: usize,
+}
+
+impl Bounded for ObjectGroup {
+    fn bounding_box(&self) -> &BoundingBox {
+        &self.bounding_box
+    }
 }
 
 impl ObjectGroup {
@@ -60,7 +69,7 @@ impl ObjectGroup {
         }
     }
     pub fn add_child(&mut self, child: Object) {
-        self.bounding_box.add_bounding_box(&child.bounding_box());
+        self.bounding_box.add_bounding_box(child.bounding_box());
         self.primitive_count += child.primitive_count();
         self.children.push(child);
     }
@@ -101,10 +110,10 @@ impl ObjectGroup {
         for child in self.children.iter() {
             let bbox = child.bounding_box();
             if bbox.center()[axis] < pos {
-                left_bbox.add_bounding_box(&bbox);
+                left_bbox.add_bounding_box(bbox);
                 left_count += child.primitive_count();
             } else {
-                right_bbox.add_bounding_box(&bbox);
+                right_bbox.add_bounding_box(bbox);
                 right_count += child.primitive_count();
             }
         }
@@ -189,10 +198,6 @@ impl ObjectGroup {
         Self::intersect_iter(self, world_ray, collector)
     }
 
-    pub fn bounding_box(&self) -> &BoundingBox {
-        &self.bounding_box
-    }
-
     pub fn children(&self) -> &[Object] {
         self.children.as_ref()
     }
@@ -220,7 +225,7 @@ impl ObjectGroup {
     fn recalculate_bbox(&mut self) {
         self.bounding_box = BoundingBox::empty();
         for child in self.children.iter() {
-            self.bounding_box.add_bounding_box(&child.bounding_box());
+            self.bounding_box.add_bounding_box(child.bounding_box());
         }
     }
     pub fn animate(&mut self, time: f64) {
@@ -269,7 +274,10 @@ mod tests {
                 TransformAnimation,
             },
             intersection::IntersectionCollection,
-            object::{group::ObjectGroup, shape::Shape, Object, ObjectKind, PrimitiveObject},
+            object::{
+                bounding_box::Bounded, group::ObjectGroup, shape::Shape, Object, ObjectKind,
+                PrimitiveObject,
+            },
             ray::Ray,
         },
     };
@@ -353,11 +361,11 @@ mod tests {
 
         let mut group = ObjectGroup::new(vec![animated_object.clone()]);
 
-        assert_eq!(group.bounding_box(), &animated_object.bounding_box());
+        assert_eq!(group.bounding_box(), animated_object.bounding_box());
         assert_eq!(animated_object.bounding_box(), sphere.bounding_box());
         group.animate(0.5);
         animated_object.animate(0.5);
-        assert_eq!(group.bounding_box(), &animated_object.bounding_box());
+        assert_eq!(group.bounding_box(), animated_object.bounding_box());
         assert_ne!(animated_object.bounding_box(), sphere.bounding_box());
     }
 }

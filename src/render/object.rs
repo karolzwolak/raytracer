@@ -10,6 +10,7 @@ pub mod smooth_triangle;
 pub mod sphere;
 pub mod triangle;
 
+use bounding_box::Bounded;
 use csg::CsgObject;
 
 use crate::{
@@ -71,6 +72,16 @@ impl Transform for Object {
             ObjectKind::Primitive(obj) => obj.transform(matrix),
             ObjectKind::Group(group) => group.transform(matrix),
             ObjectKind::Csg(csg) => csg.transform(matrix),
+        }
+    }
+}
+
+impl Bounded for Object {
+    fn bounding_box(&self) -> &BoundingBox {
+        match &self.kind {
+            ObjectKind::Primitive(p) => p.bounding_box(),
+            ObjectKind::Group(group) => group.bounding_box(),
+            ObjectKind::Csg(csg) => &csg.bounding_box,
         }
     }
 }
@@ -247,13 +258,6 @@ impl Object {
         }
     }
 
-    pub fn bounding_box(&self) -> BoundingBox {
-        match &self.kind {
-            ObjectKind::Primitive(obj) => obj.bounding_box(),
-            ObjectKind::Group(group) => group.bounding_box().clone(),
-            ObjectKind::Csg(csg) => csg.bounding_box.clone(),
-        }
-    }
     pub fn as_group(&self) -> Option<&ObjectGroup> {
         match &self.kind {
             ObjectKind::Group(group) => Some(group),
@@ -296,6 +300,12 @@ pub struct PrimitiveObject {
     bbox: BoundingBox,
 }
 
+impl Bounded for PrimitiveObject {
+    fn bounding_box(&self) -> &BoundingBox {
+        &self.bbox
+    }
+}
+
 impl PrimitiveObject {
     pub fn new(shape: Shape, material: Material, transformation: Matrix) -> Self {
         let mut res = PrimitiveObject {
@@ -308,10 +318,6 @@ impl PrimitiveObject {
             res.transform(&transformation);
         }
         res
-    }
-
-    pub fn bounding_box(&self) -> BoundingBox {
-        self.bbox.clone()
     }
 
     pub fn with_shape(shape: Shape) -> Self {
