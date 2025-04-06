@@ -55,9 +55,10 @@ impl<T: Transform + Bounded> LocalTransform for T {}
 pub enum LocalTransformation {
     /// Translates the object so it's center is at origin
     Center,
-    /// Translates the object so it's center is at origin plus nudges it in the direction of the
-    /// axis such that it's bounding box is sitting at the axis
-    CenterAt(Axis),
+    /// Translates the object so it's bounding box is above at the axis
+    TranslateAbove(Axis),
+    /// Translates the object so it's bounding box is below at the axis
+    TranslateBelow(Axis),
     /// Scales the object so that it's bounding box is a cube of side 1
     NormalizeAllAxes,
     /// Scales the object uniformly in all axes such that lenght of the longest side becomes 1
@@ -92,18 +93,19 @@ impl LocalTransformation {
                     -center.z(),
                 )]
             }
-            Self::CenterAt(axis) => {
-                let nudge = match axis {
-                    Axis::X => Point::new(bbox.min.x(), 0., 0.),
-                    Axis::Y => Point::new(0., bbox.min.y(), 0.),
-                    Axis::Z => Point::new(0., 0., bbox.min.z()),
-                };
-                let translate = bbox.center() - nudge;
-                vec![Transformation::Translation(
-                    -translate.x(),
-                    -translate.y(),
-                    -translate.z(),
-                )]
+            Self::TranslateAbove(axis) => {
+                vec![match axis {
+                    Axis::X => Transformation::Translation(-bbox.min.x(), 0., 0.),
+                    Axis::Y => Transformation::Translation(0., -bbox.min.y(), 0.),
+                    Axis::Z => Transformation::Translation(0., 0., -bbox.min.z()),
+                }]
+            }
+            Self::TranslateBelow(axis) => {
+                vec![match axis {
+                    Axis::X => Transformation::Translation(-bbox.max.x(), 0., 0.),
+                    Axis::Y => Transformation::Translation(0., -bbox.max.y(), 0.),
+                    Axis::Z => Transformation::Translation(0., 0., -bbox.max.z()),
+                }]
             }
             Self::NormalizeToLongestAxis => {
                 let (_, len) = bbox.longest_axis();
