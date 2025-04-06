@@ -1,4 +1,10 @@
-use crate::{approx_eq::ApproxEq, render::object::bounding_box::Bounded};
+use crate::{
+    approx_eq::ApproxEq,
+    render::{
+        animations::{Base, Interpolate},
+        object::bounding_box::Bounded,
+    },
+};
 use std::ops;
 
 use super::{
@@ -42,6 +48,8 @@ where
 
 /// An object that can be transformed via LocalTransformation
 pub trait LocalTransform: Transform + Bounded {}
+
+impl<T: Transform + Bounded> LocalTransform for T {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LocalTransformation {
@@ -110,6 +118,12 @@ pub enum Transformation {
     Identity,
 }
 
+impl Transformation {
+    pub fn scaling_uniform(f: f64) -> Self {
+        Self::Scaling(f, f, f)
+    }
+}
+
 impl From<Transformation> for Matrix {
     fn from(val: Transformation) -> Self {
         match val {
@@ -128,8 +142,8 @@ impl From<Transformation> for Matrix {
     }
 }
 
-impl Transformation {
-    fn default(&self) -> Self {
+impl Base for Transformation {
+    fn base(&self) -> Self {
         match self {
             Self::Scaling(_, _, _) => Self::Scaling(1., 1., 1.),
             Self::Translation(_, _, _) => Self::Translation(0., 0., 0.),
@@ -137,12 +151,6 @@ impl Transformation {
             Self::Shearing(_, _, _, _, _, _) => Self::Shearing(0., 0., 0., 0., 0., 0.),
             Self::Identity => Self::Identity,
         }
-    }
-    pub fn interpolated(&self, val: f64) -> Self {
-        let start = self.default();
-        let diff = *self - start;
-
-        start + diff * val
     }
 }
 
@@ -167,13 +175,11 @@ impl TransformationVec {
     pub fn extend(&mut self, other: &Self) {
         self.data.extend(other.data.iter().copied());
     }
-    pub fn interpolated(&self, factor: f64) -> Self {
-        Self::with_vec(
-            self.data
-                .iter()
-                .map(|t| t.interpolated(factor))
-                .collect::<Vec<_>>(),
-        )
+}
+
+impl Interpolate for TransformationVec {
+    fn interpolated(&self, at: f64) -> Self {
+        Self::with_vec(self.data.interpolated(at))
     }
 }
 
@@ -588,6 +594,7 @@ where
 
 pub trait Transform: Sized + Clone {
     fn transform(&mut self, matrix: &Matrix);
+
     fn transform_new(&self, matrix: &Matrix) -> Self {
         let mut copy = self.clone();
         copy.transform(matrix);
@@ -1119,10 +1126,10 @@ mod tests {
     #[test]
     fn default_interpolate() {
         let transforms = TransformationVec::from(vec![
-            Transformation::Scaling(1., 2., 3.).default(),
-            Transformation::Translation(4., 5., 6.).default(),
-            Transformation::Rotation(Axis::X, consts::FRAC_PI_2).default(),
-            Transformation::Shearing(1., 2., 3., 4., 5., 6.).default(),
+            Transformation::Scaling(1., 2., 3.).base(),
+            Transformation::Translation(4., 5., 6.).base(),
+            Transformation::Rotation(Axis::X, consts::FRAC_PI_2).base(),
+            Transformation::Shearing(1., 2., 3., 4., 5., 6.).base(),
         ]);
         let factor = 0.25;
         let interpolated = transforms.interpolated(factor);

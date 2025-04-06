@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{ops, str::FromStr};
 
 use crate::{
     approx_eq::ApproxEq,
@@ -189,16 +189,11 @@ impl TransformAnimation {
         }
     }
 
-    fn interpolated(&self, factor: f64) -> Matrix {
-        if factor.approx_eq(&0.) {
+    fn interpolated(&self, at: f64) -> Matrix {
+        if at.approx_eq(&0.) {
             return Matrix::identity();
         }
-        Matrix::from_iter(
-            self.transformations
-                .vec()
-                .iter()
-                .map(|t| t.interpolated(factor)),
-        )
+        Matrix::from(self.transformations.interpolated(at).vec())
     }
 
     pub fn matrix_at(&self, time: f64) -> Matrix {
@@ -241,6 +236,37 @@ impl Animations {
 impl From<Vec<TransformAnimation>> for Animations {
     fn from(vec: Vec<TransformAnimation>) -> Self {
         Self::with_vec(vec)
+    }
+}
+
+pub trait Base: Sized {
+    fn base(&self) -> Self;
+}
+
+pub trait Interpolate: Sized {
+    fn interpolated(&self, at: f64) -> Self;
+}
+
+impl<T> Interpolate for Vec<T>
+where
+    T: Interpolate,
+{
+    fn interpolated(&self, at: f64) -> Self {
+        self.iter().map(|e| e.interpolated(at)).collect()
+    }
+}
+
+impl<T> Interpolate for T
+where
+    T: Base
+        + Clone
+        + ops::Sub<Self, Output = Self>
+        + ops::Mul<f64, Output = Self>
+        + ops::Add<Self, Output = Self>,
+{
+    fn interpolated(&self, at: f64) -> Self {
+        let diff = self.clone() - self.base();
+        self.base() + diff * at
     }
 }
 
