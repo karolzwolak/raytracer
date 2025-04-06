@@ -2,9 +2,12 @@ use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use saphyr::Yaml;
 
+use crate::primitive::matrix::{
+    LocalTransform, LocalTransformation, LocalTransformations, Matrix, Transformation,
+    Transformations,
+};
 use crate::{
     primitive::{
-        matrix::{Matrix, Transform, Transformation, Transformations},
         point::Point,
         tuple::{Axis, Tuple},
         vector::Vector,
@@ -44,7 +47,17 @@ pub enum YamlParseError {
     FileReadError,
     ObjParsingError,
     InternalError,
+    UnsupportedFeature(String),
     EmptyGroup, // empty groups don't make sense, it has to a mistake, so we return an error
+}
+
+impl YamlParseError {
+    fn unsupported(feature: &str, _for: &str) -> Self {
+        Self::UnsupportedFeature(format!(
+            "The feature `{}` is unsupported for `{}`.",
+            feature, _for
+        ))
+    }
 }
 
 impl Display for YamlParseError {
@@ -265,7 +278,7 @@ impl<'a> YamlParser<'a> {
         }
         let transform = match &body["transform"] {
             &Yaml::BadValue => None,
-            val => Some(self.parse_transformation(val)?),
+            val => Some(self.parse_matrix(val, "pattern")?),
         };
 
         Ok(match kind {
@@ -360,39 +373,86 @@ impl<'a> YamlParser<'a> {
         Ok(res)
     }
 
-    fn parse_matrix(&self, body: &Yaml) -> YamlParseResult<Transformation> {
-        let values = body.as_vec().ok_or(YamlParseError::InvalidField)?;
-        if values.is_empty() {
-            return Ok(Transformation::Identity);
-        }
-        let kind = values[0].as_str().ok_or(YamlParseError::InvalidField)?;
-        let vector = self.parse_vec(&values[1..])?;
+    fn parse_singular_transformation_literal(
+        &self,
+        kind: &str,
+        values: Vec<f64>,
+    ) -> YamlParseResult<Transformation> {
         match kind {
-            "translate" => parse_transformation!(Translation, vector, 3),
-            "scale" => parse_transformation!(Scaling, vector, 3),
+            "translate" => parse_transformation!(Translation, values, 3),
+            "scale" => parse_transformation!(Scaling, values, 3),
             "scale-uniform" => {
-                let vector = if let Some(&val) = vector.first() {
+                let vector = if let Some(&val) = values.first() {
                     vec![val, val, val]
                 } else {
-                    vector
+                    values
                 };
                 parse_transformation!(Scaling, vector, 3)
             }
-            "rotate-x" => rotation_transformation!(Axis::X, vector),
-            "rotate-y" => rotation_transformation!(Axis::Y, vector),
-            "rotate-z" => rotation_transformation!(Axis::Z, vector),
-            "shear" => parse_transformation!(Shearing, vector, 6),
+            "rotate-x" => rotation_transformation!(Axis::X, values),
+            "rotate-y" => rotation_transformation!(Axis::Y, values),
+            "rotate-z" => rotation_transformation!(Axis::Z, values),
+            "shear" => parse_transformation!(Shearing, values, 6),
             _ => Err(YamlParseError::InvalidField),
         }
     }
 
-    fn parse_transformation(&self, body: &Yaml) -> YamlParseResult<Matrix> {
-        Ok(Matrix::from(&self.parse_transformations(body)?))
+    fn extract_transformation_literal(
+        &'a self,
+        body: &'a Yaml,
+    ) -> YamlParseResult<(&'a str, Vec<f64>)> {
+        let values = body.as_vec().ok_or(YamlParseError::InvalidField)?;
+        if values.is_empty() {
+            return Err(YamlParseError::MissingField);
+        }
+        let kind = values[0].as_str().ok_or(YamlParseError::InvalidField)?;
+        let values = self.parse_vec(&values[1..])?;
+
+        Ok((kind, values))
     }
 
-    fn parse_transformations(&self, body: &Yaml) -> YamlParseResult<Transformations> {
+    fn parse_singular_local_transformation(
+        &self,
+        body: &Yaml,
+    ) -> YamlParseResult<LocalTransformation> {
+        let (kind, values) = self.extract_transformation_literal(body)?;
+
+        if let Some(kind) = kind.strip_prefix("local") {
+            return self
+                .parse_singular_transformation_literal(kind, values)
+                .map(LocalTransformation::Local);
+        }
+
+        Ok(match kind {
+            "center" => LocalTransformation::Center,
+            "normalize-all-axes" => LocalTransformation::NormalizeAllAxes,
+            "normalize-to-longest-axis" => LocalTransformation::NormalizeToLongestAxis,
+
+            "translate-above-x" => LocalTransformation::TranslateAbove(Axis::X),
+            "translate-above-y" => LocalTransformation::TranslateAbove(Axis::Y),
+            "translate-above-z" => LocalTransformation::TranslateAbove(Axis::Z),
+
+            "translate-below-x" => LocalTransformation::TranslateBelow(Axis::X),
+            "translate-below-y" => LocalTransformation::TranslateBelow(Axis::Y),
+            "translate-below-z" => LocalTransformation::TranslateBelow(Axis::Z),
+
+            _ => {
+                return self
+                    .parse_singular_transformation_literal(kind, values)
+                    .map(LocalTransformation::Transformation)
+            }
+        })
+    }
+
+    fn parse_matrix(&self, body: &Yaml, _for: &str) -> YamlParseResult<Matrix> {
+        let transformations = Transformations::try_from(self.parse_transformations(body)?)
+            .map_err(|_| YamlParseError::unsupported("local transformations", _for))?;
+        Ok(Matrix::from(&transformations))
+    }
+
+    fn parse_transformations(&self, body: &Yaml) -> YamlParseResult<LocalTransformations> {
         match body {
-            Yaml::BadValue => Ok(Transformations::new()),
+            Yaml::BadValue => Ok(LocalTransformations::new()),
             Yaml::String(name) => {
                 let transform = self
                     .defines
@@ -401,7 +461,7 @@ impl<'a> YamlParser<'a> {
                 self.parse_transformations(transform)
             }
             Yaml::Array(arr) => {
-                let mut res = Transformations::new();
+                let mut res = LocalTransformations::new();
                 for val in arr {
                     match val {
                         Yaml::String(name) => {
@@ -411,7 +471,7 @@ impl<'a> YamlParser<'a> {
                                 .ok_or_else(|| YamlParseError::UnknownDefine(name.to_string()))?;
                             res.extend(&self.parse_transformations(transform)?);
                         }
-                        _ => res.push(self.parse_matrix(val)?),
+                        _ => res.push(self.parse_singular_local_transformation(val)?),
                     }
                 }
                 Ok(res)
@@ -515,7 +575,7 @@ impl<'a> YamlParser<'a> {
             val => self.parse_animations(val)?,
         };
         let material = self.parse_material(&body["material"])?;
-        let transformation = self.parse_transformation(&body["transform"])?;
+        let transformations = self.parse_transformations(&body["transform"])?;
 
         let shape = match obj_kind {
             "group" | "obj" | "csg" => {
@@ -532,8 +592,8 @@ impl<'a> YamlParser<'a> {
                 if material != Material::default() {
                     res.set_material(material);
                 }
-                if transformation != Matrix::identity() {
-                    res.transform(&transformation);
+                if !transformations.vec().is_empty() {
+                    res.local_transform(&transformations);
                 }
                 return Ok(res);
             }
@@ -580,9 +640,15 @@ impl<'a> YamlParser<'a> {
                 return Err(YamlParseError::InvalidField);
             }
         };
-        let obj_kind = ObjectKind::primitive(PrimitiveObject::new(shape, material, transformation));
+        let mut obj = Object::animated(
+            ObjectKind::primitive(PrimitiveObject::with_shape_material(shape, material)),
+            animations,
+        );
+        if !transformations.vec().is_empty() {
+            obj.local_transform(&transformations);
+        }
 
-        Ok(Object::animated(obj_kind, animations))
+        Ok(obj)
     }
 
     fn parse_world(&mut self, body: &Yaml) -> YamlParseResult<()> {

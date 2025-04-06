@@ -239,7 +239,12 @@ where
 }
 
 /// An object that can be transformed via LocalTransformation
-pub trait LocalTransform: Transform + Bounded {}
+pub trait LocalTransform: Transform + Bounded {
+    fn local_transform(&mut self, t: &LocalTransformations) {
+        let matrix = t.into_matrix(self);
+        self.transform(&matrix);
+    }
+}
 
 impl<T: Transform + Bounded> LocalTransform for T {}
 
@@ -268,6 +273,22 @@ where
     fn interpolated_with(&self, local_obj: &T, at: f64) -> Vec<Transformation> {
         let transformations = self.into_transformations(local_obj);
         transformations.interpolated(at)
+    }
+}
+
+impl TryFrom<LocalTransformations> for Transformations {
+    type Error = ();
+
+    fn try_from(value: LocalTransformations) -> Result<Self, Self::Error> {
+        value
+            .data
+            .into_iter()
+            .map(|t| match t {
+                LocalTransformation::Transformation(t) => Ok(t),
+                _ => Err(()),
+            })
+            .collect::<Result<Vec<Transformation>, Self::Error>>()
+            .map(Into::into)
     }
 }
 
@@ -336,6 +357,10 @@ impl LocalTransformation {
     pub fn matrix_at<T: LocalTransform>(&self, local_obj: &T, at: f64) -> Matrix {
         self.interpolated_with(local_obj, at).into()
     }
+
+    pub fn into_matrix<T: LocalTransform>(&self, local_obj: &T) -> Matrix {
+        self.into_transformations(local_obj).into()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -403,6 +428,10 @@ impl LocalTransformations {
     }
     pub fn extend(&mut self, other: &Self) {
         self.data.extend(other.data.iter().copied());
+    }
+
+    pub fn into_matrix<T: Bounded>(&self, obj: &T) -> Matrix {
+        self.interpolated_with(obj, 1.).into()
     }
 }
 
