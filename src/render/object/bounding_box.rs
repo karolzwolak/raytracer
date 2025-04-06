@@ -57,6 +57,16 @@ impl Transform for BoundingBox {
     }
 }
 
+#[cfg(test)]
+impl BoundingBox {
+    pub fn unit() -> Self {
+        Self {
+            min: Point::new(-0.5, -0.5, -0.5),
+            max: Point::new(0.5, 0.5, 0.5),
+        }
+    }
+}
+
 impl BoundingBox {
     const MAX_DIM: f64 = World::MAX_DIM;
     pub fn empty() -> Self {

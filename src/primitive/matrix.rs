@@ -383,6 +383,7 @@ impl Base for Transformation {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct LocalTransformations {
     data: Vec<LocalTransformation>,
 }
@@ -402,6 +403,29 @@ impl LocalTransformations {
     }
     pub fn extend(&mut self, other: &Self) {
         self.data.extend(other.data.iter().copied());
+    }
+}
+
+impl From<Transformation> for LocalTransformation {
+    fn from(value: Transformation) -> Self {
+        Self::Transformation(value)
+    }
+}
+
+impl From<Transformations> for LocalTransformations {
+    fn from(value: Transformations) -> Self {
+        Self::from(value.data)
+    }
+}
+
+impl From<Vec<Transformation>> for LocalTransformations {
+    fn from(value: Vec<Transformation>) -> Self {
+        Self::with_vec(
+            value
+                .into_iter()
+                .map(Into::<LocalTransformation>::into)
+                .collect(),
+        )
     }
 }
 
@@ -496,6 +520,12 @@ impl From<&[Transformation]> for Transformations {
 }
 impl From<&Transformations> for Matrix {
     fn from(val: &Transformations) -> Self {
+        Matrix::from(val.vec())
+    }
+}
+
+impl From<Transformations> for Matrix {
+    fn from(val: Transformations) -> Self {
         Matrix::from(val.vec())
     }
 }

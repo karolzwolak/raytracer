@@ -1529,7 +1529,8 @@ mod tests {
             Transformations::from(vec![
                 Transformation::Translation(1., -2., 10.),
                 Transformation::Rotation(Axis::Y, -std::f64::consts::FRAC_PI_3),
-            ]),
+            ])
+            .into(),
         )]);
 
         assert_eq!(world.objects().first().unwrap().animations(), &animations);

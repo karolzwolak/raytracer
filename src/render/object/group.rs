@@ -263,7 +263,7 @@ mod tests {
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         primitive::{
-            matrix::{Matrix, Transformation, Transformations},
+            matrix::{LocalTransformations, Matrix, Transformation},
             point::Point,
             tuple::Tuple,
             vector::Vector,
@@ -346,7 +346,7 @@ mod tests {
     fn animating_children_updates_bbox() {
         let sphere = PrimitiveObject::sphere(Point::zero(), 1.);
         let translate = Transformation::Translation(5., 2., 10.);
-        let transfom = Transformations::from(vec![translate]);
+        let transfom = LocalTransformations::from(vec![translate]);
         let animation = Animation::new(
             0.,
             1.,

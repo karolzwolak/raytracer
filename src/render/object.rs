@@ -26,7 +26,7 @@ use crate::{
 use self::{bounding_box::BoundingBox, group::ObjectGroup, shape::Shape};
 
 use super::{
-    animations::Animations,
+    animations::{Animations, Interpolate},
     intersection::{Intersection, IntersectionCollector},
     material::Material,
     ray::Ray,
@@ -98,7 +98,7 @@ impl Object {
 
 impl Object {
     pub fn animate(&mut self, time: f64) {
-        let transform = self.animations.matrix_at(time);
+        let transform = self.animations.interpolated_with(self, time);
         match &mut self.kind {
             ObjectKind::Primitive(obj) => {
                 if transform != Matrix::identity() {

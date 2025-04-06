@@ -2,8 +2,10 @@ use std::{ops, str::FromStr};
 
 use crate::{
     approx_eq::ApproxEq,
-    primitive::matrix::{Matrix, Transformations},
+    primitive::matrix::{LocalTransformations, Matrix},
 };
+
+use super::object::bounding_box::Bounded;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AnimationTiming {
@@ -178,27 +180,25 @@ impl Animation {
 #[derive(Debug, Clone, PartialEq)]
 pub struct TransformAnimation {
     animation: Animation,
-    transformations: Transformations,
+    transformations: LocalTransformations,
+}
+
+impl<T: Bounded> Interpolate<T, Matrix> for TransformAnimation {
+    fn interpolated_with(&self, with: &T, at: f64) -> Matrix {
+        let at = self.animation.val_at(at);
+        if at.approx_eq(&0.) {
+            return Matrix::identity();
+        }
+        self.transformations.interpolated_with(with, at).into()
+    }
 }
 
 impl TransformAnimation {
-    pub fn new(animation: Animation, transformations: Transformations) -> Self {
+    pub fn new(animation: Animation, transformations: LocalTransformations) -> Self {
         Self {
             animation,
             transformations,
         }
-    }
-
-    fn interpolated(&self, at: f64) -> Matrix {
-        if at.approx_eq(&0.) {
-            return Matrix::identity();
-        }
-        Matrix::from(self.transformations.interpolated(at).vec())
-    }
-
-    pub fn matrix_at(&self, time: f64) -> Matrix {
-        let fraction = self.animation.val_at(time);
-        self.interpolated(fraction)
     }
 
     pub fn animations(&self) -> &Animation {
@@ -209,6 +209,12 @@ impl TransformAnimation {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Animations {
     vec: Vec<TransformAnimation>,
+}
+
+impl<T: Bounded> Interpolate<T, Matrix> for Animations {
+    fn interpolated_with(&self, with: &T, at: f64) -> Matrix {
+        Matrix::from_iter(self.vec.iter().map(|a| a.interpolated_with(with, at)))
+    }
 }
 
 impl Animations {
@@ -222,10 +228,6 @@ impl Animations {
 
     pub fn add(&mut self, animation: TransformAnimation) {
         self.vec.push(animation);
-    }
-
-    pub fn matrix_at(&self, time: f64) -> Matrix {
-        Matrix::from_iter(self.vec.iter().map(|a| a.matrix_at(time)))
     }
 
     pub fn vec(&self) -> &[TransformAnimation] {
@@ -288,9 +290,13 @@ where
 mod tests {
     use std::f64::{self};
 
-    use crate::primitive::{
-        matrix::{Transform, Transformation},
-        tuple::Axis,
+    use crate::{
+        primitive::{
+            matrix::{Transform, Transformation, Transformations},
+            point::Point,
+            tuple::{Axis, Tuple},
+        },
+        render::object::bounding_box::BoundingBox,
     };
 
     use super::*;
@@ -318,7 +324,7 @@ mod tests {
     fn transform_animation() -> TransformAnimation {
         TransformAnimation::new(
             NORMAL_ANIMATION,
-            Transformations::from(&TRANSFORMATIONS[..]),
+            Transformations::from(&TRANSFORMATIONS[..]).into(),
         )
     }
 
@@ -400,14 +406,20 @@ mod tests {
     fn zero_interpolation_is_identity() {
         let animation = transform_animation();
 
-        assert_eq!(animation.interpolated(0.0), Matrix::identity());
+        assert_eq!(
+            animation.interpolated_with(&BoundingBox::unit(), 0.0),
+            Matrix::identity()
+        );
     }
 
     #[test]
     fn full_interpolation_is_full_transformation() {
         let animation = transform_animation();
 
-        assert_eq!(animation.interpolated(1.0), full_transformation());
+        assert_eq!(
+            animation.interpolated_with(&BoundingBox::unit(), 1.0),
+            full_transformation()
+        );
     }
 
     #[test]
@@ -415,11 +427,12 @@ mod tests {
         let transforms = Transformations::from(vec![
             Transformation::Translation(12., 12., 12.),
             Transformation::Scaling(2., 2., 2.),
-        ]);
+        ])
+        .into();
         let animation = TransformAnimation::new(NORMAL_ANIMATION, transforms);
 
         assert_eq!(
-            animation.matrix_at(0.5),
+            animation.interpolated_with(&BoundingBox::unit(), 0.5),
             Matrix::translation(6., 6., 6.)
                 .scale(1.5, 1.5, 1.5)
                 .transformed()
