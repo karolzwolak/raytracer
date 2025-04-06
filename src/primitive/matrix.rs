@@ -22,8 +22,9 @@ pub struct Matrix {
 #[cfg(test)]
 mod local_transform_tests {
     use super::*;
-    use crate::{assert_approx_eq_low_prec, primitive::point::Point};
     use crate::render::object::bounding_box::BoundingBox;
+    use crate::render::object::shape::Shape;
+    use crate::{assert_approx_eq_low_prec, primitive::point::Point};
 
     fn bbox(min: (f64, f64, f64), max: (f64, f64, f64)) -> BoundingBox {
         BoundingBox {
@@ -35,7 +36,6 @@ mod local_transform_tests {
     #[test]
     fn center_translation_moves_center_to_origin() {
         let mut obj = bbox((1., 2., 3.), (5., 6., 7.));
-        let center = obj.center();
 
         let transform = LocalTransformation::Center.matrix_at(&obj, 1.0);
         obj.transform(&transform);
@@ -46,7 +46,7 @@ mod local_transform_tests {
 
     #[test]
     fn translate_above_moves_min_to_origin() {
-        let mut obj = bbox((1., 2., 3.), (5., 6., 7.));
+        let obj = bbox((1., 2., 3.), (5., 6., 7.));
 
         for axis in [Axis::X, Axis::Y, Axis::Z] {
             let mut obj_copy = obj.clone();
@@ -64,7 +64,7 @@ mod local_transform_tests {
 
     #[test]
     fn translate_below_moves_max_to_origin() {
-        let mut obj = bbox((1., 2., 3.), (5., 6., 7.));
+        let obj = bbox((1., 2., 3.), (5., 6., 7.));
 
         for axis in [Axis::X, Axis::Y, Axis::Z] {
             let mut obj_copy = obj.clone();
@@ -86,9 +86,8 @@ mod local_transform_tests {
         let transform = LocalTransformation::NormalizeToLongestAxis.matrix_at(&obj, 1.0);
         obj.transform(&transform);
 
-        let size = obj.size();
-        let max_side = size.x().max(size.y()).max(size.z());
-        assert_approx_eq_low_prec!(max_side, 1.0);
+        let size = obj.bounding_box().size();
+        assert_eq!(size, Vector::new(1. / 4., 1. / 2., 1.));
     }
 
     #[test]
@@ -102,27 +101,42 @@ mod local_transform_tests {
         assert_approx_eq_low_prec!(size.y(), 1.0);
         assert_approx_eq_low_prec!(size.z(), 1.0);
     }
-
     #[test]
-    fn pivot_rotates_around_origin() {
-        let mut obj = bbox((-1., -1., -1.), (1., 1., 1.));
-        let transform = LocalTransformation::Pivot(Axis::Y, std::f64::consts::FRAC_PI_2).matrix_at(&obj, 1.0);
-        obj.transform(&transform);
+    fn pivot_90_degree_multiple_keeps_bounding_box() {
+        let obj = bbox((1., 2., 3.), (5., 6., 7.));
+        let original_bbox = obj.clone();
 
-        let min = obj.min;
-        let max = obj.max;
+        let deg_90 =
+            LocalTransformation::Pivot(Axis::Y, std::f64::consts::FRAC_PI_2).matrix_at(&obj, 1.0);
+        let deg_45 =
+            LocalTransformation::Pivot(Axis::Y, std::f64::consts::FRAC_PI_4).matrix_at(&obj, 1.0);
 
-        // After 90 degree rotation around Y, x and z swap with sign
-        assert_approx_eq_low_prec!(min.x(), -1.0);
-        assert_approx_eq_low_prec!(max.x(), 1.0);
-        assert_approx_eq_low_prec!(min.z(), -1.0);
-        assert_approx_eq_low_prec!(max.z(), 1.0);
+        assert_eq!(obj.transform_new(&deg_90).bounding_box(), &original_bbox);
+        assert_ne!(obj.transform_new(&deg_45).bounding_box(), &original_bbox);
+    }
+    #[test]
+    fn pivot_rotates_around_local_axis() {
+        let translate = Matrix::translation(1., 2., 3.);
+        let rad = std::f64::consts::FRAC_PI_4;
+
+        let mut obj = Shape::Cube.bounding_box();
+        let mut expected = obj.clone();
+
+        obj.transform(&translate);
+        obj.transform(&LocalTransformation::Pivot(Axis::X, rad).matrix_at(&obj, 1.0));
+
+        expected.rotate_x(rad);
+        expected.transform(&translate);
+
+        assert_eq!(obj, expected);
     }
 
     #[test]
     fn transformation_variant_applies_directly() {
         let mut obj = bbox((1., 2., 3.), (4., 5., 6.));
-        let transform = LocalTransformation::Transformation(Transformation::Translation(1., 2., 3.)).matrix_at(&obj, 1.0);
+        let transform =
+            LocalTransformation::Transformation(Transformation::Translation(1., 2., 3.))
+                .matrix_at(&obj, 1.0);
         obj.transform(&transform);
 
         let new_min = obj.min;
