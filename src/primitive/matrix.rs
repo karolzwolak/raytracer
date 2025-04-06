@@ -19,6 +19,120 @@ pub struct Matrix {
     data: [f64; 16],
 }
 
+#[cfg(test)]
+mod local_transform_tests {
+    use super::*;
+    use crate::{assert_approx_eq_low_prec, primitive::point::Point};
+    use crate::render::object::bounding_box::BoundingBox;
+
+    fn bbox(min: (f64, f64, f64), max: (f64, f64, f64)) -> BoundingBox {
+        BoundingBox {
+            min: Point::new(min.0, min.1, min.2),
+            max: Point::new(max.0, max.1, max.2),
+        }
+    }
+
+    #[test]
+    fn center_translation_moves_center_to_origin() {
+        let mut obj = bbox((1., 2., 3.), (5., 6., 7.));
+        let center = obj.center();
+
+        let transform = LocalTransformation::Center.matrix_at(&obj, 1.0);
+        obj.transform(&transform);
+
+        let new_center = obj.center();
+        assert_approx_eq_low_prec!(new_center, Point::zero());
+    }
+
+    #[test]
+    fn translate_above_moves_min_to_origin() {
+        let mut obj = bbox((1., 2., 3.), (5., 6., 7.));
+
+        for axis in [Axis::X, Axis::Y, Axis::Z] {
+            let mut obj_copy = obj.clone();
+            let transform = LocalTransformation::TranslateAbove(axis).matrix_at(&obj_copy, 1.0);
+            obj_copy.transform(&transform);
+
+            let new_min = obj_copy.min;
+            match axis {
+                Axis::X => assert_approx_eq_low_prec!(new_min.x(), 0.),
+                Axis::Y => assert_approx_eq_low_prec!(new_min.y(), 0.),
+                Axis::Z => assert_approx_eq_low_prec!(new_min.z(), 0.),
+            }
+        }
+    }
+
+    #[test]
+    fn translate_below_moves_max_to_origin() {
+        let mut obj = bbox((1., 2., 3.), (5., 6., 7.));
+
+        for axis in [Axis::X, Axis::Y, Axis::Z] {
+            let mut obj_copy = obj.clone();
+            let transform = LocalTransformation::TranslateBelow(axis).matrix_at(&obj_copy, 1.0);
+            obj_copy.transform(&transform);
+
+            let new_max = obj_copy.max;
+            match axis {
+                Axis::X => assert_approx_eq_low_prec!(new_max.x(), 0.),
+                Axis::Y => assert_approx_eq_low_prec!(new_max.y(), 0.),
+                Axis::Z => assert_approx_eq_low_prec!(new_max.z(), 0.),
+            }
+        }
+    }
+
+    #[test]
+    fn normalize_to_longest_axis_scales_longest_side_to_one() {
+        let mut obj = bbox((0., 0., 0.), (2., 4., 8.));
+        let transform = LocalTransformation::NormalizeToLongestAxis.matrix_at(&obj, 1.0);
+        obj.transform(&transform);
+
+        let size = obj.size();
+        let max_side = size.x().max(size.y()).max(size.z());
+        assert_approx_eq_low_prec!(max_side, 1.0);
+    }
+
+    #[test]
+    fn normalize_all_axes_scales_all_sides_to_one() {
+        let mut obj = bbox((0., 0., 0.), (2., 4., 8.));
+        let transform = LocalTransformation::NormalizeAllAxes.matrix_at(&obj, 1.0);
+        obj.transform(&transform);
+
+        let size = obj.size();
+        assert_approx_eq_low_prec!(size.x(), 1.0);
+        assert_approx_eq_low_prec!(size.y(), 1.0);
+        assert_approx_eq_low_prec!(size.z(), 1.0);
+    }
+
+    #[test]
+    fn pivot_rotates_around_origin() {
+        let mut obj = bbox((-1., -1., -1.), (1., 1., 1.));
+        let transform = LocalTransformation::Pivot(Axis::Y, std::f64::consts::FRAC_PI_2).matrix_at(&obj, 1.0);
+        obj.transform(&transform);
+
+        let min = obj.min;
+        let max = obj.max;
+
+        // After 90 degree rotation around Y, x and z swap with sign
+        assert_approx_eq_low_prec!(min.x(), -1.0);
+        assert_approx_eq_low_prec!(max.x(), 1.0);
+        assert_approx_eq_low_prec!(min.z(), -1.0);
+        assert_approx_eq_low_prec!(max.z(), 1.0);
+    }
+
+    #[test]
+    fn transformation_variant_applies_directly() {
+        let mut obj = bbox((1., 2., 3.), (4., 5., 6.));
+        let transform = LocalTransformation::Transformation(Transformation::Translation(1., 2., 3.)).matrix_at(&obj, 1.0);
+        obj.transform(&transform);
+
+        let new_min = obj.min;
+        let new_max = obj.max;
+
+        assert_approx_eq_low_prec!(new_min, Point::new(2., 4., 6.));
+        assert_approx_eq_low_prec!(new_max, Point::new(5., 7., 9.));
+    }
+}
+
 impl Transform for Matrix {
     fn transform(&mut self, matrix: &Matrix) {
         *self = self.transform_new(matrix);
