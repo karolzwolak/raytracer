@@ -129,6 +129,9 @@ impl LocalTransformation {
             Self::Transformation(t) => vec![*t],
         }
     }
+    pub fn matrix_at<T: LocalTransform>(&self, local_obj: &T, at: f64) -> Matrix {
+        self.interpolated_with(local_obj, at).into()
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -225,6 +228,12 @@ impl From<&[Transformation]> for TransformationVec {
 impl From<&TransformationVec> for Matrix {
     fn from(val: &TransformationVec) -> Self {
         Matrix::from(val.vec())
+    }
+}
+
+impl From<Vec<Transformation>> for Matrix {
+    fn from(val: Vec<Transformation>) -> Self {
+        Matrix::from(&val[..])
     }
 }
 
