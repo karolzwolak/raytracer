@@ -243,30 +243,44 @@ pub trait Base: Sized {
     fn base(&self) -> Self;
 }
 
-pub trait Interpolate: Sized {
+/// A object that can be interpolated into itself without additional parameters
+pub trait SelfInterpolate: Sized {
     fn interpolated(&self, at: f64) -> Self;
 }
 
-impl<T> Interpolate for Vec<T>
+impl<T> SelfInterpolate for T
 where
-    T: Interpolate,
+    T: Interpolate<Self, Self> + Base,
+{
+    fn interpolated(&self, at: f64) -> Self {
+        self.interpolated_with(&self.base(), at)
+    }
+}
+
+/// A object that can be interpolated, but needs additional parameter
+pub trait Interpolate<With, Output>: Sized {
+    fn interpolated_with(&self, with: &With, at: f64) -> Output;
+}
+
+impl<T> SelfInterpolate for Vec<T>
+where
+    T: SelfInterpolate,
 {
     fn interpolated(&self, at: f64) -> Self {
         self.iter().map(|e| e.interpolated(at)).collect()
     }
 }
 
-impl<T> Interpolate for T
+impl<T> Interpolate<Self, Self> for T
 where
-    T: Base
-        + Clone
+    T: Clone
         + ops::Sub<Self, Output = Self>
         + ops::Mul<f64, Output = Self>
         + ops::Add<Self, Output = Self>,
 {
-    fn interpolated(&self, at: f64) -> Self {
-        let diff = self.clone() - self.base();
-        self.base() + diff * at
+    fn interpolated_with(&self, base: &Self, at: f64) -> Self {
+        let diff = self.clone() - base.clone();
+        base.clone() + diff * at
     }
 }
 

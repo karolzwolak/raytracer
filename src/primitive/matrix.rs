@@ -1,7 +1,7 @@
 use crate::{
     approx_eq::ApproxEq,
     render::{
-        animations::{Base, Interpolate},
+        animations::{Base, SelfInterpolate},
         object::bounding_box::Bounded,
     },
 };
@@ -177,7 +177,7 @@ impl TransformationVec {
     }
 }
 
-impl Interpolate for TransformationVec {
+impl SelfInterpolate for TransformationVec {
     fn interpolated(&self, at: f64) -> Self {
         Self::with_vec(self.data.interpolated(at))
     }
