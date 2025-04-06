@@ -21,6 +21,8 @@ pub struct Matrix {
 
 #[cfg(test)]
 mod local_transform_tests {
+    use std::f64::consts::FRAC_PI_3;
+
     use super::*;
     use crate::render::object::bounding_box::BoundingBox;
     use crate::render::object::shape::Shape;
@@ -102,20 +104,26 @@ mod local_transform_tests {
         assert_approx_eq_low_prec!(size.z(), 1.0);
     }
     #[test]
-    fn pivot_90_degree_multiple_keeps_bounding_box() {
+    fn local_rotate_90_degree_multiple_keeps_bounding_box() {
         let obj = bbox((1., 2., 3.), (5., 6., 7.));
         let original_bbox = obj.clone();
 
-        let deg_90 =
-            LocalTransformation::Pivot(Axis::Y, std::f64::consts::FRAC_PI_2).matrix_at(&obj, 1.0);
-        let deg_45 =
-            LocalTransformation::Pivot(Axis::Y, std::f64::consts::FRAC_PI_4).matrix_at(&obj, 1.0);
+        let deg_90 = LocalTransformation::Local(Transformation::Rotation(
+            Axis::Y,
+            std::f64::consts::FRAC_PI_2,
+        ))
+        .matrix_at(&obj, 1.0);
+        let deg_45 = LocalTransformation::Local(Transformation::Rotation(
+            Axis::Y,
+            std::f64::consts::FRAC_PI_4,
+        ))
+        .matrix_at(&obj, 1.0);
 
         assert_eq!(obj.transform_new(&deg_90).bounding_box(), &original_bbox);
         assert_ne!(obj.transform_new(&deg_45).bounding_box(), &original_bbox);
     }
     #[test]
-    fn pivot_rotates_around_local_axis() {
+    fn local_rotate_rotates_around_local_axis() {
         let translate = Matrix::translation(1., 2., 3.);
         let rad = std::f64::consts::FRAC_PI_4;
 
@@ -123,7 +131,10 @@ mod local_transform_tests {
         let mut expected = obj.clone();
 
         obj.transform(&translate);
-        obj.transform(&LocalTransformation::Pivot(Axis::X, rad).matrix_at(&obj, 1.0));
+        obj.transform(
+            &LocalTransformation::Local(Transformation::Rotation(Axis::X, rad))
+                .matrix_at(&obj, 1.0),
+        );
 
         expected.rotate_x(rad);
         expected.transform(&translate);
@@ -147,14 +158,18 @@ mod local_transform_tests {
     }
 
     #[test]
-    fn local_scale_keeps_center() {
+    fn local_transformations_keep_center() {
         let obj = bbox((1., 2., 3.), (4., 5., 6.));
 
-        let transform = LocalTransformation::LocalScale(-1., 2., -3.);
+        let transforms = LocalTransformations::from(vec![
+            LocalTransformation::Local(Transformation::Scaling(-1., 2., -3.)),
+            LocalTransformation::Local(Transformation::Rotation(Axis::X, FRAC_PI_3)),
+            LocalTransformation::Local(Transformation::Shearing(1., -2., 3., -4., 5., 6.)),
+        ]);
 
-        let scaled = obj.transform_new(&transform.interpolated_with(&obj, 1.).into());
+        let transformed = obj.transform_new(&(&transforms.interpolated_with(&obj, 1.)).into());
 
-        assert_eq!(obj.center(), scaled.center());
+        assert_eq!(obj.center(), transformed.center());
     }
 
     #[test]
@@ -164,12 +179,15 @@ mod local_transform_tests {
         let local_transformations = LocalTransformations::from(vec![
             LocalTransformation::Center,
             LocalTransformation::Transformation(Transformation::Translation(1., 2., 3.)),
-            LocalTransformation::Pivot(Axis::X, std::f64::consts::FRAC_PI_2),
+            LocalTransformation::Local(Transformation::Rotation(
+                Axis::X,
+                std::f64::consts::FRAC_PI_2,
+            )),
             LocalTransformation::NormalizeToLongestAxis,
             LocalTransformation::NormalizeAllAxes,
             LocalTransformation::TranslateAbove(Axis::X),
             LocalTransformation::TranslateBelow(Axis::Y),
-            LocalTransformation::LocalScale(1., -2., 3.),
+            LocalTransformation::Local(Transformation::Scaling(1., -2., 3.)),
         ]);
         let expected = Transformations::from(vec![
             Transformation::Translation(-1., -2., -4.),
@@ -237,10 +255,8 @@ pub enum LocalTransformation {
     NormalizeAllAxes,
     /// Scales the object uniformly in all axes such that lenght of the longest side becomes 1
     NormalizeToLongestAxis,
-    /// Pivots the object along it's local axis
-    Pivot(Axis, f64),
-    /// Scales the object without moving it's center
-    LocalScale(f64, f64, f64),
+    /// Transformation that maintains the center of the object
+    Local(Transformation),
     /// Regular transformation
     Transformation(Transformation),
 }
@@ -306,14 +322,14 @@ impl LocalTransformation {
                     Transformation::Scaling(1. / size.x(), 1. / size.y(), 1. / size.z()),
                 )
             }
-            Self::Pivot(axis, radians) => {
-                self.local_transform(bbox, Transformation::Rotation(*axis, *radians))
-            }
 
-            Self::LocalScale(x, y, z) => {
-                self.local_transform(bbox, Transformation::Scaling(*x, *y, *z))
+            Self::Local(t) => {
+                let mut res = LocalTransformation::Center.into_transformations(bbox);
+                let put_back = res[0].interpolated(-1.);
+                res.push(*t);
+                res.push(put_back);
+                res
             }
-
             Self::Transformation(t) => vec![*t],
         }
     }
