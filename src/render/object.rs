@@ -400,7 +400,6 @@ impl Transform for PrimitiveObject {
             (Shape::Triangle(t), _) => t.transform(matrix),
             (Shape::SmoothTriangle(t), _) => t.transform(matrix),
             (Shape::Bbox, _) => {
-                self.bbox.transform(matrix);
                 self.transformation_inverse =
                     Some(self.bbox.as_cube_transformation().inverse().unwrap());
             }
@@ -416,6 +415,8 @@ impl Transform for PrimitiveObject {
 
 #[cfg(test)]
 mod tests {
+
+    use std::f64;
 
     use crate::assert_approx_eq_low_prec;
 
@@ -437,5 +438,22 @@ mod tests {
         let normal =
             sphere_obj.normal_vector_at(Point::new(frac_sqrt_3_3, frac_sqrt_3_3, frac_sqrt_3_3));
         assert_approx_eq_low_prec!(normal, normal.normalize());
+    }
+
+    #[test]
+    fn bbox_primitive_obj() {
+        let mut expected = Shape::Cube.bounding_box();
+        let mut bbox_obj = Shape::Cube.bounding_box().as_object();
+
+        assert_eq!(&expected, bbox_obj.bounding_box());
+
+        let transformation = Matrix::translation(1., 2., 3.)
+            .rotate_y(f64::consts::FRAC_PI_4)
+            .transformed();
+
+        expected.transform(&transformation);
+        bbox_obj.transform(&transformation);
+
+        assert_eq!(bbox_obj.bounding_box(), &expected);
     }
 }

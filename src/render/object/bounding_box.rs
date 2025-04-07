@@ -1,5 +1,5 @@
 use crate::{
-    approx_eq::{self, ApproxEq},
+    approx_eq::ApproxEq,
     primitive::{
         matrix::{Matrix, Transform},
         point::Point,
@@ -262,10 +262,8 @@ impl BoundingBox {
     }
 
     pub fn as_cube_transformation(&self) -> Matrix {
-        // render slightly bigger box to avoid z-fighting
-        const LEN_FACTOR: f64 = 0.5 * (1. + approx_eq::LOW_PREC_EPSILON);
         let center = self.center();
-        let scale = self.size() * LEN_FACTOR;
+        let scale = self.size() * 0.5; // the default cube has side of length 2
 
         Matrix::scaling(scale.x(), scale.y(), scale.z())
             .translate(center.x(), center.y(), center.z())
