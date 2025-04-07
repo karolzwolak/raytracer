@@ -417,7 +417,7 @@ impl<'a> YamlParser<'a> {
     ) -> YamlParseResult<LocalTransformation> {
         let (kind, values) = self.extract_transformation_literal(body)?;
 
-        if let Some(kind) = kind.strip_prefix("local") {
+        if let Some(kind) = kind.strip_prefix("local-") {
             return self
                 .parse_singular_transformation_literal(kind, values)
                 .map(LocalTransformation::Local);
@@ -1695,4 +1695,7 @@ mod tests {
             },
         );
     }
+
+    #[test]
+    fn parse_local_transformations() {}
 }
