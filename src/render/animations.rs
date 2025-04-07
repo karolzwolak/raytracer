@@ -293,8 +293,7 @@ mod tests {
     use crate::{
         primitive::{
             matrix::{Transform, Transformation, Transformations},
-            point::Point,
-            tuple::{Axis, Tuple},
+            tuple::Axis,
         },
         render::object::bounding_box::BoundingBox,
     };
@@ -413,11 +412,21 @@ mod tests {
     }
 
     #[test]
-    fn full_interpolation_is_full_transformation() {
+    fn full_interpolation_is_next_count() {
         let animation = transform_animation();
 
         assert_eq!(
             animation.interpolated_with(&BoundingBox::unit(), 1.0),
+            Matrix::identity(),
+        );
+    }
+    #[test]
+    fn full_interpolation_is_full_transformation() {
+        let animation = transform_animation();
+
+        let full = 1.0 - 10e-10; // 1.0 is next animation count
+        assert_eq!(
+            animation.interpolated_with(&BoundingBox::unit(), full),
             full_transformation()
         );
     }
