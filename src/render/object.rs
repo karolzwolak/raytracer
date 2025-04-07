@@ -27,7 +27,7 @@ use self::{bounding_box::BoundingBox, group::ObjectGroup, shape::Shape};
 
 use super::{
     animations::{Animations, Interpolate},
-    intersection::{Intersection, IntersectionCollector},
+    intersection::{Intersection, IntersectionCollection, IntersectionCollector},
     material::Material,
     ray::Ray,
 };
@@ -149,8 +149,9 @@ impl Object {
         self.normal_vector_at_with_intersection(world_point, None)
     }
 
-    pub fn into_group_with_bbox(self) -> Object {
-        ObjectGroup::new(vec![self.bounding_box().as_object(), self]).into()
+    pub fn into_group_with_bbox(self, material: Material) -> Object {
+        let bbox = self.bounding_box().as_object(material);
+        ObjectGroup::new(vec![bbox, self]).into()
     }
 
     pub fn normal_vector_at_with_intersection<'a>(
@@ -176,10 +177,14 @@ impl Object {
         }
     }
 
-    pub fn intersect_to_sorted_vec_testing<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
+    pub fn intersect_to_collection(&self, world_ray: &Ray) -> IntersectionCollection {
         let mut collector = IntersectionCollector::new(Some(self), false);
         self.intersect(world_ray, &mut collector);
-        collector.collect_sorted()
+        IntersectionCollection::from_collector(world_ray.clone(), collector)
+    }
+
+    pub fn intersect_to_sorted_vec_testing<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
+        self.intersect_to_collection(world_ray).into_vec()
     }
 
     pub fn intersection_times_testing(&self, world_ray: &Ray) -> Vec<f64> {
@@ -418,7 +423,7 @@ mod tests {
 
     use std::f64;
 
-    use crate::assert_approx_eq_low_prec;
+    use crate::{assert_approx_eq_low_prec, render::color::Color};
 
     use super::*;
 
@@ -443,7 +448,9 @@ mod tests {
     #[test]
     fn bbox_primitive_obj() {
         let mut expected = Shape::Cube.bounding_box();
-        let mut bbox_obj = Shape::Cube.bounding_box().as_object();
+        let mut bbox_obj = Shape::Cube
+            .bounding_box()
+            .as_object(BoundingBox::DEFAULT_DEBUG_BBOX_MATERIAL);
 
         assert_eq!(&expected, bbox_obj.bounding_box());
 
@@ -455,5 +462,29 @@ mod tests {
         bbox_obj.transform(&transformation);
 
         assert_eq!(bbox_obj.bounding_box(), &expected);
+    }
+
+    #[test]
+    fn bbox_primitive_obj_visibility() {
+        let material = Material::with_color(Color::red());
+        let mut cube = Object::primitive_with_shape(Shape::Cube);
+
+        let transformation = Matrix::rotation_x(f64::consts::FRAC_PI_4)
+            .translate(1., 2., 3.)
+            .transformed();
+
+        cube.transform(&transformation);
+
+        let group_with_bbox = cube.into_group_with_bbox(material);
+
+        let ray = Ray::new(Point::zero(), Vector::new(1., 2., 3.));
+
+        let c = group_with_bbox.intersect_to_collection(&ray);
+        let intersected_obj = c.hit().unwrap().object();
+
+        assert_eq!(
+            *intersected_obj.as_primitive().unwrap().shape(),
+            Shape::Bbox
+        );
     }
 }

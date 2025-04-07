@@ -6,6 +6,7 @@ use crate::primitive::matrix::{
     LocalTransform, LocalTransformation, LocalTransformations, Matrix, Transformation,
     Transformations,
 };
+use crate::render::object::bounding_box::BoundingBox;
 use crate::{
     primitive::{
         point::Point,
@@ -555,6 +556,18 @@ impl<'a> YamlParser<'a> {
         self.parse_object_with_kind(body, kind)
     }
 
+    // Option because the bbox is optional, so None means don't add bbox
+    fn parse_object_debug_bbox_material(&self, body: &Yaml) -> YamlParseResult<Option<Material>> {
+        if body.is_badvalue() {
+            return Ok(None);
+        }
+
+        match &body["material"] {
+            Yaml::BadValue => Ok(Some(BoundingBox::DEFAULT_DEBUG_BBOX_MATERIAL)),
+            body => self.parse_material(body).map(Some),
+        }
+    }
+
     fn parse_csg_object(&self, body: &Yaml) -> YamlParseResult<CsgObject> {
         let left = self.parse_object(&body["left"])?;
         let right = self.parse_object(&body["right"])?;
@@ -576,7 +589,7 @@ impl<'a> YamlParser<'a> {
         };
         let material = self.parse_material(&body["material"])?;
         let transformations = self.parse_transformations(&body["transform"])?;
-        let add_bbox = !body["bbox"].is_badvalue();
+        let bbox_material = self.parse_object_debug_bbox_material(&body["bbox"])?;
 
         let shape = match obj_kind {
             "group" | "obj" | "csg" => {
@@ -597,8 +610,8 @@ impl<'a> YamlParser<'a> {
                     res.local_transform(&transformations);
                 }
 
-                if add_bbox {
-                    return Ok(res.into_group_with_bbox());
+                if let Some(material) = bbox_material {
+                    return Ok(res.into_group_with_bbox(material));
                 }
                 return Ok(res);
             }
@@ -653,8 +666,9 @@ impl<'a> YamlParser<'a> {
             obj.local_transform(&transformations);
         }
 
-        if add_bbox {
-            return Ok(obj.into_group_with_bbox());
+        if let Some(material) = bbox_material {
+            println!("adding bbox");
+            return Ok(obj.into_group_with_bbox(material));
         }
         Ok(obj)
     }
@@ -866,6 +880,24 @@ mod tests {
         parse_str(source, WIDTH, HEIGHT, FOV).unwrap()
     }
 
+    fn test_parse_object<T, S: ToString, F>(
+        source: &str,
+        test_values: Vec<S>,
+        expected: Vec<T>,
+        getter: F,
+    ) where
+        T: PartialEq + Debug,
+        F: Fn(&Object) -> T,
+    {
+        let source = test_values
+            .into_iter()
+            .map(|s| source.replace("{}", &s.to_string()))
+            .collect::<String>();
+        let (world, _) = parse(&source);
+        let actual = world.objects().iter().map(getter).collect::<Vec<_>>();
+        assert_eq!(actual, expected);
+    }
+
     fn test_field<T, F>(
         source: &str,
         field: &str,
@@ -876,7 +908,7 @@ mod tests {
         T: PartialEq + Debug,
         F: Fn(&Object) -> T,
     {
-        let source = test_values
+        let test_values = test_values
             .into_iter()
             .map(|s| {
                 if s.is_empty() {
@@ -885,11 +917,8 @@ mod tests {
                     format!("{}: {}", field, s)
                 }
             })
-            .map(|s| source.replace("{}", &s))
-            .collect::<String>();
-        let (world, _) = parse(&source);
-        let actual = world.objects().iter().map(field_getter).collect::<Vec<_>>();
-        assert_eq!(actual, expected);
+            .collect::<Vec<String>>();
+        test_parse_object(source, test_values, expected, field_getter)
     }
 
     #[test]
@@ -1706,4 +1735,39 @@ mod tests {
 
     #[test]
     fn parse_local_transformations() {}
+
+    #[test]
+    fn add_debug_bbox_to_obj() {
+        let source = r#"
+- add: cube
+  bbox:
+    {}
+        "#;
+        let material_strings = vec![
+            r#"
+    material:
+        color: RED
+"#,
+            "",
+        ];
+
+        let expected_materials = vec![
+            Material::with_color(Color::red()),
+            BoundingBox::DEFAULT_DEBUG_BBOX_MATERIAL,
+        ];
+
+        test_parse_object(source, material_strings, expected_materials, |obj| {
+            obj.as_group()
+                .unwrap()
+                .children()
+                .iter()
+                .find(|obj| {
+                    obj.as_primitive()
+                        .is_some_and(|p| matches!(p.shape(), Shape::Bbox))
+                })
+                .unwrap()
+                .material_unwrapped()
+                .clone()
+        });
+    }
 }

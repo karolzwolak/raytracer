@@ -12,10 +12,10 @@ pub struct Color {
 }
 
 impl Color {
-    pub fn new(r: f64, g: f64, b: f64) -> Self {
+    pub const fn new(r: f64, g: f64, b: f64) -> Self {
         Self { r, g, b }
     }
-    pub fn with_uniform_intensity(intensity: f64) -> Self {
+    pub const fn with_uniform_intensity(intensity: f64) -> Self {
         Self::new(intensity, intensity, intensity)
     }
     pub fn with_hex(mut hex: &str) -> Self {
@@ -27,7 +27,7 @@ impl Color {
         let b = u8::from_str_radix(&hex[4..6], 16).unwrap() as f64 / 255.;
         Self::new(r, g, b)
     }
-    pub fn black() -> Self {
+    pub const fn black() -> Self {
         Self::new(0., 0., 0.)
     }
     pub fn red() -> Self {

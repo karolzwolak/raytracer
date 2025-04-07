@@ -204,8 +204,8 @@ impl ObjectGroup {
     pub fn children_mut(&mut self) -> &mut [Object] {
         self.children.as_mut()
     }
-    pub fn add_bounding_box_as_obj(&mut self) {
-        self.children.push(self.bounding_box.as_object())
+    pub fn add_bounding_box_as_obj(&mut self, material: Material) {
+        self.children.push(self.bounding_box.as_object(material))
     }
 
     pub fn primitive_count(&self) -> usize {

@@ -86,7 +86,7 @@ impl Material {
             ..Self::glass()
         }
     }
-    pub fn air() -> Self {
+    pub const fn air() -> Self {
         Self {
             pattern: Pattern::Const(Color::black()),
             ambient: 0.,

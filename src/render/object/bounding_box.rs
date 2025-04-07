@@ -69,6 +69,13 @@ impl BoundingBox {
 
 impl BoundingBox {
     const MAX_DIM: f64 = World::MAX_DIM;
+    pub const DEFAULT_DEBUG_BBOX_MATERIAL: Material = Material {
+        pattern: Pattern::Const(Color::with_uniform_intensity(0.5)),
+        transparency: 1.,
+        reflectivity: 0.,
+        ambient: 0.1,
+        ..Material::air()
+    };
     pub fn empty() -> Self {
         Self {
             min: Point::new(f64::INFINITY, f64::INFINITY, f64::INFINITY),
@@ -270,19 +277,8 @@ impl BoundingBox {
             .transformed()
     }
 
-    pub fn as_object(&self) -> Object {
-        let pattern = Pattern::Const(Color::new(0.5, 0.5, 0.5));
-        Object::primitive(
-            Shape::Bbox,
-            Material {
-                pattern,
-                transparency: 1.,
-                reflectivity: 0.,
-                ambient: 0.1,
-                ..Material::air()
-            },
-            self.as_cube_transformation(),
-        )
+    pub fn as_object(&self, material: Material) -> Object {
+        Object::primitive(Shape::Bbox, material, self.as_cube_transformation())
     }
     pub fn center(&self) -> Point {
         Point::new(
