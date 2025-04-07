@@ -26,6 +26,10 @@ pub enum Shape {
     Cone(Cone),
     Triangle(Triangle),
     SmoothTriangle(SmoothTriangle),
+    /// Bounding box for debug purposes
+    /// This variant will not have any methods implemented, it will act as regular cube,
+    /// but it's transformation will be different to preserve the axis-alignment
+    Bbox,
 }
 
 impl Shape {
@@ -42,6 +46,7 @@ impl Shape {
             Shape::Cone(cone) => cone.local_normal_at(object_point),
             Shape::Triangle(triangle) => triangle.normal(),
             Shape::SmoothTriangle(triangle) => triangle.local_normal_at(i),
+            Shape::Bbox => UnitCube::local_normal_at(object_point),
         }
     }
     pub fn local_intersect(&self, object_ray: &Ray, collector: &mut IntersectionCollector) {
@@ -53,6 +58,7 @@ impl Shape {
             Shape::Cone(cone) => cone.local_intersect(object_ray, collector),
             Shape::Triangle(triangle) => triangle.local_intersect(object_ray, collector),
             Shape::SmoothTriangle(triangle) => triangle.local_intersect(object_ray, collector),
+            Shape::Bbox => UnitCube::local_intersect(object_ray, collector),
         }
     }
     pub fn bounding_box(&self) -> BoundingBox {
@@ -64,6 +70,7 @@ impl Shape {
             Shape::Cone(cone) => cone.bounding_box(),
             Shape::Triangle(triangle) => triangle.bounding_box(),
             Shape::SmoothTriangle(triangle) => triangle.bounding_box(),
+            Shape::Bbox => UnitCube::bounding_box(),
         };
         bbox.limit_dimensions();
         bbox

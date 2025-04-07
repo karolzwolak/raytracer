@@ -576,6 +576,7 @@ impl<'a> YamlParser<'a> {
         };
         let material = self.parse_material(&body["material"])?;
         let transformations = self.parse_transformations(&body["transform"])?;
+        let add_bbox = !body["bbox"].is_badvalue();
 
         let shape = match obj_kind {
             "group" | "obj" | "csg" => {
@@ -594,6 +595,10 @@ impl<'a> YamlParser<'a> {
                 }
                 if !transformations.vec().is_empty() {
                     res.local_transform(&transformations);
+                }
+
+                if add_bbox {
+                    return Ok(res.into_group_with_bbox());
                 }
                 return Ok(res);
             }
@@ -648,6 +653,9 @@ impl<'a> YamlParser<'a> {
             obj.local_transform(&transformations);
         }
 
+        if add_bbox {
+            return Ok(obj.into_group_with_bbox());
+        }
         Ok(obj)
     }
 

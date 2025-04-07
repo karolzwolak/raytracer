@@ -261,17 +261,21 @@ impl BoundingBox {
         result
     }
 
-    pub fn as_object(&self) -> Object {
+    pub fn as_cube_transformation(&self) -> Matrix {
         // render slightly bigger box to avoid z-fighting
         const LEN_FACTOR: f64 = 0.5 * (1. + approx_eq::LOW_PREC_EPSILON);
-
-        let x_len = self.max.x() - self.min.x();
-        let y_len = self.max.y() - self.min.y();
-        let z_len = self.max.z() - self.min.z();
         let center = self.center();
+        let scale = self.size() * LEN_FACTOR;
+
+        Matrix::scaling(scale.x(), scale.y(), scale.z())
+            .translate(center.x(), center.y(), center.z())
+            .transformed()
+    }
+
+    pub fn as_object(&self) -> Object {
         let pattern = Pattern::Const(Color::new(0.5, 0.5, 0.5));
         Object::primitive(
-            Shape::Cube,
+            Shape::Bbox,
             Material {
                 pattern,
                 transparency: 1.,
@@ -279,10 +283,7 @@ impl BoundingBox {
                 ambient: 0.1,
                 ..Material::air()
             },
-            Matrix::identity()
-                .scale(x_len * LEN_FACTOR, y_len * LEN_FACTOR, z_len * LEN_FACTOR)
-                .translate(center.x(), center.y(), center.z())
-                .transformed(),
+            self.as_cube_transformation(),
         )
     }
     pub fn center(&self) -> Point {

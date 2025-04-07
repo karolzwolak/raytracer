@@ -149,6 +149,10 @@ impl Object {
         self.normal_vector_at_with_intersection(world_point, None)
     }
 
+    pub fn into_group_with_bbox(self) -> Object {
+        ObjectGroup::new(vec![self.bounding_box().as_object(), self]).into()
+    }
+
     pub fn normal_vector_at_with_intersection<'a>(
         &self,
         world_point: Point,
@@ -395,6 +399,11 @@ impl Transform for PrimitiveObject {
         match (&mut self.shape, &mut self.transformation_inverse) {
             (Shape::Triangle(t), _) => t.transform(matrix),
             (Shape::SmoothTriangle(t), _) => t.transform(matrix),
+            (Shape::Bbox, _) => {
+                self.bbox.transform(matrix);
+                self.transformation_inverse =
+                    Some(self.bbox.as_cube_transformation().inverse().unwrap());
+            }
             (_, Some(inv)) => {
                 *inv = matrix.inverse().unwrap().transform_new(inv);
             }
