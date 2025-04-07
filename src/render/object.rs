@@ -113,21 +113,29 @@ impl Object {
     }
 }
 
+impl From<ObjectKind> for Object {
+    fn from(value: ObjectKind) -> Self {
+        Self::with_kind(value)
+    }
+}
+
 impl Object {
     pub fn animated(kind: ObjectKind, animations: Animations) -> Self {
         Self { kind, animations }
     }
-    pub fn from_group(group: ObjectGroup) -> Self {
+
+    pub fn with_kind(kind: ObjectKind) -> Self {
         Self {
-            animations: Animations::empty(),
-            kind: ObjectKind::Group(group),
+            kind,
+            animations: Animations::default(),
         }
     }
+
+    pub fn from_group(group: ObjectGroup) -> Self {
+        Self::with_kind(ObjectKind::group(group))
+    }
     pub fn from_primitive(obj: PrimitiveObject) -> Self {
-        Self {
-            animations: Animations::empty(),
-            kind: ObjectKind::Primitive(Box::new(obj)),
-        }
+        Self::with_kind(ObjectKind::primitive(obj))
     }
     pub fn group_with_children(children: Vec<Object>) -> Self {
         Self::from_group(ObjectGroup::new(children))
@@ -149,9 +157,17 @@ impl Object {
         self.normal_vector_at_with_intersection(world_point, None)
     }
 
-    pub fn into_group_with_bbox(self, material: Material) -> Object {
+    /// turns this object into a group that contains this object and it's bounding box
+    pub fn into_group_with_bbox(&mut self, material: Material) {
         let bbox = self.bounding_box().as_object(material);
-        ObjectGroup::new(vec![bbox, self]).into()
+        // we turn this object into a group, to preserve object fields like animations
+        let kind = std::mem::replace(&mut self.kind, ObjectKind::Group(ObjectGroup::empty()));
+        let this = Object::with_kind(kind);
+
+        let group = self.as_group_mut().unwrap();
+
+        group.add_child(this);
+        group.add_child(bbox);
     }
 
     pub fn normal_vector_at_with_intersection<'a>(
@@ -423,7 +439,14 @@ mod tests {
 
     use std::f64;
 
-    use crate::{assert_approx_eq_low_prec, render::color::Color};
+    use crate::{
+        assert_approx_eq_low_prec,
+        primitive::matrix::LocalTransformations,
+        render::{
+            animations::{Animation, TransformAnimation},
+            color::Color,
+        },
+    };
 
     use super::*;
 
@@ -465,6 +488,27 @@ mod tests {
     }
 
     #[test]
+    fn object_into_group_with_bbox() {
+        let material = Material::with_color(Color::red());
+        let mut cube = Object::primitive_with_shape(Shape::Cube);
+
+        let transformation = Matrix::rotation_x(f64::consts::FRAC_PI_4)
+            .translate(1., 2., 3.)
+            .transformed();
+
+        cube.transform(&transformation);
+        let expected_bbox = cube.bounding_box().clone();
+
+        cube.into_group_with_bbox(material);
+
+        let group = cube.as_group().unwrap();
+        assert_eq!(group.bounding_box(), &expected_bbox);
+        assert_eq!(group.children().len(), 2);
+        assert_eq!(group.children()[0].bounding_box(), &expected_bbox);
+        assert_eq!(group.children()[1].bounding_box(), &expected_bbox);
+    }
+
+    #[test]
     fn bbox_primitive_obj_visibility() {
         let material = Material::with_color(Color::red());
         let mut cube = Object::primitive_with_shape(Shape::Cube);
@@ -475,7 +519,8 @@ mod tests {
 
         cube.transform(&transformation);
 
-        let group_with_bbox = cube.into_group_with_bbox(material);
+        cube.into_group_with_bbox(material);
+        let group_with_bbox = cube;
 
         let ray = Ray::new(Point::zero(), Vector::new(1., 2., 3.));
 
@@ -486,5 +531,20 @@ mod tests {
             *intersected_obj.as_primitive().unwrap().shape(),
             Shape::Bbox
         );
+    }
+
+    #[test]
+    fn into_group_with_bbox_preserves_fields() {
+        let animations = Animations::with_vec(vec![TransformAnimation::new(
+            Animation::default(),
+            LocalTransformations::default(),
+        )]);
+
+        let kind = ObjectKind::primitive(PrimitiveObject::with_shape(Shape::Cube));
+        let mut animated = Object::animated(kind, animations.clone());
+
+        assert_eq!(animated.animations, animations);
+        animated.into_group_with_bbox(Material::default());
+        assert_eq!(animated.animations, animations);
     }
 }

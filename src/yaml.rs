@@ -611,7 +611,7 @@ impl<'a> YamlParser<'a> {
                 }
 
                 if let Some(material) = bbox_material {
-                    return Ok(res.into_group_with_bbox(material));
+                    res.into_group_with_bbox(material);
                 }
                 return Ok(res);
             }
@@ -667,8 +667,7 @@ impl<'a> YamlParser<'a> {
         }
 
         if let Some(material) = bbox_material {
-            println!("adding bbox");
-            return Ok(obj.into_group_with_bbox(material));
+            obj.into_group_with_bbox(material);
         }
         Ok(obj)
     }
