@@ -1,0 +1,11 @@
+pre-commit:
+  piped: true
+  commands:
+    install:
+      run: rustup component add rustfmt clippy
+    fmt:
+      run: cargo fmt -- --check
+    clippy:
+      run: cargo clippy --tests -- -D warnings
+    test:
+      run: cargo test
