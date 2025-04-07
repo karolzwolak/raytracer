@@ -72,7 +72,7 @@ impl Shape {
             Shape::SmoothTriangle(triangle) => triangle.bounding_box(),
             Shape::Bbox => UnitCube::bounding_box(),
         };
-        bbox.limit_dimensions();
+        bbox.clamp_dimensions();
         bbox
     }
     pub fn cylinder(height: f64, closed: bool) -> Self {

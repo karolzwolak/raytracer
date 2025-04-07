@@ -122,14 +122,9 @@ impl BoundingBox {
             (tmax, tmin)
         }
     }
-    pub fn limit_dimensions(&mut self) {
-        self.max.limit_upper(Self::MAX_DIM);
-        self.min.limit_lower(-Self::MAX_DIM);
-        let inf = self.is_infinitely_large();
-        if inf {
-            println!("{:?}", self);
-        }
-        assert!(!self.is_infinitely_large());
+    pub fn clamp_dimensions(&mut self) {
+        self.min.clamp(-Self::MAX_DIM, Self::MAX_DIM);
+        self.max.clamp(-Self::MAX_DIM, Self::MAX_DIM);
     }
     pub fn is_infinitely_large(&self) -> bool {
         !self.is_empty() && (self.max - self.min).magnitude() == f64::INFINITY
@@ -405,5 +400,11 @@ mod tests {
         bb2.add_point(Point::new(1.0, 2.0, 2.0));
 
         assert_approx_eq_low_prec!(bb1.distance(&bb2), 1.0);
+    }
+
+    #[test]
+    fn as_object_works_for_infinite_shapes() {
+        let bbox = Shape::Plane.bounding_box();
+        bbox.as_object(BoundingBox::DEFAULT_DEBUG_BBOX_MATERIAL);
     }
 }

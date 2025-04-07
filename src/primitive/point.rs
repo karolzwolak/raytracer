@@ -70,15 +70,11 @@ impl Point {
             self.z.round() as usize,
         ))
     }
-    pub fn limit_upper(&mut self, limit: f64) {
-        self.x = self.x.min(limit);
-        self.y = self.y.min(limit);
-        self.z = self.z.min(limit);
-    }
-    pub fn limit_lower(&mut self, limit: f64) {
-        self.x = self.x.max(limit);
-        self.y = self.y.max(limit);
-        self.z = self.z.max(limit);
+
+    pub fn clamp(&mut self, min: f64, max: f64) {
+        self.x = self.x.clamp(min, max);
+        self.y = self.x.clamp(min, max);
+        self.z = self.x.clamp(min, max);
     }
 }
 
