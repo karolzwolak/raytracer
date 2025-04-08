@@ -117,12 +117,12 @@ A scene file typically contains:
 - Camera definition
 - Light sources
 - Objects with materials and transformations
-- Optional world settings (supersampling, recursion depth)
+- Optional scene settings (supersampling, recursion depth)
 
 Example:
 
 ```yaml
-- add: world
+- add: scene
   max-reflective-depth: 5
   supersampling-level: 2
 

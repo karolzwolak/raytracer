@@ -1,4 +1,4 @@
-- add: world
+- add: scene
   max-reflective-depth: 8
 
 - define: gray

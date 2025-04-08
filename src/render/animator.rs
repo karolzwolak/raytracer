@@ -11,7 +11,7 @@ use std::thread;
 use std::time::Duration;
 use webp::WebPConfig;
 
-use super::{camera::Camera, canvas::Canvas, world::World};
+use super::{camera::Camera, canvas::Canvas, scene::Scene};
 
 #[derive(Debug, Copy, Clone, PartialEq, ValueEnum)]
 pub enum AnimationFormat {
@@ -31,19 +31,19 @@ impl Display for AnimationFormat {
 }
 
 pub struct Animator {
-    world: World,
+    scene: Scene,
     camera: Camera,
     framerate: u32,
     duration_sec: f64,
 }
 
 impl Animator {
-    pub fn new(world: World, camera: Camera, framerate: u32, duration_sec: f64) -> Option<Self> {
+    pub fn new(scene: Scene, camera: Camera, framerate: u32, duration_sec: f64) -> Option<Self> {
         if framerate == 0 || duration_sec == 0. {
             return None;
         }
         Some(Self {
-            world,
+            scene,
             camera,
             framerate,
             duration_sec,
@@ -51,9 +51,9 @@ impl Animator {
     }
 
     fn render_frame(&self, time: f64, progressbar: indicatif::ProgressBar) -> Canvas {
-        let mut world = self.world.clone();
-        world.animate(time);
-        world.render_animation_frame(&self.camera, progressbar)
+        let mut scene = self.scene.clone();
+        scene.animate(time);
+        scene.render_animation_frame(&self.camera, progressbar)
     }
 
     fn frame_count(&self) -> u32 {
@@ -182,13 +182,13 @@ mod tests {
 
     use crate::{
         approx_eq::ApproxEq,
-        render::{animator::Animator, camera::Camera, world::World},
+        render::{animator::Animator, camera::Camera, scene::Scene},
     };
 
     fn animator(framerate: u32, duration_sec: f64) -> Animator {
-        let world = World::default_testing();
+        let scene = Scene::default_testing();
         let camera = Camera::new(10, 10, 1.);
-        Animator::new(world, camera, framerate, duration_sec).unwrap()
+        Animator::new(scene, camera, framerate, duration_sec).unwrap()
     }
 
     fn default_animator() -> Animator {

@@ -1428,7 +1428,7 @@ mod tests {
         )
     }
     #[test]
-    fn view_transformation_moves_the_world() {
+    fn view_transformation_moves_the_scene() {
         let from = Point::new(0., 0., 8.);
         let to = Point::zero();
         let up_v = Vector::new(0., 1., 0.);

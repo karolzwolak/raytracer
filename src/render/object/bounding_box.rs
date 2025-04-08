@@ -12,7 +12,7 @@ use crate::{
         object::{shape::Shape, Object},
         pattern::Pattern,
         ray::Ray,
-        world::World,
+        scene::Scene,
     },
 };
 
@@ -68,7 +68,7 @@ impl BoundingBox {
 }
 
 impl BoundingBox {
-    const MAX_DIM: f64 = World::MAX_DIM;
+    const MAX_DIM: f64 = Scene::MAX_DIM;
     pub const DEFAULT_DEBUG_BBOX_MATERIAL: Material = Material {
         pattern: Pattern::Const(Color::with_uniform_intensity(0.5)),
         transparency: 1.,

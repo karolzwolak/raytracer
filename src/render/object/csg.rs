@@ -110,12 +110,12 @@ impl CsgObject {
         });
         // note: the collection is temporary so we don't care about calculating hit
     }
-    pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
+    pub fn intersect<'a>(&'a self, scene_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
         let mut temp_collector = IntersectionCollector::new(None, false);
-        self.left.intersect(world_ray, &mut temp_collector);
-        self.right.intersect(world_ray, &mut temp_collector);
+        self.left.intersect(scene_ray, &mut temp_collector);
+        self.right.intersect(scene_ray, &mut temp_collector);
         let mut collection =
-            IntersectionCollection::from_collector(world_ray.clone(), temp_collector);
+            IntersectionCollection::from_collector(scene_ray.clone(), temp_collector);
         self.filter_intersections(&mut collection);
         collection.into_vec().into_iter().for_each(|i| {
             collector.push(i);

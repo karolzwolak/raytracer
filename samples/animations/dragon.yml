@@ -9,7 +9,7 @@
   at: [ 1, 5, -6 ]
   intensity: [0.5, 0.5, 0.5]
 
-- add: world
+- add: scene
   max-reflective-depth: 1
   supersampling-level: 1
 

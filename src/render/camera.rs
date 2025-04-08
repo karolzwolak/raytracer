@@ -76,10 +76,10 @@ impl Camera {
         let x_offset_to_center = (x + 0.5) * self.pixel_size;
         let y_offset_to_center = (y + 0.5) * self.pixel_size;
 
-        let world_x = self.half_width - x_offset_to_center;
-        let world_y = self.half_height - y_offset_to_center;
+        let scene_x = self.half_width - x_offset_to_center;
+        let scene_y = self.half_height - y_offset_to_center;
 
-        let pixel = self.inverse_transformation * Point::new(world_x, world_y, -1.);
+        let pixel = self.inverse_transformation * Point::new(scene_x, scene_y, -1.);
         let origin = self.inverse_transformation * Point::zero();
         let direction = pixel - origin;
 
@@ -115,7 +115,7 @@ mod tests {
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         primitive::{matrix::Transform, tuple::Tuple, vector::Vector},
-        render::{color::Color, world::World},
+        render::{color::Color, scene::Scene},
     };
 
     use super::*;
@@ -177,8 +177,8 @@ mod tests {
     }
 
     #[test]
-    fn render_world_with_camera() {
-        let mut world = World::default_testing();
+    fn render_scene_with_camera() {
+        let mut scene = Scene::default_testing();
 
         let from = Point::new(0., 0., -5.);
         let to = Point::new(0., 0., 0.);
@@ -191,7 +191,7 @@ mod tests {
             Matrix::view_tranformation(from, to, up_v),
         );
 
-        let canvas = world.render(&camera);
+        let canvas = scene.render(&camera);
         assert_approx_eq_low_prec!(canvas.pixel_at(5, 5), Color::new(0.38066, 0.47583, 0.2855));
     }
 }

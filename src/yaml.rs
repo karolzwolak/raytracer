@@ -31,7 +31,7 @@ use crate::{
             Object, ObjectKind, PrimitiveObject,
         },
         pattern::Pattern,
-        world::World,
+        scene::Scene,
     },
 };
 
@@ -140,13 +140,13 @@ const PREDEFINED_DEFINES: &str = r#"
 // TODO: Actual errors
 pub struct YamlParser<'a> {
     yaml: &'a Yaml,
-    world: World,
+    scene: Scene,
     camera: Camera,
     defines: HashMap<String, Yaml>,
 }
 
 type YamlParseResult<T> = Result<T, YamlParseError>;
-type YamlParserOutput = YamlParseResult<(World, Camera)>;
+type YamlParserOutput = YamlParseResult<(Scene, Camera)>;
 
 macro_rules! parse_optional_field {
     ($self:ident, $yaml_body:ident, $base:ident, $field:ident) => {
@@ -199,13 +199,13 @@ macro_rules! rotation_transformation {
 }
 
 impl<'a> YamlParser<'a> {
-    fn with_world_and_camera(yaml: &'a Yaml, default_world: World, default_camera: Camera) -> Self {
+    fn with_scene_and_camera(yaml: &'a Yaml, default_scene: Scene, default_camera: Camera) -> Self {
         let parsed = saphyr::Yaml::load_from_str(PREDEFINED_DEFINES).unwrap();
         let predefined = parsed.first().unwrap();
 
         let mut predefined_parser = YamlParser {
             yaml: predefined,
-            world: World::empty(),
+            scene: Scene::empty(),
             camera: Camera::new(1, 1, 1.),
             defines: HashMap::new(),
         };
@@ -215,7 +215,7 @@ impl<'a> YamlParser<'a> {
         // println!("{:?}", predefined_parser.defines);
         Self {
             yaml,
-            world: default_world,
+            scene: default_scene,
             camera: default_camera,
             defines: predefined_parser.defines,
         }
@@ -675,22 +675,22 @@ impl<'a> YamlParser<'a> {
         Ok(obj)
     }
 
-    fn parse_world(&mut self, body: &Yaml) -> YamlParseResult<()> {
+    fn parse_scene(&mut self, body: &Yaml) -> YamlParseResult<()> {
         match &body["supersampling-level"] {
             &Yaml::BadValue => {}
             val => self
-                .world
+                .scene
                 .set_supersampling_level(self.parse_num(val)? as usize),
         }
         match &body["depth"] {
             &Yaml::BadValue => {}
             val => self
-                .world
+                .scene
                 .set_max_recursive_depth(self.parse_num(val)? as usize),
         }
         match &body["use-shadow-intensity"] {
             &Yaml::BadValue => {}
-            val => self.world.set_use_shadow_intensity(self.parse_bool(val)?),
+            val => self.scene.set_use_shadow_intensity(self.parse_bool(val)?),
         }
         Ok(())
     }
@@ -699,19 +699,19 @@ impl<'a> YamlParser<'a> {
         match what {
             "light" => {
                 let light = self.parse_light(body)?;
-                self.world.add_light(light);
+                self.scene.add_light(light);
             }
             "camera" => {
                 let camera = self.parse_camera(body)?;
                 self.camera = camera;
             }
-            "world" => {
-                self.parse_world(body)?;
+            "scene" => {
+                self.parse_scene(body)?;
             }
             "group" | "obj" | "sphere" | "cube" | "plane" | "cylinder" | "cone" | "triangle"
             | "smooth-triangle" | "csg" => {
                 let object = self.parse_object_with_kind(body, what)?;
-                self.world.add_obj(object);
+                self.scene.add_obj(object);
             }
             name => {
                 if let Some(def) = self.defines.get(name) {
@@ -832,7 +832,7 @@ impl<'a> YamlParser<'a> {
 
     fn parse_consume(mut self) -> YamlParserOutput {
         self.parse()?;
-        Ok((self.world, self.camera))
+        Ok((self.scene, self.camera))
     }
 }
 
@@ -849,11 +849,11 @@ impl YamlParser<'_> {
 }
 
 pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> YamlParserOutput {
-    let world = World::empty();
+    let scene = Scene::empty();
     let camera = Camera::new(width, height, fov);
 
     let yaml = YamlParser::str_to_yaml(source)?;
-    let parser = YamlParser::with_world_and_camera(&yaml, world, camera);
+    let parser = YamlParser::with_scene_and_camera(&yaml, scene, camera);
 
     parser.parse_consume()
 }
@@ -884,7 +884,7 @@ mod tests {
     const HEIGHT: usize = 800;
     const FOV: f64 = std::f64::consts::PI / 2.0;
 
-    fn parse(source: &str) -> (World, Camera) {
+    fn parse(source: &str) -> (Scene, Camera) {
         parse_str(source, WIDTH, HEIGHT, FOV).unwrap()
     }
 
@@ -901,8 +901,8 @@ mod tests {
             .into_iter()
             .map(|s| source.replace("{}", &s.to_string()))
             .collect::<String>();
-        let (world, _) = parse(&source);
-        let actual = world.objects().iter().map(getter).collect::<Vec<_>>();
+        let (scene, _) = parse(&source);
+        let actual = scene.objects().iter().map(getter).collect::<Vec<_>>();
         assert_eq!(actual, expected);
     }
 
@@ -931,8 +931,8 @@ mod tests {
 
     #[test]
     fn empty_yaml() {
-        let (world, camera) = parse("");
-        assert_eq!(world, World::empty());
+        let (scene, camera) = parse("");
+        assert_eq!(scene, Scene::empty());
         assert_eq!(camera, Camera::new(WIDTH, HEIGHT, FOV));
     }
     #[test]
@@ -948,9 +948,9 @@ mod tests {
   at: [ 50, 100, -50 ]
   intensity: [ 1, 1, 1]
 "#;
-        let (world, _) = parse(LIGHT_YAML);
+        let (scene, _) = parse(LIGHT_YAML);
         let expected_light = PointLightSource::new(Point::new(50., 100., -50.), Color::white());
-        assert_eq!(world.light_sources().first(), Some(&expected_light));
+        assert_eq!(scene.light_sources().first(), Some(&expected_light));
     }
 
     #[test]
@@ -988,17 +988,17 @@ mod tests {
     }
 
     #[test]
-    fn parse_world() {
-        const WORLD_YAML: &str = r#"
-- add: world
+    fn parse_scene() {
+        const SCENE_YAML: &str = r#"
+- add: scene
   max-reflective-depth: 4
   supersampling-level: 3
   use-shadow-intensity: false
 "#;
-        let (world, _) = parse(WORLD_YAML);
-        assert_eq!(world.max_recursive_depth(), 4);
-        assert_eq!(world.supersampling_level(), 3);
-        assert!(!world.use_shadow_intensity());
+        let (scene, _) = parse(SCENE_YAML);
+        assert_eq!(scene.max_recursive_depth(), 4);
+        assert_eq!(scene.supersampling_level(), 3);
+        assert!(!scene.use_shadow_intensity());
     }
 
     #[test]
@@ -1014,7 +1014,7 @@ mod tests {
     - [ rotate-x, 1.5707963267948966 ] # pi/2
     - [ translate, 0, 0, 500 ]
 "#;
-        let (world, _) = parse(PLANE_YAML);
+        let (scene, _) = parse(PLANE_YAML);
         let expected_material = Material {
             pattern: Pattern::Const(Color::white()),
             ambient: 1.,
@@ -1027,7 +1027,7 @@ mod tests {
             .transformed();
         let expected_object =
             Object::primitive(Shape::Plane, expected_material, expected_transformation);
-        assert_eq!(world.objects(), vec![expected_object]);
+        assert_eq!(scene.objects(), vec![expected_object]);
     }
 
     #[test]
@@ -1035,9 +1035,9 @@ mod tests {
         const DEFAULT_SPHERE_YAML: &str = r#"
 - add: sphere
 "#;
-        let (world, _) = parse(DEFAULT_SPHERE_YAML);
+        let (scene, _) = parse(DEFAULT_SPHERE_YAML);
         let sphere = Object::primitive(Shape::Sphere, Material::default(), Matrix::identity());
-        assert_eq!(world.objects(), vec![sphere]);
+        assert_eq!(scene.objects(), vec![sphere]);
     }
 
     #[test]
@@ -1054,7 +1054,7 @@ mod tests {
     transparency: 0.7
     refractive-index: 1.5
 "#;
-        let (world, _) = parse(SPHERE_YAML);
+        let (scene, _) = parse(SPHERE_YAML);
         let expected_material = Material {
             pattern: Pattern::Const(Color::new(0.373, 0.404, 0.550)),
             ambient: 0.,
@@ -1068,7 +1068,7 @@ mod tests {
         let expected_object =
             Object::primitive(Shape::Sphere, expected_material, Matrix::identity());
 
-        assert_eq!(world.objects(), vec![expected_object]);
+        assert_eq!(scene.objects(), vec![expected_object]);
     }
 
     #[test]
@@ -1087,7 +1087,7 @@ mod tests {
 - add: cube
   material: blue-material
 "#;
-        let (world, _) = parse(DEFINE_MATERIALS_YAML);
+        let (scene, _) = parse(DEFINE_MATERIALS_YAML);
         let white_material = Material {
             pattern: Pattern::Const(Color::white()),
             diffuse: 0.7,
@@ -1102,7 +1102,7 @@ mod tests {
         let blue_cube = Object::primitive(Shape::Cube, blue_material, Matrix::identity());
         let expected_objects = vec![white_sphere, blue_cube];
 
-        assert_eq!(world.objects(), expected_objects);
+        assert_eq!(scene.objects(), expected_objects);
     }
 
     #[test]
@@ -1123,7 +1123,7 @@ mod tests {
   transform: 
     - large-object
 "#;
-        let (world, _) = parse(DEFINE_TRANSFORMS_YAML);
+        let (scene, _) = parse(DEFINE_TRANSFORMS_YAML);
         let standard_transform = Matrix::translation(1., -1., 1.)
             .scale(0.5, 0.5, 0.5)
             .transformed();
@@ -1131,7 +1131,7 @@ mod tests {
         let sphere = Object::primitive(Shape::Sphere, Material::default(), standard_transform);
         let cube = Object::primitive(Shape::Cube, Material::default(), large_object_transform);
         let expected_objects = vec![sphere, cube];
-        assert_eq!(world.objects(), expected_objects);
+        assert_eq!(scene.objects(), expected_objects);
     }
 
     #[test]
@@ -1148,7 +1148,7 @@ mod tests {
       material:
         color: [ 0, 1, 0 ]
 "#;
-        let (world, _) = parse(GROUP_YAML);
+        let (scene, _) = parse(GROUP_YAML);
         let red_material = Material {
             pattern: Pattern::Const(Color::red()),
             ..Material::default()
@@ -1163,7 +1163,7 @@ mod tests {
 
         let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
 
-        assert_eq!(world.objects(), vec![Object::from_group(group)]);
+        assert_eq!(scene.objects(), vec![Object::from_group(group)]);
     }
 
     #[test]
@@ -1193,12 +1193,12 @@ mod tests {
 - add: obj
   file: samples/obj/teapot-low.obj
 "#;
-        let (world, _) = parse(OBJ_YAML);
+        let (scene, _) = parse(OBJ_YAML);
         let parser = ObjParser::new();
         let path = "samples/obj/teapot-low.obj";
         let data = std::fs::read_to_string(path).unwrap();
         let expected_group = parser.parse(data).unwrap();
-        assert_eq!(world.objects(), vec![Object::from_group(expected_group)]);
+        assert_eq!(scene.objects(), vec![Object::from_group(expected_group)]);
     }
 
     #[test]
@@ -1211,14 +1211,14 @@ mod tests {
   material:
     color: [ 1, 0, 0 ]
 "#;
-        let (world, _) = parse(USE_DEFINE_IN_ADD_YAML);
+        let (scene, _) = parse(USE_DEFINE_IN_ADD_YAML);
         let red_material = Material {
             pattern: Pattern::Const(Color::red()),
             ..Material::default()
         };
         let red_cube = Object::primitive(Shape::Cube, red_material, Matrix::identity());
         let expected_objects = vec![red_cube];
-        assert_eq!(world.objects(), expected_objects);
+        assert_eq!(scene.objects(), expected_objects);
     }
 
     #[test]
@@ -1231,14 +1231,14 @@ mod tests {
     color: red
 "#;
 
-        let (world, _) = parse(DEFINE_COLOR_YAML);
+        let (scene, _) = parse(DEFINE_COLOR_YAML);
         let red_material = Material {
             pattern: Pattern::Const(Color::red()),
             ..Material::default()
         };
         let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
         let expected_objects = vec![red_sphere];
-        assert_eq!(world.objects(), expected_objects);
+        assert_eq!(scene.objects(), expected_objects);
     }
 
     #[test]
@@ -1250,10 +1250,10 @@ mod tests {
   closed: true
 "#;
 
-        let (world, _) = parse(CYLINDER_YAML);
+        let (scene, _) = parse(CYLINDER_YAML);
         let cylinder_shape = Cylinder::new(1., 5., true);
         let expected_object = Object::primitive_with_shape(Shape::Cylinder(cylinder_shape));
-        assert_eq!(world.objects(), vec![expected_object]);
+        assert_eq!(scene.objects(), vec![expected_object]);
     }
 
     #[test]
@@ -1265,14 +1265,14 @@ mod tests {
   closed: true
 "#;
 
-        let (world, _) = parse(CONE_YAML);
+        let (scene, _) = parse(CONE_YAML);
         let cylinder_shape = Cone {
             y_min: 1.,
             y_max: 5.,
             closed: true,
         };
         let expected_object = Object::primitive_with_shape(Shape::Cone(cylinder_shape));
-        assert_eq!(world.objects(), vec![expected_object]);
+        assert_eq!(scene.objects(), vec![expected_object]);
     }
 
     #[test]
@@ -1284,14 +1284,14 @@ mod tests {
   p3: [ 1, 0, 0 ]
 "#;
 
-        let (world, _) = parse(TRIANGLE_YAML);
+        let (scene, _) = parse(TRIANGLE_YAML);
         let triangle = Object::primitive_with_shape(Shape::Triangle(Triangle::new(
             Point::new(0., 1., 0.),
             Point::new(-1., 0., 0.),
             Point::new(1., 0., 0.),
         )));
         let expected_objects = vec![triangle];
-        assert_eq!(world.objects(), expected_objects);
+        assert_eq!(scene.objects(), expected_objects);
     }
     #[test]
     fn parse_smooth_triangle() {
@@ -1305,7 +1305,7 @@ mod tests {
   n3: [ 1, 0, 0 ]
 "#;
 
-        let (world, _) = parse(SMOOTH_TRIANGLE_YAML);
+        let (scene, _) = parse(SMOOTH_TRIANGLE_YAML);
         let triangle = Object::primitive_with_shape(Shape::SmoothTriangle(SmoothTriangle::new(
             Point::new(0., 1., 0.),
             Point::new(-1., 0., 0.),
@@ -1315,7 +1315,7 @@ mod tests {
             Vector::new(1., 0., 0.),
         )));
         let expected_objects = vec![triangle];
-        assert_eq!(world.objects(), expected_objects);
+        assert_eq!(scene.objects(), expected_objects);
     }
 
     #[test]
@@ -1370,7 +1370,7 @@ mod tests {
       transform:
         - transformation
 "#;
-        let (world, _) = parse(PATTERNS_YAML);
+        let (scene, _) = parse(PATTERNS_YAML);
         let red = Color::red();
         let green = Color::green();
         let transformation = Matrix::scaling_uniform(0.1);
@@ -1384,7 +1384,7 @@ mod tests {
             Object::primitive(Shape::Cube, ring, Matrix::identity()),
             Object::primitive(Shape::Cube, checkers, Matrix::identity()),
         ];
-        assert_eq!(world.objects(), expected_objects);
+        assert_eq!(scene.objects(), expected_objects);
     }
 
     #[test]
@@ -1397,13 +1397,13 @@ mod tests {
 - add: sphere
   material: AIR_MATERIAL
 "#;
-        let (world, _) = parse(source);
+        let (scene, _) = parse(source);
         let glass_sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
         let mirror_sphere =
             Object::primitive(Shape::Sphere, Material::mirror(), Matrix::identity());
         let air_sphere = Object::primitive(Shape::Sphere, Material::air(), Matrix::identity());
         let expected_objects = vec![glass_sphere, mirror_sphere, air_sphere];
-        assert_eq!(world.objects(), expected_objects);
+        assert_eq!(scene.objects(), expected_objects);
     }
 
     #[test]
@@ -1412,7 +1412,7 @@ mod tests {
 - add: SCENE_LIGHT
 - add: SCENE_CAMERA
 "#;
-        let (world, camera) = parse(source);
+        let (scene, camera) = parse(source);
         let expected_camera = Camera::with_transformation(
             WIDTH,
             HEIGHT,
@@ -1425,7 +1425,7 @@ mod tests {
         );
         let light = PointLightSource::new(Point::new(-10., 10., -10.), Color::white());
         assert_eq!(camera, expected_camera);
-        assert_eq!(world.light_sources().first(), Some(&light));
+        assert_eq!(scene.light_sources().first(), Some(&light));
     }
 
     #[test]
@@ -1442,7 +1442,7 @@ mod tests {
     transparency: FRAC_1_SQRT_2
     refractive-index: 2_PI
 "#;
-        let (world, _) = parse(source);
+        let (scene, _) = parse(source);
         let material = Material {
             refractive_index: 2. * std::f64::consts::PI,
             ambient: std::f64::consts::PI,
@@ -1454,7 +1454,7 @@ mod tests {
             ..Material::default()
         };
         let sphere = Object::primitive(Shape::Sphere, material, Matrix::identity());
-        assert_eq!(world.objects(), vec![sphere]);
+        assert_eq!(scene.objects(), vec![sphere]);
     }
 
     #[test]
@@ -1476,7 +1476,7 @@ mod tests {
   material:
     color: BLUE
 "#;
-        let (world, _) = parse(source);
+        let (scene, _) = parse(source);
         let colors = vec![
             Color::white(),
             Color::black(),
@@ -1484,7 +1484,7 @@ mod tests {
             Color::green(),
             Color::blue(),
         ];
-        let actual_colors = world
+        let actual_colors = scene
             .objects()
             .iter()
             .map(|obj| match obj.material().unwrap().pattern {
@@ -1511,7 +1511,7 @@ mod tests {
 - add: sphere
   material: green-material
 "#;
-        let (world, _) = parse(source);
+        let (scene, _) = parse(source);
         let green_material = Material {
             pattern: Pattern::Const(Color::green()),
             ambient: 1.,
@@ -1519,7 +1519,7 @@ mod tests {
             ..Material::default()
         };
         let sphere = Object::primitive(Shape::Sphere, green_material, Matrix::identity());
-        assert_eq!(world.objects(), vec![sphere]);
+        assert_eq!(scene.objects(), vec![sphere]);
     }
 
     #[test]
@@ -1533,12 +1533,12 @@ mod tests {
   - rotation-x
   - [rotate-y, FRAC_PI_3]
 "#;
-        let (world, _) = parse(source);
+        let (scene, _) = parse(source);
         let transformation = Matrix::rotation_x(FRAC_PI_3)
             .rotate_y(FRAC_PI_3)
             .transformed();
         let sphere = Object::primitive(Shape::Sphere, Material::default(), transformation);
-        assert_eq!(world.objects(), vec![sphere]);
+        assert_eq!(scene.objects(), vec![sphere]);
     }
 
     #[test]
@@ -1556,7 +1556,7 @@ mod tests {
 - add: cube
   transform: fancy-transform
 "#;
-        let (world, _) = parse(source);
+        let (scene, _) = parse(source);
         let fancy_transformation = Matrix::rotation_x(FRAC_PI_3)
             .scale(1., 2., 3.)
             .transformed();
@@ -1568,7 +1568,7 @@ mod tests {
                 .transformed(),
             fancy_transformation,
         ];
-        let actual_transformations = world
+        let actual_transformations = scene
             .objects()
             .iter()
             .map(|obj| obj.transformation())
@@ -1597,7 +1597,7 @@ mod tests {
   transform:
     - [rotate-y, FRAC_PI_3]
 "#;
-        let (world, _) = parse(source);
+        let (scene, _) = parse(source);
         let material = Material {
             pattern: Pattern::Const(Color::green()),
             ambient: 1.,
@@ -1608,7 +1608,7 @@ mod tests {
             .rotate_y(FRAC_PI_3)
             .transformed();
         let sphere = Object::primitive(Shape::Sphere, material, transformation);
-        assert_eq!(world.objects(), vec![sphere]);
+        assert_eq!(scene.objects(), vec![sphere]);
     }
 
     #[test]
@@ -1618,13 +1618,13 @@ mod tests {
   transform:
     - [translate, -1, -FRAC_PI_2, -5.5]
 "#;
-        let (world, _) = parse(source);
+        let (scene, _) = parse(source);
         let sphere = Object::primitive(
             Shape::Sphere,
             Material::default(),
             Matrix::translation(-1., -std::f64::consts::FRAC_PI_2, -5.5).transformed(),
         );
-        assert_eq!(world.objects(), vec![sphere]);
+        assert_eq!(scene.objects(), vec![sphere]);
     }
 
     #[test]
@@ -1641,7 +1641,7 @@ mod tests {
         - [translate, 1, -2, 10]
         - [rotate-y, -FRAC_PI_3]
 "#;
-        let (world, _) = parse(source);
+        let (scene, _) = parse(source);
         let animations = Animations::with_vec(vec![TransformAnimation::new(
             Animation::new(
                 2.,
@@ -1657,7 +1657,7 @@ mod tests {
             .into(),
         )]);
 
-        assert_eq!(world.objects().first().unwrap().animations(), &animations);
+        assert_eq!(scene.objects().first().unwrap().animations(), &animations);
     }
     #[test]
     fn parse_animation_timing() {
@@ -1724,8 +1724,8 @@ mod tests {
             Object::primitive_with_transformation(Shape::Cube, Matrix::translation(1., 2., 3.)),
         )));
         let expected_object = Object::animated(kind, Animations::default());
-        let (world, _) = parse(source);
-        assert_eq!(world.objects(), vec![expected_object]);
+        let (scene, _) = parse(source);
+        assert_eq!(scene.objects(), vec![expected_object]);
     }
 
     #[test]

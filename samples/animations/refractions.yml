@@ -1,4 +1,4 @@
-- add: world
+- add: scene
   max-reflective-depth: 10
   supersampling-level: 2
 

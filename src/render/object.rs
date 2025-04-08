@@ -153,8 +153,8 @@ impl Object {
         Self::from_primitive(PrimitiveObject::with_transformation(shape, transformation))
     }
 
-    pub fn normal_vector_at(&self, world_point: Point) -> Vector {
-        self.normal_vector_at_with_intersection(world_point, None)
+    pub fn normal_vector_at(&self, scene_point: Point) -> Vector {
+        self.normal_vector_at_with_intersection(scene_point, None)
     }
 
     /// turns this object into a group that contains this object and it's bounding box
@@ -172,39 +172,39 @@ impl Object {
 
     pub fn normal_vector_at_with_intersection<'a>(
         &self,
-        world_point: Point,
+        scene_point: Point,
         i: Option<&'a Intersection<'a>>,
     ) -> Vector {
         match &self.kind {
-            ObjectKind::Primitive(obj) => obj.normal_vector_at_with_intersection(world_point, i),
+            ObjectKind::Primitive(obj) => obj.normal_vector_at_with_intersection(scene_point, i),
             ObjectKind::Group(_) => unreachable!(),
             ObjectKind::Csg(_) => unreachable!(),
         }
     }
 
-    pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
+    pub fn intersect<'a>(&'a self, scene_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
         match &self.kind {
             ObjectKind::Primitive(obj) => {
                 collector.set_next_object(self);
-                obj.intersect(world_ray, collector);
+                obj.intersect(scene_ray, collector);
             }
-            ObjectKind::Group(group) => group.intersect(world_ray, collector),
-            ObjectKind::Csg(csg) => csg.intersect(world_ray, collector),
+            ObjectKind::Group(group) => group.intersect(scene_ray, collector),
+            ObjectKind::Csg(csg) => csg.intersect(scene_ray, collector),
         }
     }
 
-    pub fn intersect_to_collection(&self, world_ray: &Ray) -> IntersectionCollection {
+    pub fn intersect_to_collection(&self, scene_ray: &Ray) -> IntersectionCollection {
         let mut collector = IntersectionCollector::new(Some(self), false);
-        self.intersect(world_ray, &mut collector);
-        IntersectionCollection::from_collector(world_ray.clone(), collector)
+        self.intersect(scene_ray, &mut collector);
+        IntersectionCollection::from_collector(scene_ray.clone(), collector)
     }
 
-    pub fn intersect_to_sorted_vec_testing<'a>(&'a self, world_ray: &Ray) -> Vec<Intersection<'a>> {
-        self.intersect_to_collection(world_ray).into_vec()
+    pub fn intersect_to_sorted_vec_testing<'a>(&'a self, scene_ray: &Ray) -> Vec<Intersection<'a>> {
+        self.intersect_to_collection(scene_ray).into_vec()
     }
 
-    pub fn intersection_times_testing(&self, world_ray: &Ray) -> Vec<f64> {
-        self.intersect_to_sorted_vec_testing(world_ray)
+    pub fn intersection_times_testing(&self, scene_ray: &Ray) -> Vec<f64> {
+        self.intersect_to_sorted_vec_testing(scene_ray)
             .iter_mut()
             .map(|i| i.time())
             .collect()
@@ -372,32 +372,32 @@ impl PrimitiveObject {
     pub fn transformation_inverse(&self) -> Matrix {
         self.transformation_inverse.unwrap_or_default()
     }
-    pub fn normal_vector_at(&self, world_point: Point) -> Vector {
-        self.normal_vector_at_with_intersection(world_point, None)
+    pub fn normal_vector_at(&self, scene_point: Point) -> Vector {
+        self.normal_vector_at_with_intersection(scene_point, None)
     }
     pub fn normal_vector_at_with_intersection<'a>(
         &self,
-        world_point: Point,
+        scene_point: Point,
         i: Option<&'a Intersection<'a>>,
     ) -> Vector {
-        let world_normal = match self.transformation_inverse {
-            None => self.shape.local_normal_at(world_point, i),
+        let scene_normal = match self.transformation_inverse {
+            None => self.shape.local_normal_at(scene_point, i),
             Some(t_inverse) => {
-                let object_point = t_inverse * world_point;
+                let object_point = t_inverse * scene_point;
 
                 let object_normal = self.shape.local_normal_at(object_point, i);
                 t_inverse.mul_transposed(object_normal)
             }
         };
-        world_normal.normalize()
+        scene_normal.normalize()
     }
 
-    pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
+    pub fn intersect<'a>(&'a self, scene_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
         match self.transformation_inverse {
-            None => self.shape.local_intersect(world_ray, collector),
+            None => self.shape.local_intersect(scene_ray, collector),
             Some(transformation_inv) => self
                 .shape
-                .local_intersect(&world_ray.transform_new(&transformation_inv), collector),
+                .local_intersect(&scene_ray.transform_new(&transformation_inv), collector),
         };
     }
 

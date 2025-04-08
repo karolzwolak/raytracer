@@ -165,11 +165,11 @@ impl ObjectGroup {
     }
     fn intersect_iter<'a>(
         root: &'a ObjectGroup,
-        world_ray: &Ray,
+        scene_ray: &Ray,
         collector: &mut IntersectionCollector<'a>,
     ) {
         let mut stack = Vec::new();
-        match root.bounding_box.intersection_time(world_ray) {
+        match root.bounding_box.intersection_time(scene_ray) {
             None => return,
             Some(t) => stack.push((root, t)),
         }
@@ -184,18 +184,18 @@ impl ObjectGroup {
                     .rev()
                     .filter_map(|child| match child.kind() {
                         ObjectKind::Group(g) => {
-                            g.bounding_box.intersection_time(world_ray).map(|t| (g, t))
+                            g.bounding_box.intersection_time(scene_ray).map(|t| (g, t))
                         }
                         ObjectKind::Primitive(_) | ObjectKind::Csg(_) => {
-                            child.intersect(world_ray, collector);
+                            child.intersect(scene_ray, collector);
                             None
                         }
                     }),
             );
         }
     }
-    pub fn intersect<'a>(&'a self, world_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
-        Self::intersect_iter(self, world_ray, collector)
+    pub fn intersect<'a>(&'a self, scene_ray: &Ray, collector: &mut IntersectionCollector<'a>) {
+        Self::intersect_iter(self, scene_ray, collector)
     }
 
     pub fn children(&self) -> &[Object] {

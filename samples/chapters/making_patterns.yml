@@ -1,4 +1,4 @@
-- add: world
+- add: scene
 
 - define: cyan
   value: [0.15, 0.6, 0.7]

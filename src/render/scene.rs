@@ -21,7 +21,7 @@ use super::{
 use super::{object::shape::Shape, pattern::Pattern};
 
 #[derive(PartialEq, Debug, Clone)]
-pub struct World {
+pub struct Scene {
     objects: ObjectGroup,
     light_sources: Vec<PointLightSource>,
     /// Depth of recursive calls for reflections and refractions
@@ -38,7 +38,7 @@ pub struct World {
     use_shadow_intensity: bool,
 }
 
-impl World {
+impl Scene {
     const MAX_RECURSIVE_DEPTH: usize = 5 - 1;
     const DEFAULT_SUPERSAMPLING_LEVEL: usize = 2;
     pub const MAX_DIM: f64 = 10.0e6;
@@ -406,14 +406,14 @@ impl World {
     }
 }
 
-impl World {
+impl Scene {
     pub fn animate(&mut self, time: f64) {
         self.objects.animate(time);
     }
 }
 
-// Default testing world with bool shadows
-impl World {
+// Default testing scene with bool shadows
+impl Scene {
     pub fn default_testing() -> Self {
         let sphere1 = Object::primitive(
             Shape::Sphere,
@@ -450,11 +450,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn intersect_world_with_ray() {
-        let world = World::default_testing();
+    fn intersect_scene_with_ray() {
+        let scene = Scene::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
 
-        let mut intersections = world.intersect_testing(ray);
+        let mut intersections = scene.intersect_testing(ray);
         intersections.sort();
         assert_eq!(
             intersections.try_sorted_times_vec().unwrap(),
@@ -463,98 +463,98 @@ mod tests {
     }
     #[test]
     fn shade_intersection() {
-        let world = World::default_testing();
+        let scene = Scene::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
 
-        assert_approx_eq_low_prec!(world.color_at(ray), Color::new(0.38066, 0.47583, 0.2855));
+        assert_approx_eq_low_prec!(scene.color_at(ray), Color::new(0.38066, 0.47583, 0.2855));
     }
 
     #[test]
     fn shade_intersection_from_inside() {
-        let mut world = World::default_testing();
-        world.set_light_sources(vec![PointLightSource::new(
+        let mut scene = Scene::default_testing();
+        scene.set_light_sources(vec![PointLightSource::new(
             Point::new(0., 0.25, 0.),
             Color::new(1., 1., 1.),
         )]);
 
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
 
-        assert_approx_eq_low_prec!(world.color_at(ray), Color::new(0.90498, 0.90498, 0.90498));
+        assert_approx_eq_low_prec!(scene.color_at(ray), Color::new(0.90498, 0.90498, 0.90498));
     }
 
     #[test]
     fn color_when_ray_misses() {
-        let world = World::default_testing();
+        let scene = Scene::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 1., 0.));
 
-        assert_approx_eq_low_prec!(world.color_at(ray), Color::black());
+        assert_approx_eq_low_prec!(scene.color_at(ray), Color::black());
     }
 
     #[test]
     fn color_when_ray_hits() {
-        let world = World::default_testing();
+        let scene = Scene::default_testing();
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 1., 0.));
 
-        assert_approx_eq_low_prec!(world.color_at(ray), Color::black());
+        assert_approx_eq_low_prec!(scene.color_at(ray), Color::black());
     }
 
     #[test]
     fn no_shadow_when_nothing_blocks_light() {
-        let world = World::default_testing();
+        let scene = Scene::default_testing();
         let point = Point::new(0., 10., 0.);
 
         assert_approx_eq_low_prec!(
-            world.point_shadow_intensity_point(&world.light_sources()[0], point),
+            scene.point_shadow_intensity_point(&scene.light_sources()[0], point),
             0.
         )
     }
 
     #[test]
     fn shadow_when_object_is_between_point_and_light() {
-        let world = World::default_testing();
+        let scene = Scene::default_testing();
         let point = Point::new(10., -10., 10.);
 
         assert_approx_eq_low_prec!(
-            world.point_shadow_intensity_point(&world.light_sources()[0], point),
+            scene.point_shadow_intensity_point(&scene.light_sources()[0], point),
             1.
         )
     }
 
     #[test]
     fn no_shadow_when_object_is_behind_light() {
-        let world = World::default_testing();
+        let scene = Scene::default_testing();
         let point = Point::new(-20., 20., -20.);
 
         assert_approx_eq_low_prec!(
-            world.point_shadow_intensity_point(&world.light_sources()[0], point),
+            scene.point_shadow_intensity_point(&scene.light_sources()[0], point),
             0.
         )
     }
 
     #[test]
     fn shade_hit_intersection_in_shadow() {
-        let mut world = World::empty();
-        world.add_light(PointLightSource::new(
+        let mut scene = Scene::empty();
+        scene.add_light(PointLightSource::new(
             Point::new(0., 0., -10.),
             Color::white(),
         ));
 
-        world.add_obj(Object::primitive_with_shape(Shape::Sphere));
-        world.add_obj(Object::primitive_with_transformation(
+        scene.add_obj(Object::primitive_with_shape(Shape::Sphere));
+        scene.add_obj(Object::primitive_with_transformation(
             Shape::Sphere,
             Matrix::translation(0., 0., 10.),
         ));
 
         let ray = Ray::new(Point::new(0., 0., 5.), Vector::new(0., 0., 1.));
-        let inter = Intersection::new(4., &world.objects()[1]);
+        let inter = Intersection::new(4., &scene.objects()[1]);
         let comps = inter.computations(&ray);
 
-        assert_approx_eq_low_prec!(world.shade_hit(comps, 0), Color::new(0.1, 0.1, 0.1));
+        assert_approx_eq_low_prec!(scene.shade_hit(comps, 0), Color::new(0.1, 0.1, 0.1));
     }
 
     #[test]
     fn reflected_color_for_non_reflective_material() {
-        let mut w = World::default_testing();
+        let mut w = Scene::default_testing();
         let r = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
         let shape = &mut w.objects_mut()[1];
         shape.material_mut().unwrap().ambient = 1.;
@@ -567,7 +567,7 @@ mod tests {
 
     #[test]
     fn shade_hit_with_reflective_material() {
-        let mut w = World::default_testing();
+        let mut w = Scene::default_testing();
         let plane = Object::primitive(
             Shape::Plane,
             Material {
@@ -592,7 +592,7 @@ mod tests {
 
     #[test]
     fn ray_bouncing_between_mutually_reflective_surfaces() {
-        let mut w = World::empty();
+        let mut w = Scene::empty();
 
         w.add_light(PointLightSource::new(
             Point::new(0., 0., 0.),
@@ -625,7 +625,7 @@ mod tests {
 
     #[test]
     fn reflected_color_at_max_recursive_depth() {
-        let mut world = World::default_testing();
+        let mut scene = Scene::default_testing();
         let plane = Object::primitive(
             Shape::Plane,
             Material {
@@ -634,57 +634,57 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        world.add_obj(plane);
+        scene.add_obj(plane);
 
         let r = Ray::new(
             Point::new(0., 0., -3.),
             Vector::new(0., -FRAC_1_SQRT_2, FRAC_1_SQRT_2),
         );
-        let i = Intersection::new(SQRT_2, world.objects().last().unwrap());
+        let i = Intersection::new(SQRT_2, scene.objects().last().unwrap());
         let comps = i.computations(&r);
 
         assert_approx_eq_low_prec!(
-            world.reflected_color(&comps, world.max_recursive_depth),
+            scene.reflected_color(&comps, scene.max_recursive_depth),
             Color::black()
         );
     }
 
     #[test]
     fn refraced_colr_with_opaque_surface() {
-        let world = World::default_testing();
-        let shape = &world.objects()[0];
+        let scene = Scene::default_testing();
+        let shape = &scene.objects()[0];
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![4., 6.], shape);
         let comps = intersections.hit_computations().unwrap();
 
-        assert_approx_eq_low_prec!(world.refracted_color(&comps, 0), Color::black());
+        assert_approx_eq_low_prec!(scene.refracted_color(&comps, 0), Color::black());
     }
 
     #[test]
     fn refracted_color_at_max_recursive_depth() {
-        let mut world = World::default_testing();
-        let shape = &mut world.objects_mut()[0];
+        let mut scene = Scene::default_testing();
+        let shape = &mut scene.objects_mut()[0];
         shape.material_mut().unwrap().transparency = 1.;
         shape.material_mut().unwrap().refractive_index = 1.5;
-        let shape = &world.objects()[0];
+        let shape = &scene.objects()[0];
 
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![4., 6.], shape);
         let comps = intersections.hit_computations().unwrap();
 
         assert_approx_eq_low_prec!(
-            world.refracted_color(&comps, world.max_recursive_depth),
+            scene.refracted_color(&comps, scene.max_recursive_depth),
             Color::black()
         );
     }
 
     #[test]
     fn refracted_color_under_total_internal_reflection() {
-        let mut world = World::default_testing();
-        let shape = &mut world.objects_mut()[0];
+        let mut scene = Scene::default_testing();
+        let shape = &mut scene.objects_mut()[0];
         shape.material_mut().unwrap().transparency = 1.;
         shape.material_mut().unwrap().refractive_index = 1.5;
-        let shape = &world.objects()[0];
+        let shape = &scene.objects()[0];
 
         let ray = Ray::new(Point::new(0., 0., SQRT_2 / 2.), Vector::new(0., 1., 0.));
         let intersections =
@@ -692,39 +692,39 @@ mod tests {
 
         let comps = intersections.computations_at_id(1).unwrap();
 
-        assert_approx_eq_low_prec!(world.refracted_color(&comps, 0), Color::black());
+        assert_approx_eq_low_prec!(scene.refracted_color(&comps, 0), Color::black());
     }
 
     #[test]
     fn refracted_color_with_refracted_ray() {
-        let mut world = World::default_testing();
+        let mut scene = Scene::default_testing();
 
-        let a = &mut world.objects_mut()[0];
+        let a = &mut scene.objects_mut()[0];
         a.material_mut().unwrap().ambient = 1.;
         a.material_mut().unwrap().pattern = Pattern::test_pattern(None);
 
-        let b = &mut world.objects_mut()[1];
+        let b = &mut scene.objects_mut()[1];
         b.material_mut().unwrap().transparency = 1.;
         b.material_mut().unwrap().refractive_index = 1.5;
 
         let ray = Ray::new(Point::new(0., 0., 0.1), Vector::new(0., 1., 0.));
 
-        let a = &world.objects()[0];
-        let b = &world.objects()[1];
+        let a = &scene.objects()[0];
+        let b = &scene.objects()[1];
         let objects = vec![a.clone(), b.clone()];
 
         let intersections = IntersectionCollection::from_ray_and_mult_objects(ray, &objects);
         let comps = intersections.hit_computations().unwrap();
 
         assert_approx_eq_low_prec!(
-            world.refracted_color(&comps, 0),
+            scene.refracted_color(&comps, 0),
             &Color::new(0., 0.99888, 0.04725)
         );
     }
 
     #[test]
     fn shading_transparent_material() {
-        let mut world = World::default_testing();
+        let mut scene = Scene::default_testing();
         let floor = Object::primitive(
             Shape::Plane,
             Material {
@@ -743,25 +743,25 @@ mod tests {
             },
             Matrix::translation(0., -3.5, -0.5),
         );
-        world.add_obj(floor);
-        world.add_obj(ball);
+        scene.add_obj(floor);
+        scene.add_obj(ball);
 
         let ray = Ray::new(
             Point::new(0., 0., -3.),
             Vector::new(0., -FRAC_1_SQRT_2, FRAC_1_SQRT_2),
         );
-        let intersections = world.intersect(ray);
+        let intersections = scene.intersect(ray);
         let cmps = intersections.hit_computations().unwrap();
 
         assert_approx_eq_low_prec!(
-            world.shade_hit(cmps, 0),
+            scene.shade_hit(cmps, 0),
             Color::new(0.93642, 0.68642, 0.68642)
         );
     }
 
     #[test]
     fn shading_reflective_transparent_material() {
-        let mut world = World::default_testing();
+        let mut scene = Scene::default_testing();
         let floor = Object::primitive(
             Shape::Plane,
             Material {
@@ -781,18 +781,18 @@ mod tests {
             },
             Matrix::translation(0., -3.5, -0.5),
         );
-        world.add_obj(floor);
-        world.add_obj(ball);
+        scene.add_obj(floor);
+        scene.add_obj(ball);
 
         let ray = Ray::new(
             Point::new(0., 0., -3.),
             Vector::new(0., -FRAC_1_SQRT_2, FRAC_1_SQRT_2),
         );
-        let intersections = world.intersect(ray);
+        let intersections = scene.intersect(ray);
         let cmps = intersections.hit_computations().unwrap();
 
         assert_approx_eq_low_prec!(
-            world.shade_hit(cmps, 0),
+            scene.shade_hit(cmps, 0),
             Color::new(0.93391, 0.69643, 0.69243)
         );
     }

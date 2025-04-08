@@ -2,7 +2,7 @@ use std::{fs::File, path::PathBuf};
 
 use clap::{Args, Parser, Subcommand};
 use raytracer::{
-    render::{animator::AnimationFormat, camera::Camera, canvas::ImageFormat, world::World},
+    render::{animator::AnimationFormat, camera::Camera, canvas::ImageFormat, scene::Scene},
     yaml,
 };
 
@@ -102,17 +102,17 @@ Overrides the one in the scene file. If not specified anywhere, defaults to {}",
     supersampling_level: Option<usize>,
 }
 
-fn get_world_camera(args: &Cli) -> Result<(World, Camera), String> {
+fn get_scene_camera(args: &Cli) -> Result<(Scene, Camera), String> {
     let scene_source = std::fs::read_to_string(&args.scene_file)
         .map_err(|e| format!("Failed to read scene file: {}", e))?;
-    let (mut world, camera) =
+    let (mut scene, camera) =
         yaml::parse_str(&scene_source, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FOV)
             .map_err(|e| format!("Failed to parse scene: {}", e))?;
     if let Some(max_reflective_depth) = args.depth {
-        world.set_max_recursive_depth(max_reflective_depth);
+        scene.set_max_recursive_depth(max_reflective_depth);
     }
     if let Some(supersampling_level) = args.supersampling_level {
-        world.set_supersampling_level(supersampling_level);
+        scene.set_supersampling_level(supersampling_level);
     }
     let camera = Camera::with_inverse_transformation(
         args.width.unwrap_or(camera.target_width()),
@@ -120,16 +120,16 @@ fn get_world_camera(args: &Cli) -> Result<(World, Camera), String> {
         args.fov.unwrap_or(camera.field_of_view()),
         camera.inverse_transformation(),
     );
-    Ok((world, camera))
+    Ok((scene, camera))
 }
 
 fn render_image(
     image_args: ImageCommand,
     file: File,
-    mut world: World,
+    mut scene: Scene,
     camera: Camera,
 ) -> Result<(), String> {
-    let canvas = world.render(&camera);
+    let canvas = scene.render(&camera);
     canvas
         .save_to_file(file, image_args.format)
         .map_err(|e| format!("Failed to save image: {}", e))
@@ -138,11 +138,11 @@ fn render_image(
 fn render_animation(
     animation_args: AnimationCommand,
     file: File,
-    world: World,
+    scene: Scene,
     camera: Camera,
 ) -> Result<(), String> {
     let animator = raytracer::render::animator::Animator::new(
-        world,
+        scene,
         camera,
         animation_args.fps,
         animation_args.duration_sec,
@@ -157,7 +157,7 @@ fn render_animation(
 fn render() -> Result<PathBuf, String> {
     let args = Cli::parse();
 
-    let (world, camera) = get_world_camera(&args)?;
+    let (scene, camera) = get_scene_camera(&args)?;
     let output_path = args.output_path.unwrap_or_else(|| {
         let mut path = args.scene_file.clone();
         path = path.file_name().unwrap().into(); // If scene file is not a file, it would get
@@ -170,8 +170,8 @@ fn render() -> Result<PathBuf, String> {
         .map_err(|e| format!("Failed to create output file: {}", e))?;
 
     match args.command {
-        Command::Image(image_args) => render_image(image_args, file, world, camera),
-        Command::Animate(animation_args) => render_animation(animation_args, file, world, camera),
+        Command::Image(image_args) => render_image(image_args, file, scene, camera),
+        Command::Animate(animation_args) => render_animation(animation_args, file, scene, camera),
     }?;
     Ok(output_path)
 }

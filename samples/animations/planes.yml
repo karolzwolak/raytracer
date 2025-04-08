@@ -1,4 +1,4 @@
-- add: world
+- add: scene
 
 - define: green1
   value: [0.1, 1.0, 0.5]

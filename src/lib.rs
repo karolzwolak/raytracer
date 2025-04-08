@@ -21,5 +21,5 @@ pub mod render {
     pub mod object;
     pub mod pattern;
     pub mod ray;
-    pub mod world;
+    pub mod scene;
 }

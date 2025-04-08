@@ -197,7 +197,7 @@ impl<'a> Intersection<'a> {
 pub struct IntersecComputations<'a> {
     time: f64,
     intersected_object: &'a Object,
-    world_point: Point,
+    scene_point: Point,
     under_point: Point,
     over_point: Point,
     eye_v: Vector,
@@ -219,10 +219,10 @@ impl<'a> IntersecComputations<'a> {
         let time = intersection.time();
         let object = intersection.object();
 
-        let world_point = ray.position(time);
+        let scene_point = ray.position(time);
         let eye_v = -*ray.direction();
         let mut normal_v =
-            object.normal_vector_at_with_intersection(world_point, Some(intersection));
+            object.normal_vector_at_with_intersection(scene_point, Some(intersection));
 
         let inside_obj = normal_v.dot(eye_v) < 0.;
         if inside_obj {
@@ -230,15 +230,15 @@ impl<'a> IntersecComputations<'a> {
         }
 
         let over_offset = normal_v * approx_eq::EPSILON;
-        let over_point = world_point + over_offset;
-        let under_point = world_point - over_offset;
+        let over_point = scene_point + over_offset;
+        let under_point = scene_point - over_offset;
 
         let reflect_v = ray.direction().reflect(normal_v);
 
         Self {
             time,
             intersected_object: object,
-            world_point,
+            scene_point,
             under_point,
             over_point,
             eye_v,
@@ -330,8 +330,8 @@ impl<'a> IntersecComputations<'a> {
         self.object().material_unwrapped()
     }
 
-    pub fn world_point(&self) -> Point {
-        self.world_point
+    pub fn scene_point(&self) -> Point {
+        self.scene_point
     }
 
     pub fn eye_v(&self) -> Vector {
@@ -478,7 +478,7 @@ impl<'a> IntersectionCollection<'a> {
     }
 
     pub fn hit_pos(&self) -> Option<Point> {
-        self.hit_computations().map(|comps| comps.world_point)
+        self.hit_computations().map(|comps| comps.scene_point)
     }
 
     pub fn ray(&self) -> &Ray {
@@ -667,7 +667,7 @@ mod tests {
         let comps = inter_vec.hit().unwrap().computations(&ray);
 
         assert!(comps.inside_obj());
-        assert_approx_eq_low_prec!(comps.world_point(), Point::new(0., 0., 1.));
+        assert_approx_eq_low_prec!(comps.scene_point(), Point::new(0., 0., 1.));
         assert_approx_eq_low_prec!(comps.eye_v(), Vector::new(0., 0., -1.));
 
         // normal is inverted
@@ -684,7 +684,7 @@ mod tests {
         let comps = inter.computations(&ray);
 
         assert!(comps.over_point().z() < -approx_eq::EPSILON / 2.);
-        assert!(comps.world_point().z() > comps.over_point().z())
+        assert!(comps.scene_point().z() > comps.over_point().z())
     }
 
     #[test]
@@ -790,7 +790,7 @@ mod tests {
         let comps = inter.computations(&ray);
 
         assert!(comps.under_point().z() > approx_eq::EPSILON / 2.);
-        assert!(comps.world_point().z() < comps.under_point().z());
+        assert!(comps.scene_point().z() < comps.under_point().z());
     }
 
     #[test]
@@ -805,7 +805,7 @@ mod tests {
         let inter = Intersection::new(5., &sphere);
         let comps = inter.computations(&ray);
 
-        assert!(!comps.over_point().approx_eq(&comps.world_point()));
-        assert!(!comps.under_point().approx_eq(&comps.world_point()));
+        assert!(!comps.over_point().approx_eq(&comps.scene_point()));
+        assert!(!comps.under_point().approx_eq(&comps.scene_point()));
     }
 }

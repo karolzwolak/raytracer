@@ -1,4 +1,4 @@
-- add: world
+- add: scene
 
 - define: sky-blue
   value: [0.2, 0.35, 0.78]
