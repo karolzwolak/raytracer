@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{point::Point, tuple::Tuple, vector::Vector},
+    core::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
 };
 
@@ -32,7 +32,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        primitive::{point::Point, tuple::Tuple, vector::Vector},
+        core::{point::Point, tuple::Tuple, vector::Vector},
         render::{
             object::{shape::Shape, Object},
             ray::Ray,
@@ -41,7 +41,7 @@ mod tests {
 
     #[test]
     fn ray_intersecting_plane_from_above() {
-        let plane = Object::primitive_with_shape(Shape::Plane);
+        let plane = Object::core_with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., 1., 0.), Vector::new(0., -1., 0.));
 
         assert_eq!(plane.intersection_times_testing(&ray), vec![1.]);
@@ -49,7 +49,7 @@ mod tests {
 
     #[test]
     fn ray_intersecting_plane_from_below() {
-        let plane = Object::primitive_with_shape(Shape::Plane);
+        let plane = Object::core_with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., -1., 0.), Vector::new(0., 1., 0.));
 
         assert_eq!(plane.intersection_times_testing(&ray), vec![1.]);
@@ -57,7 +57,7 @@ mod tests {
 
     #[test]
     fn normal_of_plane_is_const_everywhere() {
-        let plane = Object::primitive_with_shape(Shape::Plane);
+        let plane = Object::core_with_shape(Shape::Plane);
 
         let expected = Vector::new(0., 1., 0.);
 
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn normal_on_surface_of_cube() {
-        let cube = Object::primitive_with_shape(Shape::Cube);
+        let cube = Object::core_with_shape(Shape::Cube);
         let examples = vec![
             (Point::new(1., 0.5, -0.8), Vector::new(1., 0., 0.)),
             (Point::new(-1., -0.2, 0.9), Vector::new(-1., 0., 0.)),

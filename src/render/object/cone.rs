@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::{self, ApproxEq},
-    primitive::{point::Point, tuple::Tuple, vector::Vector},
+    core::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
 };
 
@@ -141,7 +141,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        primitive::{point::Point, tuple::Tuple, vector::Vector},
+        core::{point::Point, tuple::Tuple, vector::Vector},
         render::{
             object::{shape::Shape, Object},
             ray::Ray,
@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn intersecting_cone() {
-        let cone = Object::primitive_with_shape(Shape::default_cone());
+        let cone = Object::core_with_shape(Shape::default_cone());
 
         let examples = vec![
             (Point::new(0., 0., -5.), Vector::new(0., 0., 1.), (5., 5.)),
@@ -180,7 +180,7 @@ mod tests {
 
     #[test]
     fn intersecting_cone_with_ray_parallel_to_one_half() {
-        let cone = Object::primitive_with_shape(Shape::default_cone());
+        let cone = Object::core_with_shape(Shape::default_cone());
         let ray = Ray::new(Point::new(0., 0., -1.), Vector::new(0., 1., 1.).normalize());
         let times = cone.intersection_times_testing(&ray);
 
@@ -190,7 +190,7 @@ mod tests {
 
     #[test]
     fn intersecting_cone_caps() {
-        let cone = Object::primitive_with_shape(Shape::Cone(Cone {
+        let cone = Object::core_with_shape(Shape::Cone(Cone {
             y_min: -0.5,
             y_max: 0.5,
             closed: true,
@@ -210,7 +210,7 @@ mod tests {
 
     #[test]
     fn normal_of_cone_caps() {
-        let cone = Object::primitive_with_shape(Shape::default_cone());
+        let cone = Object::core_with_shape(Shape::default_cone());
 
         let examples = vec![
             (Point::new(0., 0., 0.), Vector::new(0., 0., 0.)),

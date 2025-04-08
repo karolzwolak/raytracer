@@ -1,4 +1,4 @@
-use crate::primitive::{matrix::Matrix, point::Point, tuple::Tuple};
+use crate::core::{matrix::Matrix, point::Point, tuple::Tuple};
 
 use super::{canvas::Canvas, ray::Ray};
 
@@ -114,7 +114,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        primitive::{matrix::Transform, tuple::Tuple, vector::Vector},
+        core::{matrix::Transform, tuple::Tuple, vector::Vector},
         render::{color::Color, scene::Scene},
     };
 

@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{matrix::Matrix, point::Point, tuple::Tuple},
+    core::{matrix::Matrix, point::Point, tuple::Tuple},
 };
 
 use super::{color::Color, object::Object};
@@ -138,7 +138,7 @@ impl Pattern {
 mod tests {
     use crate::approx_eq::ApproxEq;
     use crate::assert_approx_eq_low_prec;
-    use crate::{primitive::tuple::Tuple, render::object::shape::Shape};
+    use crate::{core::tuple::Tuple, render::object::shape::Shape};
 
     use super::*;
 
@@ -176,8 +176,7 @@ mod tests {
 
     #[test]
     fn stripes_with_object_transformation() {
-        let sphere =
-            Object::primitive_with_transformation(Shape::Sphere, Matrix::scaling(2., 2., 2.));
+        let sphere = Object::core_with_transformation(Shape::Sphere, Matrix::scaling(2., 2., 2.));
         let stripe = Pattern::stripe(Color::white(), Color::black(), None);
 
         assert_approx_eq_low_prec!(
@@ -188,7 +187,7 @@ mod tests {
 
     #[test]
     fn stripes_with_pattern_transformation() {
-        let sphere = Object::primitive_with_shape(Shape::Sphere);
+        let sphere = Object::core_with_shape(Shape::Sphere);
         let stripe = Pattern::stripe(
             Color::white(),
             Color::black(),
@@ -203,8 +202,7 @@ mod tests {
 
     #[test]
     fn stripes_with_object_and_pattern_transformation() {
-        let sphere =
-            Object::primitive_with_transformation(Shape::Sphere, Matrix::scaling_uniform(2.));
+        let sphere = Object::core_with_transformation(Shape::Sphere, Matrix::scaling_uniform(2.));
         let stripe = Pattern::stripe(
             Color::white(),
             Color::black(),

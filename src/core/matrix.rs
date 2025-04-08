@@ -26,7 +26,7 @@ mod local_transform_tests {
     use super::*;
     use crate::render::object::bounding_box::BoundingBox;
     use crate::render::object::shape::Shape;
-    use crate::{assert_approx_eq_low_prec, primitive::point::Point};
+    use crate::{assert_approx_eq_low_prec, core::point::Point};
 
     fn bbox(min: (f64, f64, f64), max: (f64, f64, f64)) -> BoundingBox {
         BoundingBox {
@@ -1013,7 +1013,7 @@ mod tests {
 
     use crate::{
         assert_approx_eq_low_prec,
-        primitive::{point::Point, vector::Vector},
+        core::{point::Point, vector::Vector},
     };
 
     use super::*;

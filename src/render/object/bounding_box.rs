@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{
+    core::{
         matrix::{Matrix, Transform},
         point::Point,
         tuple::{Axis, Tuple},
@@ -296,7 +296,7 @@ impl BoundingBox {
     }
 
     pub fn as_object(&self, material: Material) -> Object {
-        Object::primitive(Shape::Bbox, material, self.as_cube_transformation())
+        Object::core(Shape::Bbox, material, self.as_cube_transformation())
     }
     pub fn center(&self) -> Point {
         Point::new(
@@ -336,7 +336,7 @@ impl BoundingBox {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_approx_eq_low_prec, primitive::matrix::Matrix};
+    use crate::{assert_approx_eq_low_prec, core::matrix::Matrix};
 
     #[test]
     fn test_empty() {

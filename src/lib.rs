@@ -1,7 +1,7 @@
 pub mod approx_eq;
 pub mod yaml;
 
-pub mod primitive {
+pub mod core {
     pub mod matrix;
     pub mod point;
     pub mod tuple;

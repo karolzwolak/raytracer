@@ -1,5 +1,5 @@
 use crate::{
-    primitive::{point::Point, vector::Vector},
+    core::{point::Point, vector::Vector},
     render::{
         intersection::{Intersection, IntersectionCollector},
         object::triangle::Triangle,

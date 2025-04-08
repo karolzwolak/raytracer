@@ -2,7 +2,7 @@ use std::{ops, str::FromStr};
 
 use crate::{
     approx_eq::ApproxEq,
-    primitive::matrix::{LocalTransformations, Matrix},
+    core::matrix::{LocalTransformations, Matrix},
 };
 
 use super::object::bounding_box::Bounded;
@@ -291,7 +291,7 @@ mod tests {
     use std::f64::{self};
 
     use crate::{
-        primitive::{
+        core::{
             matrix::{Transform, Transformation, Transformations},
             tuple::Axis,
         },

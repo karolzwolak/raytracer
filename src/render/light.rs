@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{point::Point, vector::Vector},
+    core::{point::Point, vector::Vector},
 };
 
 use super::intersection::IntersecComputations;
@@ -101,7 +101,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        primitive::{matrix::Matrix, tuple::Tuple},
+        core::{matrix::Matrix, tuple::Tuple},
         render::{
             intersection::IntersectionCollection,
             material::Material,
@@ -240,7 +240,7 @@ mod tests {
 
     #[test]
     fn schlick_reflectance_under_total_internal_reflection() {
-        let sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
+        let sphere = Object::core(Shape::Sphere, Material::glass(), Matrix::identity());
 
         let ray = Ray::new(Point::new(0., 0., FRAC_1_SQRT_2), Vector::new(0., 1., 0.));
         let intersections = IntersectionCollection::from_times_and_obj(
@@ -255,7 +255,7 @@ mod tests {
 
     #[test]
     fn schlick_reflectance_with_perpendicular_viewing_angle() {
-        let sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
+        let sphere = Object::core(Shape::Sphere, Material::glass(), Matrix::identity());
 
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 1., 0.));
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![-1., 1.], &sphere);
@@ -266,7 +266,7 @@ mod tests {
 
     #[test]
     fn schlick_reflectance_with_small_angle_and_n1_greater_than_n2() {
-        let sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
+        let sphere = Object::core(Shape::Sphere, Material::glass(), Matrix::identity());
 
         let ray = Ray::new(Point::new(0., 0.99, -2.), Vector::new(0., 0., 1.));
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![1.8589], &sphere);

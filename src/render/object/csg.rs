@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    primitive::matrix::{Matrix, Transform},
+    core::matrix::{Matrix, Transform},
     render::{
         intersection::{IntersectionCollection, IntersectionCollector},
         material::Material,
@@ -171,9 +171,9 @@ impl Bounded for CsgObject {
 
 #[cfg(test)]
 mod tests {
-    use crate::primitive::point::Point;
-    use crate::primitive::tuple::Tuple;
-    use crate::primitive::vector::Vector;
+    use crate::core::point::Point;
+    use crate::core::tuple::Tuple;
+    use crate::core::vector::Vector;
     use crate::render::intersection::Intersection;
     use crate::render::object::shape::Shape;
 
@@ -184,8 +184,8 @@ mod tests {
     fn csg_creation() {
         let _ = CsgObject::new(
             CsgOperation::Union,
-            Object::primitive_with_shape(Shape::Sphere),
-            Object::primitive_with_shape(Shape::Cube),
+            Object::core_with_shape(Shape::Sphere),
+            Object::core_with_shape(Shape::Cube),
         );
     }
 
@@ -249,8 +249,8 @@ mod tests {
         expected.iter().copied().for_each(|(operation, expected)| {
             let csg = CsgObject::new(
                 operation,
-                Object::primitive_with_shape(Shape::Sphere),
-                Object::primitive_with_shape(Shape::Cube),
+                Object::core_with_shape(Shape::Sphere),
+                Object::core_with_shape(Shape::Cube),
             );
             let sphere = &csg.left;
             let cube = &csg.right;
@@ -279,8 +279,8 @@ mod tests {
     fn ray_misses_csg() {
         let csg = CsgObject::new(
             CsgOperation::Union,
-            Object::primitive_with_shape(Shape::Sphere),
-            Object::primitive_with_shape(Shape::Cube),
+            Object::core_with_shape(Shape::Sphere),
+            Object::core_with_shape(Shape::Cube),
         );
         let ray = Ray::new(Point::new(0., 2., -5.), Vector::new(0., 1., 0.));
         let mut collector = IntersectionCollector::default();
@@ -292,8 +292,8 @@ mod tests {
     fn ray_hits_csg() {
         let csg = CsgObject::new(
             CsgOperation::Union,
-            Object::primitive_with_shape(Shape::Sphere),
-            Object::primitive_with_transformation(Shape::Sphere, Matrix::translation(0., 0., 0.5)),
+            Object::core_with_shape(Shape::Sphere),
+            Object::core_with_transformation(Shape::Sphere, Matrix::translation(0., 0., 0.5)),
         );
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
         let mut collector = IntersectionCollector::new_keep_redundant();

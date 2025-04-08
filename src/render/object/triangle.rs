@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    primitive::{
+    core::{
         matrix::{Matrix, Transform},
         point::Point,
         vector::Vector,
@@ -112,7 +112,7 @@ mod tests {
     use crate::approx_eq::ApproxEq;
     use crate::assert_approx_eq_low_prec;
     use crate::{
-        primitive::{point::Point, tuple::Tuple, vector::Vector},
+        core::{point::Point, tuple::Tuple, vector::Vector},
         render::{
             object::{shape::Shape, triangle::Triangle, Object},
             ray::Ray,
@@ -133,7 +133,7 @@ mod tests {
     }
 
     fn get_triangle() -> Object {
-        Object::primitive_with_shape(Shape::triangle(
+        Object::core_with_shape(Shape::triangle(
             Point::new(0., 1., 0.),
             Point::new(-1., 0., 0.),
             Point::new(1., 0., 0.),
@@ -143,7 +143,7 @@ mod tests {
     #[test]
     fn finding_normal_on_triangle() {
         let t = get_triangle();
-        let t_shape = match t.as_primitive().unwrap().shape() {
+        let t_shape = match t.as_core().unwrap().shape() {
             Shape::Triangle(ref triangle) => triangle.clone(),
             _ => unreachable!(),
         };

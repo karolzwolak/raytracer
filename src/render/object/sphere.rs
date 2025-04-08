@@ -1,5 +1,5 @@
 use crate::{
-    primitive::{point::Point, tuple::Tuple, vector::Vector},
+    core::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
 };
 
@@ -43,7 +43,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        primitive::{
+        core::{
             matrix::{Matrix, Transform},
             point::Point,
             tuple::Tuple,
@@ -77,21 +77,20 @@ mod tests {
     #[test]
     fn intersect_scaled_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::primitive_with_transformation(Shape::Sphere, Matrix::scaling_uniform(2.));
+        let obj = Object::core_with_transformation(Shape::Sphere, Matrix::scaling_uniform(2.));
 
         assert_eq!(obj.intersection_times_testing(&ray), vec![3., 7.]);
     }
     #[test]
     fn intersect_translated_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj =
-            Object::primitive_with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
+        let obj = Object::core_with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
 
         assert_eq!(obj.intersection_times_testing(&ray), vec![]);
     }
     #[test]
     fn normal_on_sphere_x_axis() {
-        let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
+        let sphere_obj = Object::core_with_shape(Shape::Sphere);
 
         assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(1., 0., 0.,)),
@@ -100,7 +99,7 @@ mod tests {
     }
     #[test]
     fn normal_on_sphere_y_axis() {
-        let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
+        let sphere_obj = Object::core_with_shape(Shape::Sphere);
 
         assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(0., 1., 0.,)),
@@ -109,7 +108,7 @@ mod tests {
     }
     #[test]
     fn normal_on_sphere_z_axis() {
-        let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
+        let sphere_obj = Object::core_with_shape(Shape::Sphere);
 
         assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(0., 0., 1.,)),
@@ -118,7 +117,7 @@ mod tests {
     }
     #[test]
     fn normal_on_sphere_at_noaxial_point() {
-        let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
+        let sphere_obj = Object::core_with_shape(Shape::Sphere);
 
         let frac_sqrt_3_3 = 3_f64.sqrt() / 3.;
         assert_approx_eq_low_prec!(
@@ -128,7 +127,7 @@ mod tests {
     }
     #[test]
     fn compute_normal_on_translated_sphere() {
-        let mut sphere_obj = Object::primitive_with_shape(Shape::Sphere);
+        let mut sphere_obj = Object::core_with_shape(Shape::Sphere);
         sphere_obj.transform(&Matrix::translation(0., 1., 0.));
         assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(0., 1. + FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),
@@ -137,7 +136,7 @@ mod tests {
     }
     #[test]
     fn compute_normal_on_transformed_sphere() {
-        let mut sphere_obj = Object::primitive_with_shape(Shape::Sphere);
+        let mut sphere_obj = Object::core_with_shape(Shape::Sphere);
         sphere_obj.transform(&(Matrix::scaling(1., 0.5, 1.) * Matrix::rotation_z(PI / 5.)));
         assert_approx_eq_low_prec!(
             sphere_obj.normal_vector_at(Point::new(0., FRAC_1_SQRT_2, -FRAC_1_SQRT_2)),

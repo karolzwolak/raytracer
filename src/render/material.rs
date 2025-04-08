@@ -1,4 +1,4 @@
-use crate::primitive::point::Point;
+use crate::core::point::Point;
 
 use super::{color::Color, object::Object, pattern::Pattern};
 
