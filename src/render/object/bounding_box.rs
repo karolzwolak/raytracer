@@ -95,7 +95,7 @@ impl BoundingBox {
     /// A point (bounding box all sizes equal to 0) is valid
     pub fn is_valid(&self) -> bool {
         let size = self.size();
-        !self.is_empty() && size.x() >= 0. && size.y() >= 0. && size.z() >= 0.
+        self.is_empty() || (size.x() >= 0. && size.y() >= 0. && size.z() >= 0.)
     }
 
     pub fn add_point(&mut self, point: Point) {
@@ -492,5 +492,25 @@ mod tests {
         };
 
         assert_eq!(lhs.union(&rhs), expected);
+    }
+
+    #[test]
+    fn empty_bbox_validity() {
+        let invalid_empty = BoundingBox {
+            min: Point::new(0., 0., 0.),
+            max: Point::new(-1., -1., -1.),
+        };
+
+        assert!(!invalid_empty.is_valid());
+        assert!(BoundingBox::empty().is_valid());
+    }
+
+    #[test]
+    fn point_bbox_is_valid() {
+        let point = BoundingBox {
+            min: Point::new(0., 0., 0.),
+            max: Point::new(0., 0., 0.),
+        };
+        assert!(point.is_valid());
     }
 }
