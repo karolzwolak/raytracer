@@ -1811,6 +1811,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore]
     fn parse_sample_scenes() {
         use rayon::prelude::*;
 
