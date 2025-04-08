@@ -14,13 +14,29 @@ impl Axis {
     }
 }
 
-pub trait Tuple {
+pub trait Tuple: Sized {
     fn new(x: f64, y: f64, z: f64) -> Self;
 
     fn x(&self) -> f64;
     fn y(&self) -> f64;
     fn z(&self) -> f64;
     fn w(&self) -> f64;
+
+    fn min(&self, other: &Self) -> Self {
+        Self::new(
+            other.x().min(self.x()),
+            other.y().min(self.y()),
+            other.z().min(self.z()),
+        )
+    }
+
+    fn max(&self, other: &Self) -> Self {
+        Self::new(
+            other.x().max(self.x()),
+            other.y().max(self.y()),
+            other.z().max(self.z()),
+        )
+    }
 }
 
 impl<T> ApproxEq for T

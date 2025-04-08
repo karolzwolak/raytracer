@@ -90,17 +90,17 @@ impl BoundingBox {
             && self.max.y() == f64::NEG_INFINITY
             && self.max.z() == f64::NEG_INFINITY
     }
+
+    /// Invalid bounding box is an empty bounding box that is not a special value empty.
+    /// A point (bounding box all sizes equal to 0) is valid
+    pub fn is_valid(&self) -> bool {
+        let size = self.size();
+        !self.is_empty() && size.x() >= 0. && size.y() >= 0. && size.z() >= 0.
+    }
+
     pub fn add_point(&mut self, point: Point) {
-        self.min = Point::new(
-            self.min.x().min(point.x()),
-            self.min.y().min(point.y()),
-            self.min.z().min(point.z()),
-        );
-        self.max = Point::new(
-            self.max.x().max(point.x()),
-            self.max.y().max(point.y()),
-            self.max.z().max(point.z()),
-        );
+        self.min = self.min.min(&point);
+        self.max = self.max.max(&point);
     }
     pub fn add_bounding_box(&mut self, other: &BoundingBox) {
         if other.is_empty() {
@@ -109,6 +109,29 @@ impl BoundingBox {
         self.add_point(other.min);
         self.add_point(other.max);
     }
+
+    pub fn difference(&self, _rhs: &BoundingBox) -> BoundingBox {
+        self.clone()
+    }
+
+    pub fn intersection(&self, other: &BoundingBox) -> BoundingBox {
+        let res = BoundingBox {
+            min: self.min.max(&other.min),
+            max: self.max.min(&other.max),
+        };
+        if res.is_valid() {
+            res
+        } else {
+            BoundingBox::empty()
+        }
+    }
+
+    pub fn union(&self, other: &BoundingBox) -> BoundingBox {
+        let mut res = self.clone();
+        res.add_bounding_box(other);
+        res
+    }
+
     fn axis_intersection_times(&self, origin: f64, dir_inv: f64, min: f64, max: f64) -> (f64, f64) {
         let tmin_numerator = min - origin;
         let tmax_numerator = max - origin;
@@ -406,5 +429,68 @@ mod tests {
     fn as_object_works_for_infinite_shapes() {
         let bbox = Shape::Plane.bounding_box();
         bbox.as_object(BoundingBox::DEFAULT_DEBUG_BBOX_MATERIAL);
+    }
+
+    #[test]
+    fn bbox_difference_is_left_bbox() {
+        let lhs = BoundingBox {
+            min: Point::new(0., 0., 0.),
+            max: Point::new(1., 1., 1.),
+        };
+        let rhs = lhs.clone();
+
+        assert_eq!(lhs.difference(&rhs), lhs);
+    }
+
+    #[test]
+    fn bbox_intersection() {
+        let lhs = BoundingBox {
+            min: Point::new(0., 0., 0.),
+            max: Point::new(1., 1., 1.),
+        };
+        let rhs = BoundingBox {
+            min: Point::new(0.5, 0.5, 0.5),
+            max: Point::new(1.5, 1.5, 1.5),
+        };
+
+        let expected = BoundingBox {
+            min: Point::new(0.5, 0.5, 0.5),
+            max: Point::new(1., 1., 1.),
+        };
+
+        assert_eq!(lhs.intersection(&rhs), expected);
+    }
+
+    #[test]
+    fn bbox_intersection_checks_for_validity() {
+        let lhs = BoundingBox {
+            min: Point::new(0., 0., 0.),
+            max: Point::new(1., 1., 1.),
+        };
+        let rhs = BoundingBox {
+            min: Point::new(2., 2., 2.),
+            max: Point::new(3., 3., 3.),
+        };
+
+        assert_eq!(lhs.intersection(&rhs), BoundingBox::empty());
+    }
+
+    #[test]
+    fn union_is_combining_bboxes() {
+        let lhs = BoundingBox {
+            min: Point::new(0., 0., 0.),
+            max: Point::new(1., 1., 1.),
+        };
+        let rhs = BoundingBox {
+            min: Point::new(2., 2., 2.),
+            max: Point::new(3., 3., 3.),
+        };
+
+        let expected = BoundingBox {
+            min: Point::new(0., 0., 0.),
+            max: Point::new(3., 3., 3.),
+        };
+
+        assert_eq!(lhs.union(&rhs), expected);
     }
 }

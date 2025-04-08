@@ -130,10 +130,17 @@ impl CsgObject {
 
 impl CsgObject {
     fn recalculate_bbox(&mut self) {
-        self.bounding_box = BoundingBox::empty();
-        self.bounding_box.add_bounding_box(self.left.bounding_box());
-        self.bounding_box
-            .add_bounding_box(self.right.bounding_box());
+        self.bounding_box = match self.operation {
+            CsgOperation::Difference => self
+                .left
+                .bounding_box()
+                .difference(self.right.bounding_box()),
+            CsgOperation::Union => self.left.bounding_box().union(self.right.bounding_box()),
+            CsgOperation::Intersection => self
+                .left
+                .bounding_box()
+                .intersection(self.right.bounding_box()),
+        };
     }
     pub fn animate(&mut self, time: f64) {
         self.left.animate(time);
