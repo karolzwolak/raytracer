@@ -4,8 +4,10 @@ pre-commit:
     install:
       run: rustup component add rustfmt clippy
     fmt:
-      run: cargo fmt -- --check
+      run: cargo fmt
+      stage_fixed: true
     clippy:
-      run: cargo clippy --tests -- -D warnings
+      run: cargo clippy --tests --fix --allow-dirty -- -D warnings
+      stage_fixed: true
     test:
       run: cargo test
