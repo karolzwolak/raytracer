@@ -11,8 +11,6 @@
   intensity: WHITE
   at: [3, 1, 4]
 
-# TODO: fix this
-# right now camera needs other fields
 - add: camera
   fov: FRAC_PI_4
 

@@ -5,7 +5,7 @@
 # background
 - add: cube
   transform:
-    - [scale-uniform, 5 ]
+    - [scale-uniform, 5]
     - [translate, 0, 4, -4]
   material:
     pattern:
@@ -19,8 +19,8 @@
 - add: obj
   file: samples/obj/dragon.obj
   transform:
-      # TODO:
-    - [normalize]
-    - [center_above_oy]
+    - [normalize-all-axes]
+    - [center]
+    - [translate-above-y]
     - [scale-uniform, 0.1]
     - [translate, 0, 1, 3]

@@ -328,6 +328,9 @@ impl<'a> YamlParser<'a> {
         };
         let fov = self.parse_num(fov_body)?;
 
+        if body["from"].is_badvalue() && body["to"].is_badvalue() && body["up"].is_badvalue() {
+            return Ok(Camera::new(width, height, fov));
+        }
         let from = self.parse_point(&body["from"])?;
         let to = self.parse_point(&body["to"])?;
         let up = self.parse_vector(&body["up"])?;
@@ -857,7 +860,13 @@ pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> YamlPar
 
 #[cfg(test)]
 mod tests {
-    use std::{f64::consts::FRAC_PI_3, fmt::Debug};
+    const SAMPLE_SCENES_DIRS: [&str; 3] = [
+        "samples/chapters/",
+        "samples/scenes/",
+        "samples/animations/",
+    ];
+
+    use std::{f64::consts::FRAC_PI_3, fmt::Debug, path::PathBuf};
 
     use crate::{
         primitive::matrix::Transform,
@@ -962,6 +971,19 @@ mod tests {
             Vector::new(-0.45, 1., 0.),
         );
         let expected_camera = Camera::with_transformation(100, 100, 0.785, view);
+        assert_eq!(camera, expected_camera);
+    }
+
+    #[test]
+    fn camera_without_from_up_to() {
+        const CAMERA_YAML: &str = r#"
+- add: camera
+  width: 100
+  height: 100
+  field-of-view: 0.785
+"#;
+        let (_, camera) = parse(CAMERA_YAML);
+        let expected_camera = Camera::new(100, 100, 0.785);
         assert_eq!(camera, expected_camera);
     }
 
@@ -1767,6 +1789,41 @@ mod tests {
                 .unwrap()
                 .material_unwrapped()
                 .clone()
+        });
+    }
+
+    fn get_sample_scenes() -> Vec<PathBuf> {
+        SAMPLE_SCENES_DIRS
+            .iter()
+            .flat_map(|dir| {
+                PathBuf::from(dir)
+                    .read_dir()
+                    .unwrap()
+                    .map(|entry| entry.unwrap().path())
+                    .filter(|entry| {
+                        entry
+                            .extension()
+                            .is_some_and(|ext| ext == "yaml" || ext == "yml")
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn parse_sample_scenes() {
+        use rayon::prelude::*;
+
+        let scenes = get_sample_scenes();
+        assert!(!scenes.is_empty(), "No sample scenes found");
+
+        scenes.par_iter().for_each(|scene| {
+            let now = std::time::Instant::now();
+            let path = scene.to_str().unwrap();
+            let source = std::fs::read_to_string(path).unwrap();
+            let _ = parse_str(&source, WIDTH, HEIGHT, FOV)
+                .unwrap_or_else(|_| panic!("Failed to parse {:?}", scene));
+            println!("Parsed {:?} in {:?}", scene, now.elapsed());
         });
     }
 }
