@@ -5,9 +5,9 @@ use crate::{
         point::Point,
         tuple::{Axis, Tuple},
         vector::Vector,
+        Color,
     },
     render::{
-        color::Color,
         material::Material,
         object::{shape::Shape, Object},
         pattern::Pattern,

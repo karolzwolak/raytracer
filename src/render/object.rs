@@ -441,11 +441,8 @@ mod tests {
 
     use crate::{
         assert_approx_eq_low_prec,
-        core::matrix::LocalTransformations,
-        render::{
-            animations::{Animation, TransformAnimation},
-            color::Color,
-        },
+        core::{matrix::LocalTransformations, Color},
+        render::animations::{Animation, TransformAnimation},
     };
 
     use super::*;

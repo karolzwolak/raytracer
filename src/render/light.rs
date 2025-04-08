@@ -1,10 +1,10 @@
 use crate::{
     approx_eq::ApproxEq,
-    core::{point::Point, vector::Vector},
+    core::{point::Point, vector::Vector, Color},
 };
 
 use super::intersection::IntersecComputations;
-use super::{color::Color, object::Object};
+use super::object::Object;
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct PointLightSource {

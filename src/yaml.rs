@@ -12,11 +12,11 @@ use crate::{
         point::Point,
         tuple::{Axis, Tuple},
         vector::Vector,
+        Color,
     },
     render::{
         animations::{Animation, AnimationRepeat, Animations, TransformAnimation},
         camera::Camera,
-        color::Color,
         light::PointLightSource,
         material::Material,
         obj_parser::ObjParser,

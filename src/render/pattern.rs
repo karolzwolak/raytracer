@@ -1,9 +1,9 @@
 use crate::{
     approx_eq::ApproxEq,
-    core::{matrix::Matrix, point::Point, tuple::Tuple},
+    core::{matrix::Matrix, point::Point, tuple::Tuple, Color},
 };
 
-use super::{color::Color, object::Object};
+use super::object::Object;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Pattern {

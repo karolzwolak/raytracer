@@ -1,13 +1,12 @@
 use crate::{
     approx_eq::ApproxEq,
-    core::{matrix::Matrix, point::Point, tuple::Tuple},
+    core::{matrix::Matrix, point::Point, tuple::Tuple, Color},
     render::object::group::ObjectGroup,
 };
 
 use super::{
     camera::Camera,
     canvas::Canvas,
-    color::Color,
     intersection::IntersectionCollector,
     light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
     material::Material,
