@@ -56,8 +56,12 @@ impl Command {
 /// Supports basic shapes and materials and .obj models.
 /// Can render single images and animations.
 #[derive(Parser, Debug)]
-#[command(about, long_about = None)]
+#[command(about, long_about = None, disable_help_flag = true)]
 struct Cli {
+    /// Print help information
+    #[arg(long = "help", action = clap::ArgAction::Help)]
+    help: Option<bool>,
+
     #[command(subcommand)]
     command: Command,
 
