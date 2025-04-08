@@ -2,6 +2,7 @@ pre-commit:
   piped: true
   commands:
     install:
+      skip: true
       run: rustup component add rustfmt clippy
     fmt:
       run: cargo fmt
@@ -11,3 +12,11 @@ pre-commit:
       stage_fixed: true
     test:
       run: cargo test
+
+pre-push:
+  piped: true
+  commands:
+    test-all:
+      run: cargo test -- --include-ignored
+      only:
+        - ref: main
