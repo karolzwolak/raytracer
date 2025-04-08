@@ -70,12 +70,6 @@ impl Point {
             self.z.round() as usize,
         ))
     }
-
-    pub fn clamp(&mut self, min: f64, max: f64) {
-        self.x = self.x.clamp(min, max);
-        self.y = self.x.clamp(min, max);
-        self.z = self.x.clamp(min, max);
-    }
 }
 
 impl PartialEq for Point {

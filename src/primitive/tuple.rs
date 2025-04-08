@@ -37,6 +37,14 @@ pub trait Tuple: Sized {
             other.z().max(self.z()),
         )
     }
+
+    fn clamp_min(&self, min: f64) -> Self {
+        Self::new(self.x().min(min), self.y().min(min), self.z().min(min))
+    }
+
+    fn clamp_max(&self, max: f64) -> Self {
+        Self::new(self.x().max(max), self.y().max(max), self.z().max(max))
+    }
 }
 
 impl<T> ApproxEq for T

@@ -1,5 +1,5 @@
 use crate::{
-    approx_eq::ApproxEq,
+    approx_eq::{self, ApproxEq},
     render::{
         animations::{Base, Interpolate, SelfInterpolate},
         object::bounding_box::{Bounded, BoundingBox},
@@ -760,22 +760,21 @@ impl Matrix {
 
     #[rustfmt::skip]
     pub fn scaling(x: f64, y: f64, z: f64) -> Matrix {
-            Matrix::new([
-                x, 0., 0., 0.,
-                0., y, 0., 0.,
-                0., 0., z, 0.,
-                0., 0., 0., 1.,
-            ])
+        let x = if x.approx_eq(&0.) { approx_eq::EPSILON } else { x };
+        let y = if y.approx_eq(&0.) { approx_eq::EPSILON } else { y };
+        let z = if z.approx_eq(&0.) { approx_eq::EPSILON } else { z };
+
+        Matrix::new([
+            x, 0., 0., 0.,
+            0., y, 0., 0.,
+            0., 0., z, 0.,
+            0., 0., 0., 1.,
+        ])
     }
 
     #[rustfmt::skip]
     pub fn scaling_uniform(f: f64) -> Matrix {
-            Matrix::new([
-                f, 0., 0., 0.,
-                0., f, 0., 0.,
-                0., 0., f, 0.,
-                0., 0., 0., 1.,
-            ])
+        Self::scaling(f, f, f)
     }
 
     #[rustfmt::skip]
@@ -1514,5 +1513,28 @@ mod tests {
         let interpolated = transforms.interpolated(factor);
 
         assert_eq!(interpolated, expected);
+    }
+
+    fn test_scale(factor: f64) {
+        let m = Matrix::scaling(factor, 1., 1.);
+        let _ = m.inverse().unwrap(); // make sure the matrix is invertible
+
+        let p = Point::new(1., 2., 3.);
+        assert_approx_eq_low_prec!(m * p, Point::new(factor, 2., 3.));
+    }
+
+    #[test]
+    fn scaling_by_inf() {
+        test_scale(f64::INFINITY);
+    }
+
+    #[test]
+    fn scaling_by_zero() {
+        test_scale(0.);
+    }
+
+    #[test]
+    fn scaling_by_nearly_zero() {
+        test_scale(approx_eq::EPSILON / 100.);
     }
 }

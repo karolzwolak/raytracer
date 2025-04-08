@@ -146,8 +146,8 @@ impl BoundingBox {
         }
     }
     pub fn clamp_dimensions(&mut self) {
-        self.min.clamp(-Self::MAX_DIM, Self::MAX_DIM);
-        self.max.clamp(-Self::MAX_DIM, Self::MAX_DIM);
+        self.min = self.min.clamp_max(-Self::MAX_DIM);
+        self.max = self.max.clamp_min(Self::MAX_DIM);
     }
     pub fn is_infinitely_large(&self) -> bool {
         !self.is_empty() && (self.max - self.min).magnitude() == f64::INFINITY
@@ -428,7 +428,23 @@ mod tests {
     #[test]
     fn as_object_works_for_infinite_shapes() {
         let bbox = Shape::Plane.bounding_box();
+
+        assert!(!bbox.is_infinitely_large());
         bbox.as_object(BoundingBox::DEFAULT_DEBUG_BBOX_MATERIAL);
+    }
+
+    #[test]
+    fn bbox_for_infinite_shape_is_clamped() {
+        let bbox = Shape::Plane.bounding_box();
+
+        assert!(!bbox.is_infinitely_large());
+        assert_eq!(
+            bbox,
+            BoundingBox {
+                min: Point::new(-BoundingBox::MAX_DIM, 0., -BoundingBox::MAX_DIM),
+                max: Point::new(BoundingBox::MAX_DIM, 0., BoundingBox::MAX_DIM),
+            }
+        );
     }
 
     #[test]
