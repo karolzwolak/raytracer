@@ -1,5 +1,4 @@
-pub mod obj_model;
-pub mod yaml;
+pub mod io;
 
 use crate::{
     approx_eq::ApproxEq,

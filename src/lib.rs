@@ -13,8 +13,10 @@ pub mod core {
 pub mod scene;
 
 pub use scene::{
-    obj_model::ObjModelParser,
-    yaml::{self, YamlParser},
+    io::{
+        obj_model::ObjModelParser,
+        yaml::{self, YamlParser},
+    },
     Scene,
 };
 
