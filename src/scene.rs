@@ -4,7 +4,7 @@ use crate::{
     render::object::group::ObjectGroup,
 };
 
-use super::{
+use crate::render::{
     camera::Camera,
     canvas::Canvas,
     intersection::IntersectionCollector,
@@ -13,11 +13,11 @@ use super::{
     object::Object,
     ray::Ray,
 };
-use super::{
+use crate::render::{
     intersection::{IntersecComputations, IntersectionCollection},
     object::PrimitiveObject,
 };
-use super::{object::shape::Shape, pattern::Pattern};
+use crate::render::{object::shape::Shape, pattern::Pattern};
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Scene {

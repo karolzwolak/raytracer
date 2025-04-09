@@ -12,8 +12,8 @@ use crate::{
         object::{shape::Shape, Object},
         pattern::Pattern,
         ray::Ray,
-        scene::Scene,
     },
+    Scene,
 };
 
 pub trait Bounded {

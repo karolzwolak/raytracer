@@ -11,6 +11,10 @@ pub mod core {
     pub use color::Color;
 }
 
+pub mod scene;
+
+pub use scene::Scene;
+
 pub mod render {
     pub mod animations;
     pub mod animator;
@@ -23,5 +27,4 @@ pub mod render {
     pub mod object;
     pub mod pattern;
     pub mod ray;
-    pub mod scene;
 }

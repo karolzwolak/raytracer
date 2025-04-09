@@ -31,8 +31,8 @@ use crate::{
             Object, ObjectKind, PrimitiveObject,
         },
         pattern::Pattern,
-        scene::Scene,
     },
+    Scene,
 };
 
 #[derive(Debug)]

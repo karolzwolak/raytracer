@@ -115,7 +115,7 @@ mod tests {
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         core::{matrix::Transform, tuple::Tuple, vector::Vector, Color},
-        render::scene::Scene,
+        scene::Scene,
     };
 
     use super::*;

@@ -2,8 +2,8 @@ use std::{fs::File, path::PathBuf};
 
 use clap::{Args, Parser, Subcommand};
 use raytracer::{
-    render::{animator::AnimationFormat, camera::Camera, canvas::ImageFormat, scene::Scene},
-    yaml,
+    render::{animator::AnimationFormat, camera::Camera, canvas::ImageFormat},
+    yaml, Scene,
 };
 
 const DEFAULT_WIDTH: usize = 800;
