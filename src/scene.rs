@@ -1,20 +1,19 @@
 pub mod animation;
 pub mod io;
+pub mod light;
+
+use light::schlick_reflectance;
 
 use crate::{
     approx_eq::ApproxEq,
     core::{matrix::Matrix, point::Point, tuple::Tuple, Color},
     render::object::group::ObjectGroup,
+    PointLightSource,
 };
 
 use crate::render::{
-    camera::Camera,
-    canvas::Canvas,
-    intersection::IntersectionCollector,
-    light::{color_of_illuminated_point, schlick_reflectance, PointLightSource},
-    material::Material,
-    object::Object,
-    ray::Ray,
+    camera::Camera, canvas::Canvas, intersection::IntersectionCollector, material::Material,
+    object::Object, ray::Ray,
 };
 use crate::render::{
     intersection::{IntersecComputations, IntersectionCollection},
@@ -355,9 +354,8 @@ impl Scene {
         self.light_sources()
             .iter()
             .fold(Color::black(), |acc, light_source| {
-                let surface = color_of_illuminated_point(
+                let surface = light_source.color_of_illuminated_point(
                     hit_comps.object(),
-                    light_source,
                     hit_comps.over_point(),
                     hit_comps.eye_v(),
                     hit_comps.normal_v(),

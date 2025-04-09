@@ -1,4 +1,4 @@
-use crate::ObjModelParser;
+use crate::{ObjModelParser, PointLightSource};
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use saphyr::Yaml;
@@ -18,7 +18,6 @@ use crate::{
     },
     render::{
         camera::Camera,
-        light::PointLightSource,
         material::Material,
         object::{
             cone::Cone,

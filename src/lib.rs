@@ -18,6 +18,7 @@ pub use scene::{
         obj_model::ObjModelParser,
         yaml::{self, YamlParser},
     },
+    light::{self, point_light::PointLightSource},
     Scene,
 };
 
@@ -26,7 +27,6 @@ pub mod render {
     pub mod camera;
     pub mod canvas;
     pub mod intersection;
-    pub mod light;
     pub mod material;
     pub mod object;
     pub mod pattern;
