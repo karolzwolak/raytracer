@@ -1,3 +1,4 @@
+pub mod animation;
 pub mod io;
 
 use crate::{

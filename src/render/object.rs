@@ -10,6 +10,7 @@ pub mod smooth_triangle;
 pub mod sphere;
 pub mod triangle;
 
+use crate::{scene::animation::Interpolate, Animations};
 use bounding_box::Bounded;
 use csg::CsgObject;
 
@@ -26,7 +27,6 @@ use crate::{
 use self::{bounding_box::BoundingBox, group::ObjectGroup, shape::Shape};
 
 use super::{
-    animations::{Animations, Interpolate},
     intersection::{Intersection, IntersectionCollection, IntersectionCollector},
     material::Material,
     ray::Ray,
@@ -437,12 +437,13 @@ impl Transform for PrimitiveObject {
 #[cfg(test)]
 mod tests {
 
+    use crate::Animation;
+    use crate::TransformAnimation;
     use std::f64;
 
     use crate::{
         assert_approx_eq_low_prec,
         core::{matrix::LocalTransformations, Color},
-        render::animations::{Animation, TransformAnimation},
     };
 
     use super::*;

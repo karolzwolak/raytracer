@@ -1,9 +1,7 @@
 use crate::{
     approx_eq::{self, ApproxEq},
-    render::{
-        animations::{Base, Interpolate, SelfInterpolate},
-        object::bounding_box::{Bounded, BoundingBox},
-    },
+    render::object::bounding_box::{Bounded, BoundingBox},
+    scene::animation::{Base, Interpolate, SelfInterpolate},
 };
 use std::ops;
 

@@ -13,6 +13,7 @@ pub mod core {
 pub mod scene;
 
 pub use scene::{
+    animation::{Animation, Animations, TransformAnimation},
     io::{
         obj_model::ObjModelParser,
         yaml::{self, YamlParser},
@@ -21,7 +22,6 @@ pub use scene::{
 };
 
 pub mod render {
-    pub mod animations;
     pub mod animator;
     pub mod camera;
     pub mod canvas;

@@ -8,6 +8,7 @@ use crate::core::matrix::{
     Transformations,
 };
 use crate::render::object::bounding_box::BoundingBox;
+use crate::scene::animation::{Animation, AnimationRepeat, Animations, TransformAnimation};
 use crate::{
     core::{
         point::Point,
@@ -16,7 +17,6 @@ use crate::{
         Color,
     },
     render::{
-        animations::{Animation, AnimationRepeat, Animations, TransformAnimation},
         camera::Camera,
         light::PointLightSource,
         material::Material,
@@ -870,11 +870,9 @@ mod tests {
 
     use crate::{
         core::matrix::Transform,
-        render::{
-            animations::{
-                Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,
-            },
-            object::{cylinder::Cylinder, smooth_triangle::SmoothTriangle, triangle::Triangle},
+        render::object::{cylinder::Cylinder, smooth_triangle::SmoothTriangle, triangle::Triangle},
+        scene::animation::{
+            Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,
         },
     };
 

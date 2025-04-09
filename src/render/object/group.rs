@@ -269,16 +269,16 @@ mod tests {
             vector::Vector,
         },
         render::{
-            animations::{
-                Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
-                TransformAnimation,
-            },
             intersection::IntersectionCollection,
             object::{
                 bounding_box::Bounded, group::ObjectGroup, shape::Shape, Object, ObjectKind,
                 PrimitiveObject,
             },
             ray::Ray,
+        },
+        scene::animation::{
+            Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
+            TransformAnimation,
         },
     };
 

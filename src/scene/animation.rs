@@ -3,9 +3,8 @@ use std::{ops, str::FromStr};
 use crate::{
     approx_eq::ApproxEq,
     core::matrix::{LocalTransformations, Matrix},
+    render::object::bounding_box::Bounded,
 };
-
-use super::object::bounding_box::Bounded;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum AnimationTiming {
