@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use crate::core::{point::Point, tuple::Tuple, vector::Vector};
 
-use super::object::{group::ObjectGroup, shape::Shape, Object};
+use crate::render::object::{group::ObjectGroup, shape::Shape, Object};
 
-pub struct ObjParser {
+pub struct ObjModelParser {
     ignored: usize,
     vertices: Vec<Point>,
     normals: Vec<Vector>,
@@ -13,9 +13,9 @@ pub struct ObjParser {
     main_group: ObjectGroup,
 }
 
-impl ObjParser {
-    pub fn new() -> ObjParser {
-        ObjParser {
+impl ObjModelParser {
+    pub fn new() -> ObjModelParser {
+        ObjModelParser {
             ignored: 0,
             groups: HashMap::new(),
             vertices: Vec::new(),
@@ -184,7 +184,7 @@ impl ObjParser {
     }
 }
 
-impl Default for ObjParser {
+impl Default for ObjModelParser {
     fn default() -> Self {
         Self::new()
     }
@@ -209,7 +209,7 @@ mod tests {
             in a relative way,
             and came back the previous night.
         "#;
-        let mut parser = ObjParser::new();
+        let mut parser = ObjModelParser::new();
         parser.not_consuming_parse(data.to_string()).unwrap();
         assert_eq!(parser.ignored(), 5);
     }
@@ -222,7 +222,7 @@ mod tests {
             v 1 0 0
             v 1 1 0
         "#;
-        let mut parser = ObjParser::new();
+        let mut parser = ObjModelParser::new();
         parser.not_consuming_parse(data.to_string()).unwrap();
 
         assert_eq!(parser.vertices().len(), 4);
@@ -258,7 +258,7 @@ mod tests {
             f 1 2 3
             f 1 3 4
         "#;
-        let mut parser = ObjParser::new();
+        let mut parser = ObjModelParser::new();
         parser.not_consuming_parse(data.to_string()).unwrap();
         let vertices = parser.vertices();
 
@@ -282,7 +282,7 @@ mod tests {
             v 0 2 0
             f 1 2 3 4 5
         "#;
-        let mut parser = ObjParser::new();
+        let mut parser = ObjModelParser::new();
         parser.not_consuming_parse(data.to_string()).unwrap();
         let vertices = parser.vertices();
 
@@ -300,7 +300,7 @@ mod tests {
 
     #[test]
     fn triangles_in_groups() {
-        let mut parser = ObjParser::new();
+        let mut parser = ObjModelParser::new();
 
         let data: &str = r#"
         v -1 1 0
@@ -344,7 +344,7 @@ mod tests {
             vn 0.707 0 -0.707
             vn 1 2 3
         "#;
-        let mut parser = ObjParser::new();
+        let mut parser = ObjModelParser::new();
         parser.not_consuming_parse(data.to_string()).unwrap();
 
         assert_eq!(parser.ignored(), 0);
@@ -373,7 +373,7 @@ mod tests {
             f 1//3 2//1 3//2
             f 1/0/3 2/0/1 3/0/2
         "#;
-        let mut parser = ObjParser::new();
+        let mut parser = ObjModelParser::new();
         parser.not_consuming_parse(data.to_string()).unwrap();
 
         let child1 = _obj_as_smooth_triangle(&parser.main_group.children()[0]);

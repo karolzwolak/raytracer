@@ -1,5 +1,4 @@
 pub mod approx_eq;
-pub mod yaml;
 
 pub mod core {
     pub mod color;
@@ -13,7 +12,11 @@ pub mod core {
 
 pub mod scene;
 
-pub use scene::Scene;
+pub use scene::{
+    obj_model::ObjModelParser,
+    yaml::{self, YamlParser},
+    Scene,
+};
 
 pub mod render {
     pub mod animations;
@@ -23,7 +26,6 @@ pub mod render {
     pub mod intersection;
     pub mod light;
     pub mod material;
-    pub mod obj_parser;
     pub mod object;
     pub mod pattern;
     pub mod ray;

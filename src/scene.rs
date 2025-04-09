@@ -1,3 +1,6 @@
+pub mod obj_model;
+pub mod yaml;
+
 use crate::{
     approx_eq::ApproxEq,
     core::{matrix::Matrix, point::Point, tuple::Tuple, Color},

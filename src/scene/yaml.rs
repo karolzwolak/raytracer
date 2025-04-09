@@ -1,3 +1,4 @@
+use crate::ObjModelParser;
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use saphyr::Yaml;
@@ -19,7 +20,6 @@ use crate::{
         camera::Camera,
         light::PointLightSource,
         material::Material,
-        obj_parser::ObjParser,
         object::{
             cone::Cone,
             csg::{CsgObject, CsgOperation},
@@ -501,7 +501,7 @@ impl<'a> YamlParser<'a> {
     fn parse_obj_model(&self, body: &Yaml) -> YamlParseResult<ObjectGroup> {
         let file = body["file"].as_str().ok_or(YamlParseError::MissingField)?;
         let data = std::fs::read_to_string(file).map_err(|_| YamlParseError::FileReadError)?;
-        let parser = ObjParser::new();
+        let parser = ObjModelParser::new();
         parser
             .parse(data)
             .map_err(|_| YamlParseError::ObjParsingError)
@@ -1193,7 +1193,7 @@ mod tests {
   file: samples/obj/teapot-low.obj
 "#;
         let (scene, _) = parse(OBJ_YAML);
-        let parser = ObjParser::new();
+        let parser = ObjModelParser::new();
         let path = "samples/obj/teapot-low.obj";
         let data = std::fs::read_to_string(path).unwrap();
         let expected_group = parser.parse(data).unwrap();
