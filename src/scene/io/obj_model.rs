@@ -1,8 +1,11 @@
+use crate::Object;
+use crate::Shape;
 use std::collections::HashMap;
 
-use crate::core::{point::Point, tuple::Tuple, vector::Vector};
-
-use crate::render::object::{group::ObjectGroup, shape::Shape, Object};
+use crate::{
+    core::{point::Point, tuple::Tuple, vector::Vector},
+    ObjectGroup,
+};
 
 pub struct ObjModelParser {
     ignored: usize,
@@ -193,9 +196,8 @@ impl Default for ObjModelParser {
 #[cfg(test)]
 mod tests {
     use crate::{
-        approx_eq::ApproxEq,
-        assert_approx_eq_low_prec,
-        render::object::{smooth_triangle::SmoothTriangle, triangle::Triangle},
+        approx_eq::ApproxEq, assert_approx_eq_low_prec, primitive::smooth_triangle::SmoothTriangle,
+        primitive::triangle::Triangle,
     };
 
     use super::*;

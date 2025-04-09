@@ -1,9 +1,8 @@
 use crate::{
     approx_eq::ApproxEq,
     core::{matrix::Matrix, point::Point, tuple::Tuple, Color},
+    Object,
 };
-
-use super::object::Object;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Pattern {
@@ -138,7 +137,7 @@ impl Pattern {
 mod tests {
     use crate::approx_eq::ApproxEq;
     use crate::assert_approx_eq_low_prec;
-    use crate::{core::tuple::Tuple, render::object::shape::Shape};
+    use crate::{core::tuple::Tuple, Shape};
 
     use super::*;
 

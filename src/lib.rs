@@ -19,6 +19,14 @@ pub use scene::{
         yaml::{self, YamlParser},
     },
     light::{self, point_light::PointLightSource},
+    object::{
+        bounding_box::{Bounded, BoundingBox},
+        csg::*,
+        group::*,
+        material::{pattern::Pattern, Material},
+        primitive::shape::*,
+        *,
+    },
     Scene,
 };
 
@@ -27,8 +35,5 @@ pub mod render {
     pub mod camera;
     pub mod canvas;
     pub mod intersection;
-    pub mod material;
-    pub mod object;
-    pub mod pattern;
     pub mod ray;
 }

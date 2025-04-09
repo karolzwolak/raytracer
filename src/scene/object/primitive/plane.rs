@@ -2,9 +2,8 @@ use crate::{
     approx_eq::ApproxEq,
     core::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
+    BoundingBox,
 };
-
-use super::bounding_box::BoundingBox;
 
 pub struct PlaneXZ {}
 
@@ -33,10 +32,8 @@ mod tests {
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         core::{point::Point, tuple::Tuple, vector::Vector},
-        render::{
-            object::{shape::Shape, Object},
-            ray::Ray,
-        },
+        render::ray::Ray,
+        {Object, Shape},
     };
 
     #[test]

@@ -1,9 +1,8 @@
 use crate::{
     core::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
+    scene::object::bounding_box::BoundingBox,
 };
-
-use super::bounding_box::BoundingBox;
 
 pub struct UnitSphere {}
 
@@ -49,10 +48,9 @@ mod tests {
             tuple::Tuple,
             vector::Vector,
         },
-        render::{
-            object::{shape::Shape, Object, PrimitiveObject},
-            ray::Ray,
-        },
+        render::ray::Ray,
+        scene::object::PrimitiveObject,
+        Object, Shape,
     };
 
     #[test]

@@ -1,18 +1,12 @@
 pub mod bounding_box;
-pub mod cone;
 pub mod csg;
-pub mod cube;
-pub mod cylinder;
 pub mod group;
-pub mod plane;
-pub mod shape;
-pub mod smooth_triangle;
-pub mod sphere;
-pub mod triangle;
+pub mod material;
+pub mod primitive;
 
-use crate::{scene::animation::Interpolate, Animations};
-use bounding_box::Bounded;
+use bounding_box::{Bounded, BoundingBox};
 use csg::CsgObject;
+use group::ObjectGroup;
 
 use crate::{
     approx_eq::ApproxEq,
@@ -22,15 +16,14 @@ use crate::{
         tuple::Tuple,
         vector::Vector,
     },
+    render::{
+        intersection::{Intersection, IntersectionCollection, IntersectionCollector},
+        ray::Ray,
+    },
+    Animations, Material, Shape,
 };
 
-use self::{bounding_box::BoundingBox, group::ObjectGroup, shape::Shape};
-
-use super::{
-    intersection::{Intersection, IntersectionCollection, IntersectionCollector},
-    material::Material,
-    ray::Ray,
-};
+use super::animation::Interpolate;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ObjectKind {

@@ -1,6 +1,10 @@
-use crate::core::{point::Point, Color};
+pub mod pattern;
+use crate::{
+    core::{point::Point, Color},
+    Pattern,
+};
 
-use super::{object::Object, pattern::Pattern};
+use super::Object;
 
 pub const AIR_REFRACTIVE_INDEX: f64 = 1.0;
 

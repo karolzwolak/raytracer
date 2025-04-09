@@ -2,9 +2,8 @@ use crate::{
     approx_eq::{self, ApproxEq},
     core::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
+    BoundingBox,
 };
-
-use super::bounding_box::BoundingBox;
 
 /// Cylinder with radius 1
 #[derive(Clone, Debug, PartialEq)]
@@ -133,10 +132,8 @@ mod tests {
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         core::{point::Point, tuple::Tuple, vector::Vector},
-        render::{
-            object::{shape::Shape, Object},
-            ray::Ray,
-        },
+        render::ray::Ray,
+        {Object, Shape},
     };
 
     use super::Cylinder;

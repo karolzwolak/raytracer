@@ -2,14 +2,14 @@ use crate::{
     core::{point::Point, vector::Vector},
     render::{
         intersection::{Intersection, IntersectionCollector},
-        object::triangle::Triangle,
         ray::Ray,
     },
+    BoundingBox,
 };
 
 use super::{
-    bounding_box::BoundingBox, cone::Cone, cube::UnitCube, cylinder::Cylinder, plane::PlaneXZ,
-    smooth_triangle::SmoothTriangle, sphere::UnitSphere,
+    cone::Cone, cube::UnitCube, cylinder::Cylinder, plane::PlaneXZ,
+    smooth_triangle::SmoothTriangle, sphere::UnitSphere, triangle::Triangle,
 };
 
 #[derive(Clone, Debug, PartialEq)]

@@ -3,7 +3,7 @@ use crate::{
     render::{intersection::IntersectionCollector, ray::Ray},
 };
 
-use super::bounding_box::BoundingBox;
+use crate::BoundingBox;
 
 pub struct UnitCube {}
 
@@ -68,10 +68,8 @@ impl UnitCube {
 mod tests {
     use crate::{
         core::{point::Point, tuple::Tuple, vector::Vector},
-        render::{
-            object::{shape::Shape, Object},
-            ray::Ray,
-        },
+        render::ray::Ray,
+        Object, Shape,
     };
 
     #[test]

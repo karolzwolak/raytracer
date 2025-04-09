@@ -1,7 +1,9 @@
 use crate::{
     approx_eq::{self, ApproxEq},
-    render::object::bounding_box::{Bounded, BoundingBox},
-    scene::animation::{Base, Interpolate, SelfInterpolate},
+    scene::{
+        animation::{Base, Interpolate, SelfInterpolate},
+        object::bounding_box::{Bounded, BoundingBox},
+    },
 };
 use std::ops;
 
@@ -19,12 +21,13 @@ pub struct Matrix {
 
 #[cfg(test)]
 mod local_transform_tests {
+    use crate::Shape;
     use std::f64::consts::FRAC_PI_3;
 
     use super::*;
-    use crate::render::object::bounding_box::BoundingBox;
-    use crate::render::object::shape::Shape;
-    use crate::{assert_approx_eq_low_prec, core::point::Point};
+    use crate::{
+        assert_approx_eq_low_prec, core::point::Point, scene::object::bounding_box::BoundingBox,
+    };
 
     fn bbox(min: (f64, f64, f64), max: (f64, f64, f64)) -> BoundingBox {
         BoundingBox {

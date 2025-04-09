@@ -1,25 +1,19 @@
 pub mod animation;
 pub mod io;
 pub mod light;
+pub mod object;
 
 use light::schlick_reflectance;
+use object::{group::ObjectGroup, PrimitiveObject};
 
 use crate::{
     approx_eq::ApproxEq,
     core::{matrix::Matrix, point::Point, tuple::Tuple, Color},
-    render::object::group::ObjectGroup,
-    PointLightSource,
+    render::{camera::Camera, canvas::Canvas, intersection::IntersectionCollector, ray::Ray},
+    Material, Object, Pattern, PointLightSource, Shape,
 };
 
-use crate::render::{
-    camera::Camera, canvas::Canvas, intersection::IntersectionCollector, material::Material,
-    object::Object, ray::Ray,
-};
-use crate::render::{
-    intersection::{IntersecComputations, IntersectionCollection},
-    object::PrimitiveObject,
-};
-use crate::render::{object::shape::Shape, pattern::Pattern};
+use crate::render::intersection::{IntersecComputations, IntersectionCollection};
 
 #[derive(PartialEq, Debug, Clone)]
 pub struct Scene {
@@ -445,6 +439,7 @@ mod tests {
 
     use crate::{
         assert_approx_eq_low_prec, core::vector::Vector, render::intersection::Intersection,
+        Material, Pattern, Shape,
     };
 
     use super::*;

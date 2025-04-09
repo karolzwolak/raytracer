@@ -4,9 +4,9 @@ use crate::{
     core::matrix::{Matrix, Transform},
     render::{
         intersection::{IntersectionCollection, IntersectionCollector},
-        material::Material,
         ray::Ray,
     },
+    Material,
 };
 
 use super::{
@@ -175,7 +175,7 @@ mod tests {
     use crate::core::tuple::Tuple;
     use crate::core::vector::Vector;
     use crate::render::intersection::Intersection;
-    use crate::render::object::shape::Shape;
+    use crate::Shape;
 
     use super::LeftRight::{Left, Right};
     use super::*;

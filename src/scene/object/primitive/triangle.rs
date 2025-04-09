@@ -1,3 +1,4 @@
+use crate::BoundingBox;
 use crate::{
     approx_eq::ApproxEq,
     core::{
@@ -7,8 +8,6 @@ use crate::{
     },
     render::{intersection::IntersectionCollector, ray::Ray},
 };
-
-use super::bounding_box::BoundingBox;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Triangle {
@@ -110,13 +109,11 @@ impl Triangle {
 #[cfg(test)]
 mod tests {
     use crate::approx_eq::ApproxEq;
-    use crate::assert_approx_eq_low_prec;
+    use crate::primitive::triangle::Triangle;
+    use crate::{assert_approx_eq_low_prec, Object, Shape};
     use crate::{
         core::{point::Point, tuple::Tuple, vector::Vector},
-        render::{
-            object::{shape::Shape, triangle::Triangle, Object},
-            ray::Ray,
-        },
+        render::ray::Ray,
     };
 
     #[test]

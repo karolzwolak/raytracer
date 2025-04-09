@@ -4,7 +4,7 @@ use crate::{
     render::{intersection::IntersectionCollector, ray::Ray},
 };
 
-use super::bounding_box::BoundingBox;
+use crate::BoundingBox;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Cone {
@@ -142,10 +142,8 @@ mod tests {
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         core::{point::Point, tuple::Tuple, vector::Vector},
-        render::{
-            object::{shape::Shape, Object},
-            ray::Ray,
-        },
+        render::ray::Ray,
+        Object, Shape,
     };
 
     use super::Cone;

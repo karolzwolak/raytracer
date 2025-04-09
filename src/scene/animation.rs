@@ -1,9 +1,9 @@
+use crate::scene::object::bounding_box::Bounded;
 use std::{ops, str::FromStr};
 
 use crate::{
     approx_eq::ApproxEq,
     core::matrix::{LocalTransformations, Matrix},
-    render::object::bounding_box::Bounded,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -287,14 +287,12 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::scene::object::bounding_box::BoundingBox;
     use std::f64::{self};
 
-    use crate::{
-        core::{
-            matrix::{Transform, Transformation, Transformations},
-            tuple::Axis,
-        },
-        render::object::bounding_box::BoundingBox,
+    use crate::core::{
+        matrix::{Transform, Transformation, Transformations},
+        tuple::Axis,
     };
 
     use super::*;

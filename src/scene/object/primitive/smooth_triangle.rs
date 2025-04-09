@@ -9,9 +9,8 @@ use crate::{
         intersection::{Intersection, IntersectionCollector},
         ray::Ray,
     },
+    BoundingBox,
 };
-
-use super::bounding_box::BoundingBox;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct SmoothTriangle {
@@ -133,11 +132,8 @@ mod tests {
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         core::{point::Point, tuple::Tuple, vector::Vector},
-        render::{
-            intersection::Intersection,
-            object::{shape::Shape, Object},
-            ray::Ray,
-        },
+        render::{intersection::Intersection, ray::Ray},
+        Object, Shape,
     };
 
     fn get_smooth_triangle() -> Object {

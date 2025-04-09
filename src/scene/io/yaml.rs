@@ -1,4 +1,15 @@
-use crate::{ObjModelParser, PointLightSource};
+use crate::primitive::cone::Cone;
+use crate::primitive::cylinder::Cylinder;
+use crate::primitive::smooth_triangle::SmoothTriangle;
+use crate::primitive::triangle::Triangle;
+use crate::CsgObject;
+use crate::CsgOperation;
+use crate::ObjectKind;
+use crate::PrimitiveObject;
+use crate::Shape;
+use crate::{
+    BoundingBox, Material, ObjModelParser, Object, ObjectGroup, Pattern, PointLightSource,
+};
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use saphyr::Yaml;
@@ -7,7 +18,6 @@ use crate::core::matrix::{
     LocalTransform, LocalTransformation, LocalTransformations, Matrix, Transformation,
     Transformations,
 };
-use crate::render::object::bounding_box::BoundingBox;
 use crate::scene::animation::{Animation, AnimationRepeat, Animations, TransformAnimation};
 use crate::{
     core::{
@@ -16,21 +26,7 @@ use crate::{
         vector::Vector,
         Color,
     },
-    render::{
-        camera::Camera,
-        material::Material,
-        object::{
-            cone::Cone,
-            csg::{CsgObject, CsgOperation},
-            cylinder::Cylinder,
-            group::ObjectGroup,
-            shape::Shape,
-            smooth_triangle::SmoothTriangle,
-            triangle::Triangle,
-            Object, ObjectKind, PrimitiveObject,
-        },
-        pattern::Pattern,
-    },
+    render::camera::Camera,
     Scene,
 };
 
@@ -869,7 +865,6 @@ mod tests {
 
     use crate::{
         core::matrix::Transform,
-        render::object::{cylinder::Cylinder, smooth_triangle::SmoothTriangle, triangle::Triangle},
         scene::animation::{
             Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,
         },

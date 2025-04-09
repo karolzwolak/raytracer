@@ -1,14 +1,15 @@
-use super::{
-    bounding_box::{Bounded, BoundingBox},
-    Object, ObjectKind,
-};
+use crate::Material;
+use crate::ObjectKind;
 use crate::{
     core::{
         matrix::{Matrix, Transform},
         tuple::Axis,
     },
-    render::{intersection::IntersectionCollector, material::Material, ray::Ray},
+    render::{intersection::IntersectionCollector, ray::Ray},
+    Bounded, BoundingBox,
 };
+
+use super::Object;
 
 #[derive(Clone, Debug, PartialEq)]
 /// A group of objects that can be transformed simultaneously.
@@ -259,6 +260,7 @@ impl Transform for ObjectGroup {
 
 #[cfg(test)]
 mod tests {
+    use super::ObjectGroup;
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
@@ -268,19 +270,14 @@ mod tests {
             tuple::Tuple,
             vector::Vector,
         },
-        render::{
-            intersection::IntersectionCollection,
-            object::{
-                bounding_box::Bounded, group::ObjectGroup, shape::Shape, Object, ObjectKind,
-                PrimitiveObject,
-            },
-            ray::Ray,
-        },
+        render::{intersection::IntersectionCollection, ray::Ray},
         scene::animation::{
             Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
             TransformAnimation,
         },
+        Object, PrimitiveObject, Shape,
     };
+    use crate::{Bounded, ObjectKind};
 
     #[test]
     fn intersecting_ray_with_empty_group() {

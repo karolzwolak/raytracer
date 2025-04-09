@@ -7,14 +7,11 @@ use crate::{
         vector::Vector,
         Color,
     },
-    render::{
-        material::Material,
-        object::{shape::Shape, Object},
-        pattern::Pattern,
-        ray::Ray,
-    },
-    Scene,
+    render::ray::Ray,
+    Material, Pattern, Scene, Shape,
 };
+
+use super::Object;
 
 pub trait Bounded {
     fn bounding_box(&self) -> &BoundingBox;
