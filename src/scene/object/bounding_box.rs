@@ -24,6 +24,12 @@ pub struct BoundingBox {
     pub max: Point,
 }
 
+impl Default for BoundingBox {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
 impl Bounded for BoundingBox {
     fn bounding_box(&self) -> &BoundingBox {
         self

@@ -11,7 +11,7 @@ use crate::{
 
 use super::Object;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Default)]
 /// A group of objects that can be transformed simultaneously.
 /// However, children added later will not be affected by previous transformations.
 /// It also features automatic bounding_box calculation, that reduce ray intersection checks.
@@ -240,12 +240,6 @@ impl ObjectGroup {
             self.transform(&transform);
         }
         self.animate(time);
-    }
-}
-
-impl Default for ObjectGroup {
-    fn default() -> Self {
-        Self::empty()
     }
 }
 

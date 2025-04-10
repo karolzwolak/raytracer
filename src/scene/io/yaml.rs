@@ -3,6 +3,7 @@ use crate::primitive::cylinder::Cylinder;
 use crate::primitive::smooth_triangle::SmoothTriangle;
 use crate::primitive::triangle::Triangle;
 use crate::scene::camera::Camera;
+use crate::scene::SceneBuilder;
 use crate::CsgObject;
 use crate::CsgOperation;
 use crate::ObjectKind;
@@ -135,7 +136,9 @@ const PREDEFINED_DEFINES: &str = r#"
 // TODO: Actual errors
 pub struct YamlParser<'a> {
     yaml: &'a Yaml,
-    scene: Scene,
+    scene_builder: SceneBuilder,
+    objects: ObjectGroup,
+    lights: Vec<PointLightSource>,
     camera: Camera,
     defines: HashMap<String, Yaml>,
 }
@@ -194,25 +197,30 @@ macro_rules! rotation_transformation {
 }
 
 impl<'a> YamlParser<'a> {
-    fn with_scene_and_camera(yaml: &'a Yaml, default_scene: Scene, default_camera: Camera) -> Self {
+    fn new(yaml: &'a Yaml, defines: HashMap<String, Yaml>) -> Self {
+        Self {
+            yaml,
+            scene_builder: SceneBuilder::default(),
+            objects: ObjectGroup::default(),
+            lights: Vec::new(),
+            camera: Camera::new(1, 1, 1.),
+            defines,
+        }
+    }
+    fn with_camera(yaml: &'a Yaml, default_camera: Camera) -> Self {
         let parsed = saphyr::Yaml::load_from_str(PREDEFINED_DEFINES).unwrap();
         let predefined = parsed.first().unwrap();
 
-        let mut predefined_parser = YamlParser {
-            yaml: predefined,
-            scene: Scene::empty(),
-            camera: Camera::new(1, 1, 1.),
-            defines: HashMap::new(),
-        };
+        let mut predefined_parser = YamlParser::new(predefined, HashMap::new());
         predefined_parser
             .parse()
             .expect("Error parsing predefined defines");
         // println!("{:?}", predefined_parser.defines);
-        Self {
+
+        YamlParser {
             yaml,
-            scene: default_scene,
             camera: default_camera,
-            defines: predefined_parser.defines,
+            ..predefined_parser
         }
     }
 
@@ -673,19 +681,24 @@ impl<'a> YamlParser<'a> {
     fn parse_scene(&mut self, body: &Yaml) -> YamlParseResult<()> {
         match &body["supersampling-level"] {
             &Yaml::BadValue => {}
-            val => self
-                .scene
-                .set_supersampling_level(self.parse_num(val)? as usize),
+            val => {
+                self.scene_builder
+                    .supersampling_level(self.parse_num(val)? as usize);
+            }
         }
         match &body["depth"] {
             &Yaml::BadValue => {}
-            val => self
-                .scene
-                .set_max_recursive_depth(self.parse_num(val)? as usize),
+            val => {
+                self.scene_builder
+                    .max_recursive_depth(self.parse_num(val)? as usize);
+            }
         }
         match &body["use-shadow-intensity"] {
             &Yaml::BadValue => {}
-            val => self.scene.set_use_shadow_intensity(self.parse_bool(val)?),
+            val => {
+                self.scene_builder
+                    .use_shadow_intensity(self.parse_bool(val)?);
+            }
         }
         Ok(())
     }
@@ -694,7 +707,7 @@ impl<'a> YamlParser<'a> {
         match what {
             "light" => {
                 let light = self.parse_light(body)?;
-                self.scene.add_light(light);
+                self.lights.push(light);
             }
             "camera" => {
                 let camera = self.parse_camera(body)?;
@@ -706,7 +719,7 @@ impl<'a> YamlParser<'a> {
             "group" | "obj" | "sphere" | "cube" | "plane" | "cylinder" | "cone" | "triangle"
             | "smooth-triangle" | "csg" => {
                 let object = self.parse_object_with_kind(body, what)?;
-                self.scene.add_obj(object);
+                self.objects.add_child(object);
             }
             name => {
                 if let Some(def) = self.defines.get(name) {
@@ -827,7 +840,13 @@ impl<'a> YamlParser<'a> {
 
     fn parse_consume(mut self) -> YamlParserOutput {
         self.parse()?;
-        Ok((self.scene, self.camera))
+        let scene = self
+            .scene_builder
+            .objects(self.objects)
+            .light_sources(self.lights)
+            .build()
+            .unwrap();
+        Ok((scene, self.camera))
     }
 }
 
@@ -844,11 +863,10 @@ impl YamlParser<'_> {
 }
 
 pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> YamlParserOutput {
-    let scene = Scene::empty();
     let camera = Camera::new(width, height, fov);
 
     let yaml = YamlParser::str_to_yaml(source)?;
-    let parser = YamlParser::with_scene_and_camera(&yaml, scene, camera);
+    let parser = YamlParser::with_camera(&yaml, camera);
 
     parser.parse_consume()
 }

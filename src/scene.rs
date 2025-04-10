@@ -5,6 +5,7 @@ pub mod light;
 pub mod object;
 
 use crate::scene::camera::Camera;
+use derive_builder::Builder;
 use light::schlick_reflectance;
 use object::{group::ObjectGroup, PrimitiveObject};
 
@@ -17,22 +18,43 @@ use crate::{
 
 use crate::render::intersection::{IntersecComputations, IntersectionCollection};
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Builder)]
+#[builder(default)]
 pub struct Scene {
     objects: ObjectGroup,
     light_sources: Vec<PointLightSource>,
     /// Depth of recursive calls for reflections and refractions
     /// 0 means no reflections or refractions
+    #[builder(default = "Scene::MAX_RECURSIVE_DEPTH")]
     max_recursive_depth: usize,
     /// offset from the center of the pixel
     /// so it should be in range [-0.5, 0.5]
     // TODO: intelligently apply supersampling only if it makes a difference
+    #[builder(setter(custom))]
+    #[builder(field(
+        ty = "Option<usize>",
+        build = "Scene::gen_supersampling_offsets(self.supersampling_offsets.unwrap_or(Scene::DEFAULT_SUPERSAMPLING_LEVEL))"
+    ))]
     supersampling_offsets: Vec<f64>,
     /// If true, shadows are calculated with intensity,
     /// so that all objects don't cast full shadow
     /// boolean shadows are required for testing purposes,
     /// because all tests values were calculated with bool shadows
+    #[builder(default = "true")]
     use_shadow_intensity: bool,
+}
+
+impl Default for Scene {
+    fn default() -> Self {
+        Self::empty()
+    }
+}
+
+impl SceneBuilder {
+    fn supersampling_level(&mut self, level: usize) -> &mut Self {
+        self.supersampling_offsets = Some(level);
+        self
+    }
 }
 
 impl Scene {
@@ -792,5 +814,32 @@ mod tests {
             scene.shade_hit(cmps, 0),
             Color::new(0.93391, 0.69643, 0.69243)
         );
+    }
+
+    #[test]
+    fn default_scene_builder() {
+        let builder = SceneBuilder::default();
+        builder.build().unwrap();
+    }
+
+    #[test]
+    fn default_scene_values() {
+        let builded = SceneBuilder::default().build().unwrap();
+        let scene = Scene::default();
+
+        assert_eq!(
+            builded.supersampling_level(),
+            Scene::DEFAULT_SUPERSAMPLING_LEVEL
+        );
+        assert_eq!(
+            scene.supersampling_level(),
+            Scene::DEFAULT_SUPERSAMPLING_LEVEL
+        );
+
+        assert_eq!(scene.max_recursive_depth(), Scene::MAX_RECURSIVE_DEPTH);
+        assert_eq!(builded.max_recursive_depth(), Scene::MAX_RECURSIVE_DEPTH);
+
+        assert!(scene.use_shadow_intensity());
+        assert!(builded.use_shadow_intensity());
     }
 }

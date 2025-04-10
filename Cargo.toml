@@ -15,6 +15,7 @@ codegen-units = 1
 
 [dependencies]
 clap = { version = "4.5.31", features = ["derive"] }
+derive_builder = "0.20.2"
 gif = "0.13.1"
 indicatif = { version = "0.17.11", features = ["rayon"] }
 libwebp-sys = "0.9.6"
