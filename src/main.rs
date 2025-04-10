@@ -2,7 +2,8 @@ use std::{fs::File, path::PathBuf};
 
 use clap::{Args, Parser, Subcommand};
 use raytracer::{
-    render::{animator::AnimationFormat, camera::Camera, canvas::ImageFormat},
+    render::{animator::AnimationFormat, canvas::ImageFormat},
+    scene::camera::Camera,
     yaml, Scene,
 };
 

@@ -32,7 +32,6 @@ pub use scene::{
 
 pub mod render {
     pub mod animator;
-    pub mod camera;
     pub mod canvas;
     pub mod intersection;
     pub mod ray;

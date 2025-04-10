@@ -11,9 +11,9 @@ use std::thread;
 use std::time::Duration;
 use webp::WebPConfig;
 
-use crate::Scene;
+use crate::{scene::camera::Camera, Scene};
 
-use super::{camera::Camera, canvas::Canvas};
+use super::canvas::Canvas;
 
 #[derive(Debug, Copy, Clone, PartialEq, ValueEnum)]
 pub enum AnimationFormat {
@@ -182,11 +182,9 @@ impl Animator {
 #[cfg(test)]
 mod tests {
 
+    use crate::scene::camera::Camera;
     use crate::Scene;
-    use crate::{
-        approx_eq::ApproxEq,
-        render::{animator::Animator, camera::Camera},
-    };
+    use crate::{approx_eq::ApproxEq, render::animator::Animator};
 
     fn animator(framerate: u32, duration_sec: f64) -> Animator {
         let scene = Scene::default_testing();

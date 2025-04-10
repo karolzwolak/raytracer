@@ -2,6 +2,7 @@ use crate::primitive::cone::Cone;
 use crate::primitive::cylinder::Cylinder;
 use crate::primitive::smooth_triangle::SmoothTriangle;
 use crate::primitive::triangle::Triangle;
+use crate::scene::camera::Camera;
 use crate::CsgObject;
 use crate::CsgOperation;
 use crate::ObjectKind;
@@ -26,7 +27,6 @@ use crate::{
         vector::Vector,
         Color,
     },
-    render::camera::Camera,
     Scene,
 };
 

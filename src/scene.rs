@@ -1,15 +1,17 @@
 pub mod animation;
+pub mod camera;
 pub mod io;
 pub mod light;
 pub mod object;
 
+use crate::scene::camera::Camera;
 use light::schlick_reflectance;
 use object::{group::ObjectGroup, PrimitiveObject};
 
 use crate::{
     approx_eq::ApproxEq,
     core::{matrix::Matrix, point::Point, tuple::Tuple, Color},
-    render::{camera::Camera, canvas::Canvas, intersection::IntersectionCollector, ray::Ray},
+    render::{canvas::Canvas, intersection::IntersectionCollector, ray::Ray},
     Material, Object, Pattern, PointLightSource, Shape,
 };
 
