@@ -9,7 +9,7 @@ use openh264::{
 };
 use webp::WebPConfig;
 
-use super::canvas::Canvas;
+use super::image::Image;
 use crate::scene::{camera::Camera, Scene};
 
 #[derive(Debug, Copy, Clone, PartialEq, ValueEnum)]
@@ -49,7 +49,7 @@ impl Animator {
         })
     }
 
-    fn render_frame(&self, time: f64, progressbar: indicatif::ProgressBar) -> Canvas {
+    fn render_frame(&self, time: f64, progressbar: indicatif::ProgressBar) -> Image {
         let mut scene = self.scene.clone();
         scene.animate(time);
         scene.render_animation_frame(&self.camera, progressbar)
@@ -65,7 +65,7 @@ impl Animator {
 
     fn render_animation<F>(&self, mut encode_fun: F)
     where
-        F: FnMut(Canvas),
+        F: FnMut(Image),
     {
         let main_bar = indicatif::ProgressBar::new(self.frame_count() as u64).with_style(indicatif::ProgressStyle::with_template(
             "[{elapsed_precise}] {wide_bar:.cyan/blue} rendering frame: {human_pos}/{human_len} {percent}% ({eta})",
@@ -95,16 +95,16 @@ impl Animator {
             .for_each(|i| {
                 let time = i as f64 * frame_duration;
                 let bar = multi_bar.add(frame_bar.clone());
-                let canvas = self.render_frame(time, bar.clone());
+                let image = self.render_frame(time, bar.clone());
                 bar.reset();
-                encode_fun(canvas);
+                encode_fun(image);
             });
     }
 
     fn render_gif(&self, encoder: &mut gif::Encoder<&mut File>) {
-        self.render_animation(|canvas| {
+        self.render_animation(|image| {
             encoder
-                .write_frame(&gif::Frame::<'_>::from(&canvas))
+                .write_frame(&gif::Frame::<'_>::from(&image))
                 .unwrap();
         });
     }
@@ -117,8 +117,8 @@ impl Animator {
         muxer.init_video(width as i32, height as i32, false, "title");
         let mut h264_encoder = Encoder::new().unwrap();
 
-        self.render_animation(|canvas| {
-            let bytes = canvas.as_u8_rgb();
+        self.render_animation(|image| {
+            let bytes = image.as_u8_rgb();
 
             let rgb_source = RgbSliceU8::new(&bytes, (width, height));
             let buf = YUVBuffer::from_rgb_source(rgb_source);
@@ -141,8 +141,8 @@ impl Animator {
         let mut encoder = webp::AnimEncoder::new(width, height, &config);
 
         let mut frame_buffer = Vec::with_capacity(self.frame_count() as usize);
-        self.render_animation(|canvas| {
-            let bytes = canvas.as_u8_rgb();
+        self.render_animation(|image| {
+            let bytes = image.as_u8_rgb();
             frame_buffer.push(bytes);
         });
 

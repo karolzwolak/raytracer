@@ -22,13 +22,13 @@ impl Display for ImageFormat {
 }
 
 #[derive(Debug, Clone)]
-pub struct Canvas {
+pub struct Image {
     width: usize,
     height: usize,
     pixels: Vec<Color>,
 }
 
-impl Canvas {
+impl Image {
     pub fn with_color(width: usize, height: usize, color: Color) -> Self {
         Self {
             width,
@@ -88,18 +88,14 @@ impl Canvas {
     }
 }
 
-impl From<&Canvas> for gif::Frame<'_> {
-    fn from(canvas: &Canvas) -> Self {
-        gif::Frame::from_rgb(
-            canvas.width as u16,
-            canvas.height as u16,
-            &canvas.as_u8_rgb(),
-        )
+impl From<&Image> for gif::Frame<'_> {
+    fn from(image: &Image) -> Self {
+        gif::Frame::from_rgb(image.width as u16, image.height as u16, &image.as_u8_rgb())
     }
 }
 
 /// saving image in ppm format
-impl Canvas {
+impl Image {
     const MAX_LINE_LEN: usize = 70;
     fn ppm_header(&self) -> String {
         format!(
@@ -162,7 +158,7 @@ impl Canvas {
 }
 
 /// savng image in png format
-impl Canvas {
+impl Image {
     fn colors_to_bytes(&self) -> Vec<u8> {
         self.pixels
             .iter()
@@ -192,19 +188,19 @@ mod tests {
     fn index() {
         let width = 5;
         let height = 3;
-        let canvas = Canvas::new(width, height);
-        assert_eq!(canvas.index(0, 1), width);
-        assert_eq!(canvas.index(1, 0), 1);
-        assert_eq!(canvas.index(width - 1, height - 1), width * height - 1);
-        assert_eq!(canvas.index(1, 2), width * 2 + 1);
-        assert_eq!(canvas.index(2, 1), width + 2);
+        let image = Image::new(width, height);
+        assert_eq!(image.index(0, 1), width);
+        assert_eq!(image.index(1, 0), 1);
+        assert_eq!(image.index(width - 1, height - 1), width * height - 1);
+        assert_eq!(image.index(1, 2), width * 2 + 1);
+        assert_eq!(image.index(2, 1), width + 2);
     }
 
     #[test]
     fn new_blank() {
         let black = Color::black();
-        let canvas = Canvas::new(10, 20);
-        canvas
+        let image = Image::new(10, 20);
+        image
             .pixels
             .iter()
             .for_each(|pixel| assert_approx_eq_low_prec!(*pixel, black))
@@ -212,19 +208,19 @@ mod tests {
 
     #[test]
     fn write_pixel() {
-        let mut canvas = Canvas::new(10, 10);
+        let mut image = Image::new(10, 10);
         let red = Color::red();
 
-        canvas.write_pixel(2, 3, red);
-        assert_approx_eq_low_prec!(canvas.pixel_at(2, 3), red);
+        image.write_pixel(2, 3, red);
+        assert_approx_eq_low_prec!(image.pixel_at(2, 3), red);
     }
 
     #[test]
     fn ppm_header() {
-        let canvas = Canvas::new(5, 3);
+        let image = Image::new(5, 3);
 
         assert_eq!(
-            canvas.ppm_header(),
+            image.ppm_header(),
             r#"P3
             5 3
             255
@@ -233,14 +229,14 @@ mod tests {
     }
     #[test]
     fn ppm_pixel_data() {
-        let mut canvas = Canvas::new(5, 3);
+        let mut image = Image::new(5, 3);
 
-        canvas.write_pixel(0, 0, Color::new(1.5, 0., 0.));
-        canvas.write_pixel(2, 1, Color::new(0., 0.5, 0.));
-        canvas.write_pixel(4, 2, Color::new(-1.5, 0., 1.));
+        image.write_pixel(0, 0, Color::new(1.5, 0., 0.));
+        image.write_pixel(2, 1, Color::new(0., 0.5, 0.));
+        image.write_pixel(4, 2, Color::new(-1.5, 0., 1.));
 
         assert_eq!(
-            canvas.ppm_data(),
+            image.ppm_data(),
             r#"255 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 128 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0 0 0 0 0 0 0 255
@@ -249,10 +245,10 @@ mod tests {
     }
     #[test]
     fn split_long_lines_ppm_data() {
-        let canvas = Canvas::with_color(10, 2, Color::new(1., 0.8, 0.6));
+        let image = Image::with_color(10, 2, Color::new(1., 0.8, 0.6));
 
         assert_eq!(
-            canvas.ppm_data(),
+            image.ppm_data(),
             r#"255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204
 153 255 204 153 255 204 153 255 204 153 255 204 153
 255 204 153 255 204 153 255 204 153 255 204 153 255 204 153 255 204
@@ -262,17 +258,17 @@ mod tests {
     }
     #[test]
     fn ppm_data_write() -> std::io::Result<()> {
-        let mut canvas = Canvas::with_color(10, 10, Color::new(1., 0.8, 0.6));
+        let mut image = Image::with_color(10, 10, Color::new(1., 0.8, 0.6));
 
-        canvas.write_pixel(0, 0, Color::new(1.5, 0., 0.));
-        canvas.write_pixel(2, 1, Color::new(0., 0.5, 0.));
-        canvas.write_pixel(4, 8, Color::new(-1.5, 0., 1.));
+        image.write_pixel(0, 0, Color::new(1.5, 0., 0.));
+        image.write_pixel(2, 1, Color::new(0., 0.5, 0.));
+        image.write_pixel(4, 8, Color::new(-1.5, 0., 1.));
 
         let file = File::create("test.ppm")?;
-        canvas.save_to_ppm(file)
+        image.save_to_ppm(file)
     }
     #[test]
     fn ppm_data_ends_with_newline() {
-        assert!(Canvas::new(5, 3).ppm_data().ends_with('\n'))
+        assert!(Image::new(5, 3).ppm_data().ends_with('\n'))
     }
 }

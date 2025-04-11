@@ -2,7 +2,7 @@ use std::{fs::File, path::PathBuf};
 
 use clap::{Args, Parser, Subcommand};
 use raytracer::{
-    render::{animator::AnimationFormat, canvas::ImageFormat},
+    render::{animator::AnimationFormat, image::ImageFormat},
     scene::{camera::Camera, io::yaml, Scene},
 };
 
@@ -129,8 +129,8 @@ fn render_image(
     mut scene: Scene,
     camera: Camera,
 ) -> Result<(), String> {
-    let canvas = scene.render(&camera);
-    canvas
+    let image = scene.render(&camera);
+    image
         .save_to_file(file, image_args.format)
         .map_err(|e| format!("Failed to save image: {}", e))
 }

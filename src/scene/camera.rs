@@ -1,6 +1,6 @@
 use crate::{
     math::{matrix::Matrix, point::Point, tuple::Tuple},
-    render::{canvas::Canvas, ray::Ray},
+    render::{image::Image, ray::Ray},
 };
 
 // camera looks toward -z direction from point zero
@@ -87,8 +87,8 @@ impl Camera {
         Ray::new(origin, direction.normalize())
     }
 
-    pub fn canvas(&self) -> Canvas {
-        Canvas::new(self.target_width, self.target_height)
+    pub fn image(&self) -> Image {
+        Image::new(self.target_width, self.target_height)
     }
 
     pub fn target_width(&self) -> usize {
@@ -128,21 +128,21 @@ mod tests {
         assert_eq!(camera.inverse_transformation, Matrix::identity());
     }
     #[test]
-    fn pixel_size_for_horizontal_canvas() {
+    fn pixel_size_for_horizontal_image() {
         let camera = Camera::new(200, 125, FRAC_PI_2);
 
         assert!(camera.pixel_size.approx_eq(&0.01));
     }
 
     #[test]
-    fn pixel_size_for_vertical_canvas() {
+    fn pixel_size_for_vertical_image() {
         let camera = Camera::new(125, 200, FRAC_PI_2);
 
         assert!(camera.pixel_size.approx_eq(&0.01));
     }
 
     #[test]
-    fn construct_ray_thru_canvas_center() {
+    fn construct_ray_thru_image_center() {
         let camera = Camera::new(201, 101, FRAC_PI_2);
 
         let ray = camera.ray_for_pixel(100., 50.);
@@ -150,7 +150,7 @@ mod tests {
         assert_eq!(ray.direction(), &Vector::new(0., 0., -1.));
     }
     #[test]
-    fn construct_ray_thru_canvas_corner() {
+    fn construct_ray_thru_image_corner() {
         let camera = Camera::new(201, 101, FRAC_PI_2);
 
         let ray = camera.ray_for_pixel(0., 0.);
@@ -192,7 +192,7 @@ mod tests {
             Matrix::view_tranformation(from, to, up_v),
         );
 
-        let canvas = scene.render(&camera);
-        assert_approx_eq_low_prec!(canvas.pixel_at(5, 5), Color::new(0.38066, 0.47583, 0.2855));
+        let image = scene.render(&camera);
+        assert_approx_eq_low_prec!(image.pixel_at(5, 5), Color::new(0.38066, 0.47583, 0.2855));
     }
 }

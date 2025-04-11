@@ -1,4 +1,4 @@
 pub mod animator;
-pub mod canvas;
+pub mod image;
 pub mod intersection;
 pub mod ray;

@@ -11,7 +11,7 @@ use object::{group::ObjectGroup, PrimitiveObject};
 use crate::{
     math::{approx_eq::ApproxEq, color::Color, matrix::Matrix, point::Point, tuple::Tuple},
     render::{
-        canvas::Canvas,
+        image::Image,
         intersection::{IntersecComputations, IntersectionCollection, IntersectionCollector},
         ray::Ray,
     },
@@ -196,10 +196,10 @@ impl Scene {
         &mut self,
         camera: &Camera,
         progressbar: indicatif::ProgressBar,
-    ) -> Canvas {
+    ) -> Image {
         self.objects.build_bvh();
 
-        let mut image = camera.canvas();
+        let mut image = camera.image();
 
         image.set_each_pixel(
             |x: usize, y: usize| self.color_at_pixel(x, y, camera),
@@ -208,12 +208,12 @@ impl Scene {
         image
     }
 
-    pub fn render(&mut self, camera: &Camera) -> Canvas {
+    pub fn render(&mut self, camera: &Camera) -> Image {
         let now = std::time::Instant::now();
         self.objects.build_bvh();
         println!("partitioning time: {:?}", now.elapsed());
 
-        let mut image = camera.canvas();
+        let mut image = camera.image();
 
         let primitive_count = self.objects.primitive_count();
 
