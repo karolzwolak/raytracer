@@ -1,17 +1,20 @@
-use crate::primitive::cone::Cone;
-use crate::primitive::cylinder::Cylinder;
-use crate::primitive::smooth_triangle::SmoothTriangle;
-use crate::primitive::triangle::Triangle;
-use crate::scene::camera::Camera;
+use crate::scene::object::bounding_box::BoundingBox;
+use crate::scene::object::csg::CsgObject;
+use crate::scene::object::csg::CsgOperation;
+use crate::scene::object::material::pattern::Pattern;
+use crate::scene::object::material::Material;
+use crate::scene::object::primitive::cone::Cone;
+use crate::scene::object::primitive::cylinder::Cylinder;
+use crate::scene::object::primitive::shape::Shape;
+use crate::scene::object::primitive::smooth_triangle::SmoothTriangle;
+use crate::scene::object::primitive::triangle::Triangle;
+use crate::scene::object::Object;
+use crate::scene::object::ObjectKind;
+use crate::scene::object::PrimitiveObject;
+use crate::scene::Camera;
+use crate::scene::ObjectGroup;
+use crate::scene::PointLightSource;
 use crate::scene::SceneBuilder;
-use crate::CsgObject;
-use crate::CsgOperation;
-use crate::ObjectKind;
-use crate::PrimitiveObject;
-use crate::Shape;
-use crate::{
-    BoundingBox, Material, ObjModelParser, Object, ObjectGroup, Pattern, PointLightSource,
-};
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use saphyr::Yaml;
@@ -23,13 +26,15 @@ use crate::math::matrix::{
 use crate::scene::animation::{Animation, AnimationRepeat, Animations, TransformAnimation};
 use crate::{
     math::{
+        color::Color,
         point::Point,
         tuple::{Axis, Tuple},
         vector::Vector,
-        Color,
     },
-    Scene,
+    scene::Scene,
 };
+
+use super::obj_model::ObjModelParser;
 
 #[derive(Debug)]
 pub enum YamlParseError {

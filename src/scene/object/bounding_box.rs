@@ -1,14 +1,17 @@
+use crate::scene::Material;
+use crate::scene::Pattern;
+use crate::scene::Scene;
+use crate::scene::Shape;
 use crate::{
     approx_eq::ApproxEq,
     math::{
+        color::Color,
         matrix::{Matrix, Transform},
         point::Point,
         tuple::{Axis, Tuple},
         vector::Vector,
-        Color,
     },
     render::ray::Ray,
-    Material, Pattern, Scene, Shape,
 };
 
 use super::Object;

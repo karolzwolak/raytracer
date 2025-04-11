@@ -2,7 +2,7 @@ use crate::{
     approx_eq::{self, ApproxEq},
     math::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
-    BoundingBox,
+    scene::object::bounding_box::BoundingBox,
 };
 
 /// Cylinder with radius 1
@@ -133,7 +133,7 @@ mod tests {
         assert_approx_eq_low_prec,
         math::{point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
-        {Object, Shape},
+        scene::object::{primitive::shape::Shape, Object},
     };
 
     use super::Cylinder;

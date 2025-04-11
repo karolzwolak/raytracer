@@ -1,9 +1,8 @@
 use crate::{
     math::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
+    scene::object::bounding_box::BoundingBox,
 };
-
-use crate::BoundingBox;
 
 pub struct UnitCube {}
 
@@ -69,7 +68,7 @@ mod tests {
     use crate::{
         math::{point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
-        Object, Shape,
+        scene::object::{primitive::shape::Shape, Object},
     };
 
     #[test]

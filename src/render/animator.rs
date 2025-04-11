@@ -11,7 +11,7 @@ use std::thread;
 use std::time::Duration;
 use webp::WebPConfig;
 
-use crate::{scene::camera::Camera, Scene};
+use crate::scene::{camera::Camera, Scene};
 
 use super::canvas::Canvas;
 
@@ -183,7 +183,7 @@ impl Animator {
 mod tests {
 
     use crate::scene::camera::Camera;
-    use crate::Scene;
+    use crate::scene::Scene;
     use crate::{approx_eq::ApproxEq, render::animator::Animator};
 
     fn animator(framerate: u32, duration_sec: f64) -> Animator {

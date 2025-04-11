@@ -7,6 +7,8 @@ pub mod primitive;
 use bounding_box::{Bounded, BoundingBox};
 use csg::CsgObject;
 use group::ObjectGroup;
+use material::Material;
+use primitive::shape::Shape;
 
 use crate::{
     approx_eq::ApproxEq,
@@ -20,10 +22,9 @@ use crate::{
         intersection::{Intersection, IntersectionCollection, IntersectionCollector},
         ray::Ray,
     },
-    Animations, Material, Shape,
 };
 
-use super::animation::Interpolate;
+use super::animation::{Animations, Interpolate};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ObjectKind {
@@ -430,13 +431,12 @@ impl Transform for PrimitiveObject {
 #[cfg(test)]
 mod tests {
 
-    use crate::Animation;
-    use crate::TransformAnimation;
     use std::f64;
 
     use crate::{
         assert_approx_eq_low_prec,
-        math::{matrix::LocalTransformations, Color},
+        math::{color::Color, matrix::LocalTransformations},
+        scene::animation::{Animation, TransformAnimation},
     };
 
     use super::*;

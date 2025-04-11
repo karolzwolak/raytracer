@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    math::{point::Point, vector::Vector, Color},
+    math::{color::Color, point::Point, vector::Vector},
     scene::Object,
 };
 
@@ -73,7 +73,13 @@ mod tests {
     use std::f64::consts::FRAC_1_SQRT_2;
 
     use crate::{
-        assert_approx_eq_low_prec, math::tuple::Tuple, Material, Pattern, PrimitiveObject, Shape,
+        assert_approx_eq_low_prec,
+        math::tuple::Tuple,
+        scene::object::{
+            material::{pattern::Pattern, Material},
+            primitive::shape::Shape,
+            PrimitiveObject,
+        },
     };
 
     use super::*;

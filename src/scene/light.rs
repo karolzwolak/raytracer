@@ -28,14 +28,17 @@ pub fn schlick_reflectance(comps: &IntersecComputations) -> f64 {
 
 #[cfg(test)]
 mod tests {
-    use crate::{approx_eq::ApproxEq, Material, Object, Shape};
+    use crate::approx_eq::ApproxEq;
     use std::f64::consts::FRAC_1_SQRT_2;
 
     use crate::{
         assert_approx_eq_low_prec,
-        light::schlick_reflectance,
         math::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
         render::{intersection::IntersectionCollection, ray::Ray},
+        scene::{
+            light::schlick_reflectance,
+            object::{material::Material, primitive::shape::Shape, Object},
+        },
     };
 
     #[test]

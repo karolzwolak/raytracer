@@ -1,7 +1,7 @@
 use crate::{
     approx_eq::ApproxEq,
-    math::{matrix::Matrix, point::Point, tuple::Tuple, Color},
-    Object,
+    math::{color::Color, matrix::Matrix, point::Point, tuple::Tuple},
+    scene::object::Object,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -137,7 +137,8 @@ impl Pattern {
 mod tests {
     use crate::approx_eq::ApproxEq;
     use crate::assert_approx_eq_low_prec;
-    use crate::{math::tuple::Tuple, Shape};
+    use crate::math::tuple::Tuple;
+    use crate::scene::object::primitive::shape::Shape;
 
     use super::*;
 

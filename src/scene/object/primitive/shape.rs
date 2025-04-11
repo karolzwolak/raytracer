@@ -4,7 +4,7 @@ use crate::{
         intersection::{Intersection, IntersectionCollector},
         ray::Ray,
     },
-    BoundingBox,
+    scene::object::bounding_box::BoundingBox,
 };
 
 use super::{

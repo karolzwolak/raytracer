@@ -1,15 +1,16 @@
-use crate::Material;
-use crate::ObjectKind;
 use crate::{
     math::{
         matrix::{Matrix, Transform},
         tuple::Axis,
     },
     render::{intersection::IntersectionCollector, ray::Ray},
-    Bounded, BoundingBox,
 };
 
-use super::Object;
+use super::{
+    bounding_box::{Bounded, BoundingBox},
+    material::Material,
+    Object, ObjectKind,
+};
 
 #[derive(Clone, Debug, PartialEq, Default)]
 /// A group of objects that can be transformed simultaneously.
@@ -265,13 +266,16 @@ mod tests {
             vector::Vector,
         },
         render::{intersection::IntersectionCollection, ray::Ray},
-        scene::animation::{
-            Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
-            TransformAnimation,
+        scene::{
+            animation::{
+                Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
+                TransformAnimation,
+            },
+            object::{
+                bounding_box::Bounded, primitive::shape::Shape, Object, ObjectKind, PrimitiveObject,
+            },
         },
-        Object, PrimitiveObject, Shape,
     };
-    use crate::{Bounded, ObjectKind};
 
     #[test]
     fn intersecting_ray_with_empty_group() {

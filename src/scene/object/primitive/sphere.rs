@@ -49,8 +49,7 @@ mod tests {
             vector::Vector,
         },
         render::ray::Ray,
-        scene::object::PrimitiveObject,
-        Object, Shape,
+        scene::object::{primitive::shape::Shape, Object, PrimitiveObject},
     };
 
     #[test]

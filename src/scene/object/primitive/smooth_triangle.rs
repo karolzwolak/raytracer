@@ -9,7 +9,7 @@ use crate::{
         intersection::{Intersection, IntersectionCollector},
         ray::Ray,
     },
-    BoundingBox,
+    scene::object::bounding_box::BoundingBox,
 };
 
 #[derive(Clone, Debug, PartialEq)]
@@ -133,7 +133,7 @@ mod tests {
         assert_approx_eq_low_prec,
         math::{point::Point, tuple::Tuple, vector::Vector},
         render::{intersection::Intersection, ray::Ray},
-        Object, Shape,
+        scene::object::{primitive::shape::Shape, Object},
     };
 
     fn get_smooth_triangle() -> Object {

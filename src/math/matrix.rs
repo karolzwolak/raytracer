@@ -21,7 +21,7 @@ pub struct Matrix {
 
 #[cfg(test)]
 mod local_transform_tests {
-    use crate::Shape;
+    use crate::scene::object::primitive::shape::Shape;
     use std::f64::consts::FRAC_PI_3;
 
     use super::*;

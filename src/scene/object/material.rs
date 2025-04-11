@@ -1,8 +1,7 @@
 pub mod pattern;
-use crate::{
-    math::{point::Point, Color},
-    Pattern,
-};
+use pattern::Pattern;
+
+use crate::math::{color::Color, point::Point};
 
 use super::Object;
 

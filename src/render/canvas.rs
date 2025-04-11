@@ -3,7 +3,7 @@ use indicatif::ParallelProgressIterator;
 use rayon::prelude::*;
 use std::{fmt::Display, fs::File, io::Write};
 
-use crate::math::Color;
+use crate::math::color::Color;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, ValueEnum)]
 pub enum ImageFormat {

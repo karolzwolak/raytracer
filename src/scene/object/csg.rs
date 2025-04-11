@@ -1,3 +1,4 @@
+use crate::scene::Material;
 use std::str::FromStr;
 
 use crate::{
@@ -6,7 +7,6 @@ use crate::{
         intersection::{IntersectionCollection, IntersectionCollector},
         ray::Ray,
     },
-    Material,
 };
 
 use super::{
@@ -175,7 +175,7 @@ mod tests {
     use crate::math::tuple::Tuple;
     use crate::math::vector::Vector;
     use crate::render::intersection::Intersection;
-    use crate::Shape;
+    use crate::scene::object::primitive::shape::Shape;
 
     use super::LeftRight::{Left, Right};
     use super::*;

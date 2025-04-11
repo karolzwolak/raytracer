@@ -1,8 +1,11 @@
 use crate::{
     approx_eq::{self, ApproxEq},
     math::{point::Point, vector::Vector},
-    scene::object::{group::ObjectGroup, material::AIR_REFRACTIVE_INDEX},
-    Material, Object,
+    scene::object::{
+        group::ObjectGroup,
+        material::{Material, AIR_REFRACTIVE_INDEX},
+        Object,
+    },
 };
 
 use super::ray::Ray;
@@ -532,7 +535,7 @@ mod tests {
     use crate::math::point::Point;
     use crate::math::tuple::Tuple;
     use crate::math::vector::Vector;
-    use crate::Shape;
+    use crate::scene::object::primitive::shape::Shape;
 
     #[test]
     fn intersect_sphere() {

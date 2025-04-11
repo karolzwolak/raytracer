@@ -1,10 +1,8 @@
-use crate::Object;
-use crate::Shape;
 use std::collections::HashMap;
 
 use crate::{
     math::{point::Point, tuple::Tuple, vector::Vector},
-    ObjectGroup,
+    scene::object::{group::ObjectGroup, primitive::shape::Shape, Object},
 };
 
 pub struct ObjModelParser {
@@ -195,10 +193,9 @@ impl Default for ObjModelParser {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        approx_eq::ApproxEq, assert_approx_eq_low_prec, primitive::smooth_triangle::SmoothTriangle,
-        primitive::triangle::Triangle,
-    };
+    use crate::scene::object::primitive::smooth_triangle::SmoothTriangle;
+    use crate::scene::object::primitive::triangle::Triangle;
+    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec};
 
     use super::*;
 
