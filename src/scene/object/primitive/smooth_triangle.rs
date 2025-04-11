@@ -143,7 +143,7 @@ mod tests {
         let n1 = Vector::new(0., 1., 0.);
         let n2 = Vector::new(-1., 0., 0.);
         let n3 = Vector::new(1., 0., 0.);
-        Object::core_with_shape(Shape::smooth_triangle(p1, p2, p3, n1, n2, n3))
+        Object::primitive_with_shape(Shape::smooth_triangle(p1, p2, p3, n1, n2, n3))
     }
 
     #[test]

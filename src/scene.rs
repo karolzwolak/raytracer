@@ -208,7 +208,7 @@ impl Scene {
 
         let mut image = camera.canvas();
 
-        let core_count = self.objects.core_count();
+        let primitive_count = self.objects.primitive_count();
 
         let ray_count = image.width() * image.height() * self.supersampling_offsets.len().pow(2);
 
@@ -217,7 +217,7 @@ impl Scene {
             image.width(),
             image.height()
         );
-        println!("rendering {} objects", core_count);
+        println!("rendering {} objects", primitive_count);
         println!("with {} rays", ray_count);
         println!("with {} maximum reflective depth", self.max_recursive_depth);
         println!("with supersampling level {}", self.supersampling_level());
@@ -433,7 +433,7 @@ impl Scene {
 // Default testing scene with bool shadows
 impl Scene {
     pub fn default_testing() -> Self {
-        let sphere1 = Object::core(
+        let sphere1 = Object::primitive(
             Shape::Sphere,
             Material {
                 pattern: Pattern::Const(Color::new(0.8, 1.0, 0.6)),
@@ -558,8 +558,8 @@ mod tests {
             Color::white(),
         ));
 
-        scene.add_obj(Object::core_with_shape(Shape::Sphere));
-        scene.add_obj(Object::core_with_transformation(
+        scene.add_obj(Object::primitive_with_shape(Shape::Sphere));
+        scene.add_obj(Object::primitive_with_transformation(
             Shape::Sphere,
             Matrix::translation(0., 0., 10.),
         ));
@@ -587,7 +587,7 @@ mod tests {
     #[test]
     fn shade_hit_with_reflective_material() {
         let mut w = Scene::default_testing();
-        let plane = Object::core(
+        let plane = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 0.5,
@@ -618,7 +618,7 @@ mod tests {
             Color::white(),
         ));
 
-        let lower = Object::core(
+        let lower = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 1.,
@@ -626,7 +626,7 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        let upper = Object::core(
+        let upper = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 1.,
@@ -645,7 +645,7 @@ mod tests {
     #[test]
     fn reflected_color_at_max_recursive_depth() {
         let mut scene = Scene::default_testing();
-        let plane = Object::core(
+        let plane = Object::primitive(
             Shape::Plane,
             Material {
                 reflectivity: 0.5,
@@ -744,7 +744,7 @@ mod tests {
     #[test]
     fn shading_transparent_material() {
         let mut scene = Scene::default_testing();
-        let floor = Object::core(
+        let floor = Object::primitive(
             Shape::Plane,
             Material {
                 transparency: 0.5,
@@ -753,7 +753,7 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        let ball = Object::core(
+        let ball = Object::primitive(
             Shape::Sphere,
             Material {
                 pattern: Pattern::Const(Color::red()),
@@ -781,7 +781,7 @@ mod tests {
     #[test]
     fn shading_reflective_transparent_material() {
         let mut scene = Scene::default_testing();
-        let floor = Object::core(
+        let floor = Object::primitive(
             Shape::Plane,
             Material {
                 transparency: 0.5,
@@ -791,7 +791,7 @@ mod tests {
             },
             Matrix::translation(0., -1., 0.),
         );
-        let ball = Object::core(
+        let ball = Object::primitive(
             Shape::Sphere,
             Material {
                 pattern: Pattern::Const(Color::red()),

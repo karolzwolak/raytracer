@@ -36,7 +36,7 @@ impl ObjectKind {
     pub fn group(group: ObjectGroup) -> Self {
         Self::Group(group)
     }
-    pub fn core(obj: PrimitiveObject) -> Self {
+    pub fn primitive(obj: PrimitiveObject) -> Self {
         Self::Primitive(Box::new(obj))
     }
 }
@@ -49,7 +49,7 @@ pub struct Object {
 
 impl From<PrimitiveObject> for Object {
     fn from(obj: PrimitiveObject) -> Self {
-        Self::from_core(obj)
+        Self::from_primitive(obj)
     }
 }
 
@@ -127,23 +127,23 @@ impl Object {
     pub fn from_group(group: ObjectGroup) -> Self {
         Self::with_kind(ObjectKind::group(group))
     }
-    pub fn from_core(obj: PrimitiveObject) -> Self {
-        Self::with_kind(ObjectKind::core(obj))
+    pub fn from_primitive(obj: PrimitiveObject) -> Self {
+        Self::with_kind(ObjectKind::primitive(obj))
     }
     pub fn group_with_children(children: Vec<Object>) -> Self {
         Self::from_group(ObjectGroup::new(children))
     }
 
-    pub fn core(shape: Shape, material: Material, transformation: Matrix) -> Self {
-        Self::from_core(PrimitiveObject::new(shape, material, transformation))
+    pub fn primitive(shape: Shape, material: Material, transformation: Matrix) -> Self {
+        Self::from_primitive(PrimitiveObject::new(shape, material, transformation))
     }
 
-    pub fn core_with_shape(shape: Shape) -> Self {
-        Self::from_core(PrimitiveObject::with_shape(shape))
+    pub fn primitive_with_shape(shape: Shape) -> Self {
+        Self::from_primitive(PrimitiveObject::with_shape(shape))
     }
 
-    pub fn core_with_transformation(shape: Shape, transformation: Matrix) -> Self {
-        Self::from_core(PrimitiveObject::with_transformation(shape, transformation))
+    pub fn primitive_with_transformation(shape: Shape, transformation: Matrix) -> Self {
+        Self::from_primitive(PrimitiveObject::with_transformation(shape, transformation))
     }
 
     pub fn normal_vector_at(&self, scene_point: Point) -> Vector {
@@ -208,11 +208,11 @@ impl Object {
     }
 
     pub fn material(&self) -> Option<&Material> {
-        self.as_core().map(|p| p.material())
+        self.as_primitive().map(|p| p.material())
     }
 
     pub fn material_mut(&mut self) -> Option<&mut Material> {
-        self.as_core_mut().map(|p| p.material_mut())
+        self.as_primitive_mut().map(|p| p.material_mut())
     }
 
     pub fn set_material(&mut self, material: Material) {
@@ -227,11 +227,11 @@ impl Object {
         self.material().expect("Object has no material")
     }
 
-    pub fn core_count(&self) -> usize {
+    pub fn primitive_count(&self) -> usize {
         match &self.kind {
             ObjectKind::Primitive(_) => 1,
-            ObjectKind::Group(group) => group.core_count(),
-            ObjectKind::Csg(_) => 1, // it's a core in this context
+            ObjectKind::Group(group) => group.primitive_count(),
+            ObjectKind::Csg(_) => 1, // it's a primitive in this context
         }
     }
 
@@ -288,13 +288,13 @@ impl Object {
             _ => None,
         }
     }
-    pub fn as_core(&self) -> Option<&PrimitiveObject> {
+    pub fn as_primitive(&self) -> Option<&PrimitiveObject> {
         match &self.kind {
             ObjectKind::Primitive(obj) => Some(obj),
             _ => None,
         }
     }
-    pub fn as_core_mut(&mut self) -> Option<&mut PrimitiveObject> {
+    pub fn as_primitive_mut(&mut self) -> Option<&mut PrimitiveObject> {
         match &mut self.kind {
             ObjectKind::Primitive(obj) => Some(obj),
             _ => None,
@@ -444,14 +444,14 @@ mod tests {
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {
         assert_approx_eq_low_prec!(
-            Object::core_with_shape(Shape::Sphere).transformation_inverse(),
+            Object::primitive_with_shape(Shape::Sphere).transformation_inverse(),
             Matrix::identity()
         );
     }
 
     #[test]
     fn normal_is_normalized() {
-        let sphere_obj = Object::core_with_shape(Shape::Sphere);
+        let sphere_obj = Object::primitive_with_shape(Shape::Sphere);
 
         let frac_sqrt_3_3 = 3_f64.sqrt() / 3.;
         let normal =
@@ -460,7 +460,7 @@ mod tests {
     }
 
     #[test]
-    fn bbox_core_obj() {
+    fn bbox_primitive_obj() {
         let mut expected = Shape::Cube.bounding_box();
         let mut bbox_obj = Shape::Cube
             .bounding_box()
@@ -481,7 +481,7 @@ mod tests {
     #[test]
     fn object_into_group_with_bbox() {
         let material = Material::with_color(Color::red());
-        let mut cube = Object::core_with_shape(Shape::Cube);
+        let mut cube = Object::primitive_with_shape(Shape::Cube);
 
         let transformation = Matrix::rotation_x(f64::consts::FRAC_PI_4)
             .translate(1., 2., 3.)
@@ -500,9 +500,9 @@ mod tests {
     }
 
     #[test]
-    fn bbox_core_obj_visibility() {
+    fn bbox_primitive_obj_visibility() {
         let material = Material::with_color(Color::red());
-        let mut cube = Object::core_with_shape(Shape::Cube);
+        let mut cube = Object::primitive_with_shape(Shape::Cube);
 
         let transformation = Matrix::rotation_x(f64::consts::FRAC_PI_4)
             .translate(1., 2., 3.)
@@ -518,7 +518,10 @@ mod tests {
         let c = group_with_bbox.intersect_to_collection(&ray);
         let intersected_obj = c.hit().unwrap().object();
 
-        assert_eq!(*intersected_obj.as_core().unwrap().shape(), Shape::Bbox);
+        assert_eq!(
+            *intersected_obj.as_primitive().unwrap().shape(),
+            Shape::Bbox
+        );
     }
 
     #[test]
@@ -528,7 +531,7 @@ mod tests {
             LocalTransformations::default(),
         )]);
 
-        let kind = ObjectKind::core(PrimitiveObject::with_shape(Shape::Cube));
+        let kind = ObjectKind::primitive(PrimitiveObject::with_shape(Shape::Cube));
         let mut animated = Object::animated(kind, animations.clone());
 
         assert_eq!(animated.animations, animations);

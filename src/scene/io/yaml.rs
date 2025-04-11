@@ -665,7 +665,7 @@ impl<'a> YamlParser<'a> {
             }
         };
         let mut obj = Object::animated(
-            ObjectKind::core(PrimitiveObject::with_shape_material(shape, material)),
+            ObjectKind::primitive(PrimitiveObject::with_shape_material(shape, material)),
             animations,
         );
         if !transformations.vec().is_empty() {
@@ -1036,7 +1036,7 @@ mod tests {
             .translate(0., 0., 500.)
             .transformed();
         let expected_object =
-            Object::core(Shape::Plane, expected_material, expected_transformation);
+            Object::primitive(Shape::Plane, expected_material, expected_transformation);
         assert_eq!(scene.objects(), vec![expected_object]);
     }
 
@@ -1046,7 +1046,7 @@ mod tests {
 - add: sphere
 "#;
         let (scene, _) = parse(DEFAULT_SPHERE_YAML);
-        let sphere = Object::core(Shape::Sphere, Material::default(), Matrix::identity());
+        let sphere = Object::primitive(Shape::Sphere, Material::default(), Matrix::identity());
         assert_eq!(scene.objects(), vec![sphere]);
     }
 
@@ -1075,7 +1075,8 @@ mod tests {
             transparency: 0.7,
             refractive_index: 1.5,
         };
-        let expected_object = Object::core(Shape::Sphere, expected_material, Matrix::identity());
+        let expected_object =
+            Object::primitive(Shape::Sphere, expected_material, Matrix::identity());
 
         assert_eq!(scene.objects(), vec![expected_object]);
     }
@@ -1107,8 +1108,8 @@ mod tests {
             diffuse: 0.7,
             ..white_material
         };
-        let white_sphere = Object::core(Shape::Sphere, white_material, Matrix::identity());
-        let blue_cube = Object::core(Shape::Cube, blue_material, Matrix::identity());
+        let white_sphere = Object::primitive(Shape::Sphere, white_material, Matrix::identity());
+        let blue_cube = Object::primitive(Shape::Cube, blue_material, Matrix::identity());
         let expected_objects = vec![white_sphere, blue_cube];
 
         assert_eq!(scene.objects(), expected_objects);
@@ -1137,8 +1138,8 @@ mod tests {
             .scale(0.5, 0.5, 0.5)
             .transformed();
         let large_object_transform = standard_transform.clone().scale_uniform(4.).transformed();
-        let sphere = Object::core(Shape::Sphere, Material::default(), standard_transform);
-        let cube = Object::core(Shape::Cube, Material::default(), large_object_transform);
+        let sphere = Object::primitive(Shape::Sphere, Material::default(), standard_transform);
+        let cube = Object::primitive(Shape::Cube, Material::default(), large_object_transform);
         let expected_objects = vec![sphere, cube];
         assert_eq!(scene.objects(), expected_objects);
     }
@@ -1166,8 +1167,8 @@ mod tests {
             pattern: Pattern::Const(Color::green()),
             ..Material::default()
         };
-        let red_sphere = Object::core(Shape::Sphere, red_material, Matrix::identity());
-        let green_cube = Object::core(Shape::Cube, green_material, Matrix::identity());
+        let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
+        let green_cube = Object::primitive(Shape::Cube, green_material, Matrix::identity());
         let transformation = Matrix::translation(1., 1., 1.);
 
         let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
@@ -1225,7 +1226,7 @@ mod tests {
             pattern: Pattern::Const(Color::red()),
             ..Material::default()
         };
-        let red_cube = Object::core(Shape::Cube, red_material, Matrix::identity());
+        let red_cube = Object::primitive(Shape::Cube, red_material, Matrix::identity());
         let expected_objects = vec![red_cube];
         assert_eq!(scene.objects(), expected_objects);
     }
@@ -1245,7 +1246,7 @@ mod tests {
             pattern: Pattern::Const(Color::red()),
             ..Material::default()
         };
-        let red_sphere = Object::core(Shape::Sphere, red_material, Matrix::identity());
+        let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
         let expected_objects = vec![red_sphere];
         assert_eq!(scene.objects(), expected_objects);
     }
@@ -1261,7 +1262,7 @@ mod tests {
 
         let (scene, _) = parse(CYLINDER_YAML);
         let cylinder_shape = Cylinder::new(1., 5., true);
-        let expected_object = Object::core_with_shape(Shape::Cylinder(cylinder_shape));
+        let expected_object = Object::primitive_with_shape(Shape::Cylinder(cylinder_shape));
         assert_eq!(scene.objects(), vec![expected_object]);
     }
 
@@ -1280,7 +1281,7 @@ mod tests {
             y_max: 5.,
             closed: true,
         };
-        let expected_object = Object::core_with_shape(Shape::Cone(cylinder_shape));
+        let expected_object = Object::primitive_with_shape(Shape::Cone(cylinder_shape));
         assert_eq!(scene.objects(), vec![expected_object]);
     }
 
@@ -1294,7 +1295,7 @@ mod tests {
 "#;
 
         let (scene, _) = parse(TRIANGLE_YAML);
-        let triangle = Object::core_with_shape(Shape::Triangle(Triangle::new(
+        let triangle = Object::primitive_with_shape(Shape::Triangle(Triangle::new(
             Point::new(0., 1., 0.),
             Point::new(-1., 0., 0.),
             Point::new(1., 0., 0.),
@@ -1315,7 +1316,7 @@ mod tests {
 "#;
 
         let (scene, _) = parse(SMOOTH_TRIANGLE_YAML);
-        let triangle = Object::core_with_shape(Shape::SmoothTriangle(SmoothTriangle::new(
+        let triangle = Object::primitive_with_shape(Shape::SmoothTriangle(SmoothTriangle::new(
             Point::new(0., 1., 0.),
             Point::new(-1., 0., 0.),
             Point::new(1., 0., 0.),
@@ -1388,10 +1389,10 @@ mod tests {
         let ring = Material::with_pattern(Pattern::ring(red, green, Some(transformation)));
         let checkers = Material::with_pattern(Pattern::checkers(red, green, Some(transformation)));
         let expected_objects = vec![
-            Object::core(Shape::Cube, stripe, Matrix::identity()),
-            Object::core(Shape::Cube, gradient, Matrix::identity()),
-            Object::core(Shape::Cube, ring, Matrix::identity()),
-            Object::core(Shape::Cube, checkers, Matrix::identity()),
+            Object::primitive(Shape::Cube, stripe, Matrix::identity()),
+            Object::primitive(Shape::Cube, gradient, Matrix::identity()),
+            Object::primitive(Shape::Cube, ring, Matrix::identity()),
+            Object::primitive(Shape::Cube, checkers, Matrix::identity()),
         ];
         assert_eq!(scene.objects(), expected_objects);
     }
@@ -1407,9 +1408,10 @@ mod tests {
   material: AIR_MATERIAL
 "#;
         let (scene, _) = parse(source);
-        let glass_sphere = Object::core(Shape::Sphere, Material::glass(), Matrix::identity());
-        let mirror_sphere = Object::core(Shape::Sphere, Material::mirror(), Matrix::identity());
-        let air_sphere = Object::core(Shape::Sphere, Material::air(), Matrix::identity());
+        let glass_sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
+        let mirror_sphere =
+            Object::primitive(Shape::Sphere, Material::mirror(), Matrix::identity());
+        let air_sphere = Object::primitive(Shape::Sphere, Material::air(), Matrix::identity());
         let expected_objects = vec![glass_sphere, mirror_sphere, air_sphere];
         assert_eq!(scene.objects(), expected_objects);
     }
@@ -1461,7 +1463,7 @@ mod tests {
             transparency: std::f64::consts::FRAC_1_SQRT_2,
             ..Material::default()
         };
-        let sphere = Object::core(Shape::Sphere, material, Matrix::identity());
+        let sphere = Object::primitive(Shape::Sphere, material, Matrix::identity());
         assert_eq!(scene.objects(), vec![sphere]);
     }
 
@@ -1526,7 +1528,7 @@ mod tests {
             diffuse: 1.,
             ..Material::default()
         };
-        let sphere = Object::core(Shape::Sphere, green_material, Matrix::identity());
+        let sphere = Object::primitive(Shape::Sphere, green_material, Matrix::identity());
         assert_eq!(scene.objects(), vec![sphere]);
     }
 
@@ -1545,7 +1547,7 @@ mod tests {
         let transformation = Matrix::rotation_x(FRAC_PI_3)
             .rotate_y(FRAC_PI_3)
             .transformed();
-        let sphere = Object::core(Shape::Sphere, Material::default(), transformation);
+        let sphere = Object::primitive(Shape::Sphere, Material::default(), transformation);
         assert_eq!(scene.objects(), vec![sphere]);
     }
 
@@ -1615,7 +1617,7 @@ mod tests {
         let transformation = Matrix::rotation_x(FRAC_PI_3)
             .rotate_y(FRAC_PI_3)
             .transformed();
-        let sphere = Object::core(Shape::Sphere, material, transformation);
+        let sphere = Object::primitive(Shape::Sphere, material, transformation);
         assert_eq!(scene.objects(), vec![sphere]);
     }
 
@@ -1627,7 +1629,7 @@ mod tests {
     - [translate, -1, -FRAC_PI_2, -5.5]
 "#;
         let (scene, _) = parse(source);
-        let sphere = Object::core(
+        let sphere = Object::primitive(
             Shape::Sphere,
             Material::default(),
             Matrix::translation(-1., -std::f64::consts::FRAC_PI_2, -5.5).transformed(),
@@ -1728,8 +1730,8 @@ mod tests {
 "#;
         let kind = ObjectKind::Csg(Box::new(CsgObject::new(
             CsgOperation::Union,
-            Object::core_with_shape(Shape::Sphere),
-            Object::core_with_transformation(Shape::Cube, Matrix::translation(1., 2., 3.)),
+            Object::primitive_with_shape(Shape::Sphere),
+            Object::primitive_with_transformation(Shape::Cube, Matrix::translation(1., 2., 3.)),
         )));
         let expected_object = Object::animated(kind, Animations::default());
         let (scene, _) = parse(source);
@@ -1791,7 +1793,7 @@ mod tests {
                 .children()
                 .iter()
                 .find(|obj| {
-                    obj.as_core()
+                    obj.as_primitive()
                         .is_some_and(|p| matches!(p.shape(), Shape::Bbox))
                 })
                 .unwrap()

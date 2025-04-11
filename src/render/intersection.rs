@@ -537,7 +537,7 @@ mod tests {
     #[test]
     fn intersect_sphere() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::core_with_shape(Shape::Sphere);
+        let obj = Object::primitive_with_shape(Shape::Sphere);
         let mut intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -550,7 +550,7 @@ mod tests {
     #[test]
     fn ray_intersects_sphere_at_tangent() {
         let ray = Ray::new(Point::new(0., 1., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::core_with_shape(Shape::Sphere);
+        let obj = Object::primitive_with_shape(Shape::Sphere);
         let mut intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -563,7 +563,7 @@ mod tests {
     #[test]
     fn ray_misses_sphere() {
         let ray = Ray::new(Point::new(0., 2., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::core_with_shape(Shape::Sphere);
+        let obj = Object::primitive_with_shape(Shape::Sphere);
 
         assert_eq!(
             IntersectionCollection::from_ray_and_obj_testing(ray, &obj).count(),
@@ -573,7 +573,7 @@ mod tests {
     #[test]
     fn intersect_ray_originates_inside_sphere() {
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
-        let obj = Object::core_with_shape(Shape::Sphere);
+        let obj = Object::primitive_with_shape(Shape::Sphere);
         let mut intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -586,7 +586,7 @@ mod tests {
     #[test]
     fn intersect_ray_behind_sphere() {
         let ray = Ray::new(Point::new(0., 0., 5.), Vector::new(0., 0., 1.));
-        let obj = Object::core_with_shape(Shape::Sphere);
+        let obj = Object::primitive_with_shape(Shape::Sphere);
         let mut intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &obj);
 
         assert_eq!(intersections.count(), 2);
@@ -600,7 +600,7 @@ mod tests {
     #[test]
     fn intersection_hit_all_times_positive() {
         let sphere = Shape::Sphere;
-        let obj = Object::core_with_shape(sphere);
+        let obj = Object::primitive_with_shape(sphere);
         let ray = Ray::new(Point::zero(), Vector::zero());
 
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![1., 2.], &obj);
@@ -612,7 +612,7 @@ mod tests {
     #[test]
     fn intersection_hit_with_negative_time() {
         let sphere = Shape::Sphere;
-        let obj = Object::core_with_shape(sphere);
+        let obj = Object::primitive_with_shape(sphere);
         let ray = Ray::new(Point::zero(), Vector::zero());
 
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![1., -1.], &obj);
@@ -624,7 +624,7 @@ mod tests {
     #[test]
     fn intersection_hit_all_times_negative() {
         let sphere = Shape::Sphere;
-        let obj = Object::core_with_shape(sphere);
+        let obj = Object::primitive_with_shape(sphere);
         let ray = Ray::new(Point::zero(), Vector::zero());
 
         let intersections = IntersectionCollection::from_times_and_obj(ray, vec![-2., -1.], &obj);
@@ -635,7 +635,7 @@ mod tests {
     #[test]
     fn intersection_hit_always_smallest_nonnegative() {
         let sphere = Shape::Sphere;
-        let obj = Object::core_with_shape(sphere);
+        let obj = Object::primitive_with_shape(sphere);
         let ray = Ray::new(Point::zero(), Vector::zero());
 
         let intersections =
@@ -648,7 +648,7 @@ mod tests {
     #[test]
     fn intersec_comps_outside_obj() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::core_with_shape(Shape::Sphere);
+        let obj = Object::primitive_with_shape(Shape::Sphere);
 
         let inter_vec = IntersectionCollection::from_ray_and_obj_testing(ray.clone(), &obj);
         let comps = inter_vec.hit().unwrap().computations(&ray);
@@ -657,7 +657,7 @@ mod tests {
     #[test]
     fn intersec_comps_inside_obj() {
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
-        let obj = Object::core_with_shape(Shape::Sphere);
+        let obj = Object::primitive_with_shape(Shape::Sphere);
 
         let inter_vec = IntersectionCollection::from_ray_and_obj_testing(ray.clone(), &obj);
         let comps = inter_vec.hit().unwrap().computations(&ray);
@@ -673,7 +673,8 @@ mod tests {
     #[test]
     fn hit_should_offset_point() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let obj = Object::core_with_transformation(Shape::Sphere, Matrix::translation(0., 0., 10.));
+        let obj =
+            Object::primitive_with_transformation(Shape::Sphere, Matrix::translation(0., 0., 10.));
 
         let inter = Intersection::new(5., &obj);
         let comps = inter.computations(&ray);
@@ -684,7 +685,7 @@ mod tests {
 
     #[test]
     fn intersect_plane_with_parallel_ray() {
-        let plane = Object::core_with_shape(Shape::Plane);
+        let plane = Object::primitive_with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., 10., 0.), Vector::new(0., 0., 1.));
 
         let intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &plane);
@@ -693,7 +694,7 @@ mod tests {
 
     #[test]
     fn intersect_plane_with_coplanar_ray() {
-        let plane = Object::core_with_shape(Shape::Plane);
+        let plane = Object::primitive_with_shape(Shape::Plane);
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(0., 0., 1.));
 
         let intersections = IntersectionCollection::from_ray_and_obj_testing(ray, &plane);
@@ -702,7 +703,7 @@ mod tests {
 
     #[test]
     fn precomputing_refletion_vecctor() {
-        let plane = Object::core_with_shape(Shape::Plane);
+        let plane = Object::primitive_with_shape(Shape::Plane);
         let half_sqrt = consts::FRAC_1_SQRT_2;
         let r = Ray::new(
             Point::new(0., 1., -1.),
@@ -716,12 +717,12 @@ mod tests {
 
     #[test]
     fn finding_reflective_exiting_entering_various_intersections() {
-        let sphere_a = Object::core(
+        let sphere_a = Object::primitive(
             Shape::Sphere,
             Material::glass(),
             Matrix::scaling(2., 2., 2.),
         );
-        let sphere_b = Object::core(
+        let sphere_b = Object::primitive(
             Shape::Sphere,
             Material {
                 refractive_index: 2.,
@@ -729,7 +730,7 @@ mod tests {
             },
             Matrix::translation(0., 0., -0.25),
         );
-        let sphere_c = Object::core(
+        let sphere_c = Object::primitive(
             Shape::Sphere,
             Material {
                 refractive_index: 2.5,
@@ -775,7 +776,7 @@ mod tests {
     #[test]
     fn under_point_if_offset_below_surface() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let sphere = Object::core(
+        let sphere = Object::primitive(
             Shape::Sphere,
             Material::glass(),
             Matrix::translation(0., 0., 1.),
@@ -791,7 +792,7 @@ mod tests {
     #[test]
     fn over_under_points_dont_approx_eq_actual_points() {
         let ray = Ray::new(Point::new(0., 0., -5.), Vector::new(0., 0., 1.));
-        let sphere = Object::core(
+        let sphere = Object::primitive(
             Shape::Sphere,
             Material::glass(),
             Matrix::translation(0., 0., 1.),

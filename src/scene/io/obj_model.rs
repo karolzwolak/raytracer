@@ -54,7 +54,7 @@ impl ObjModelParser {
                 .windows(2)
                 .skip(1)
                 .map(|slice| match slice {
-                    [id1, id2] => Object::core_with_shape(Shape::triangle(
+                    [id1, id2] => Object::primitive_with_shape(Shape::triangle(
                         v,
                         self.vertices[*id1],
                         self.vertices[*id2],
@@ -78,7 +78,7 @@ impl ObjModelParser {
                         let v2 = *pair.0;
                         let n2 = *pair.1;
 
-                        Object::core_with_shape(Shape::smooth_triangle(
+                        Object::primitive_with_shape(Shape::smooth_triangle(
                             v,
                             self.vertices[v1],
                             self.vertices[v2],
@@ -235,7 +235,7 @@ mod tests {
     }
 
     fn _obj_as_triangle(object: &Object) -> Option<Triangle> {
-        match object.as_core().map(|p| p.shape()) {
+        match object.as_primitive().map(|p| p.shape()) {
             Some(Shape::Triangle(t)) => Some(t.clone()),
             _ => None,
         }
@@ -357,7 +357,7 @@ mod tests {
     }
 
     fn _obj_as_smooth_triangle(object: &Object) -> SmoothTriangle {
-        match object.as_core().map(|p| p.shape()) {
+        match object.as_primitive().map(|p| p.shape()) {
             Some(Shape::SmoothTriangle(t)) => t.clone(),
             _ => unreachable!(),
         }

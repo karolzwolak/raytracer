@@ -299,7 +299,7 @@ impl BoundingBox {
     }
 
     pub fn as_object(&self, material: Material) -> Object {
-        Object::core(Shape::Bbox, material, self.as_cube_transformation())
+        Object::primitive(Shape::Bbox, material, self.as_cube_transformation())
     }
     pub fn center(&self) -> Point {
         Point::new(

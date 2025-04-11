@@ -18,7 +18,7 @@ use super::Object;
 pub struct ObjectGroup {
     children: Vec<Object>,
     bounding_box: BoundingBox,
-    core_count: usize,
+    primitive_count: usize,
 }
 
 impl Bounded for ObjectGroup {
@@ -59,7 +59,7 @@ impl ObjectGroup {
         Self {
             children: Vec::new(),
             bounding_box: BoundingBox::empty(),
-            core_count: 0,
+            primitive_count: 0,
         }
     }
 
@@ -71,7 +71,7 @@ impl ObjectGroup {
     }
     pub fn add_child(&mut self, child: Object) {
         self.bounding_box.add_bounding_box(child.bounding_box());
-        self.core_count += child.core_count();
+        self.primitive_count += child.primitive_count();
         self.children.push(child);
     }
     pub fn add_children(&mut self, children: impl IntoIterator<Item = Object>) {
@@ -112,10 +112,10 @@ impl ObjectGroup {
             let bbox = child.bounding_box();
             if bbox.center()[axis] < pos {
                 left_bbox.add_bounding_box(bbox);
-                left_count += child.core_count();
+                left_count += child.primitive_count();
             } else {
                 right_bbox.add_bounding_box(bbox);
-                right_count += child.core_count();
+                right_count += child.primitive_count();
             }
         }
         if left_count == 0 || right_count == 0 {
@@ -152,11 +152,11 @@ impl ObjectGroup {
         }
         let (mut left, mut right) = self.split(axis, pos);
 
-        if left.core_count() > 0 {
+        if left.primitive_count() > 0 {
             left.build_bvh();
             self.children.push(left.into());
         }
-        if right.core_count() > 0 {
+        if right.primitive_count() > 0 {
             right.build_bvh();
             self.children.push(right.into());
         }
@@ -209,12 +209,12 @@ impl ObjectGroup {
         self.children.push(self.bounding_box.as_object(material))
     }
 
-    pub fn core_count(&self) -> usize {
-        self.core_count
+    pub fn primitive_count(&self) -> usize {
+        self.primitive_count
     }
 
     pub fn sah_cost(&self) -> f64 {
-        self.bounding_box.half_area() * self.core_count as f64
+        self.bounding_box.half_area() * self.primitive_count as f64
     }
 
     pub fn includes(&self, other: &Object) -> bool {
@@ -282,7 +282,7 @@ mod tests {
 
     #[test]
     fn intersecting_ray_with_nonempty_group() {
-        let s1 = Object::core_with_shape(Shape::Sphere);
+        let s1 = Object::primitive_with_shape(Shape::Sphere);
         let s2 = PrimitiveObject::sphere(Point::new(0., 0., -3.), 1.).into();
         let s3 = PrimitiveObject::sphere(Point::new(5., 0., 0.), 1.).into();
 
@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn normal_on_group_child() {
         let sphere =
-            Object::core_with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
+            Object::primitive_with_transformation(Shape::Sphere, Matrix::translation(5., 0., 0.));
         let g2 =
             ObjectGroup::with_transformations(vec![sphere], Matrix::scaling(1., 2., 3.)).into();
         let g1: Object = ObjectGroup::with_transformations(
@@ -346,7 +346,7 @@ mod tests {
             AnimationRepeat::Infinite,
         );
         let mut animated_object = Object::animated(
-            ObjectKind::core(sphere.clone()),
+            ObjectKind::primitive(sphere.clone()),
             Animations::from(vec![TransformAnimation::new(animation, transfom)]),
         );
 
