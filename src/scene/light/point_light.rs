@@ -1,6 +1,5 @@
 use crate::{
-    approx_eq::ApproxEq,
-    math::{color::Color, point::Point, vector::Vector},
+    math::{approx_eq::ApproxEq, color::Color, point::Point, vector::Vector},
     scene::Object,
 };
 

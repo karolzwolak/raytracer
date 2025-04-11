@@ -6,7 +6,7 @@ use super::{
     vector::Vector,
 };
 use crate::{
-    approx_eq::{self, ApproxEq},
+    math::approx_eq::{self, ApproxEq},
     scene::{
         animation::{Base, Interpolate, SelfInterpolate},
         object::bounding_box::{Bounded, BoundingBox},

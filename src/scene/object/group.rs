@@ -256,9 +256,9 @@ impl Transform for ObjectGroup {
 mod tests {
     use super::ObjectGroup;
     use crate::{
-        approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         math::{
+            approx_eq::ApproxEq,
             matrix::{LocalTransformations, Matrix, Transformation},
             point::Point,
             tuple::Tuple,

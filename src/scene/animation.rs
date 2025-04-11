@@ -1,8 +1,10 @@
 use std::{ops, str::FromStr};
 
 use crate::{
-    approx_eq::ApproxEq,
-    math::matrix::{LocalTransformations, Matrix},
+    math::{
+        approx_eq::ApproxEq,
+        matrix::{LocalTransformations, Matrix},
+    },
     scene::object::bounding_box::Bounded,
 };
 

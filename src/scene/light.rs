@@ -31,9 +31,8 @@ mod tests {
     use std::f64::consts::FRAC_1_SQRT_2;
 
     use crate::{
-        approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        math::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
+        math::{approx_eq::ApproxEq, matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
         render::{intersection::IntersectionCollection, ray::Ray},
         scene::{
             light::schlick_reflectance,

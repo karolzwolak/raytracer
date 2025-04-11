@@ -1,6 +1,6 @@
 use std::ops;
 
-use crate::approx_eq::ApproxEq;
+use crate::math::approx_eq::ApproxEq;
 
 #[derive(Copy, Clone, Debug)]
 /// A color is represented by three floating point values

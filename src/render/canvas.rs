@@ -186,7 +186,7 @@ impl Canvas {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec};
+    use crate::{assert_approx_eq_low_prec, math::approx_eq::ApproxEq};
 
     #[test]
     fn index() {

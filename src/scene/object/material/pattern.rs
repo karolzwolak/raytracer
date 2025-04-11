@@ -1,6 +1,5 @@
 use crate::{
-    approx_eq::ApproxEq,
-    math::{color::Color, matrix::Matrix, point::Point, tuple::Tuple},
+    math::{approx_eq::ApproxEq, color::Color, matrix::Matrix, point::Point, tuple::Tuple},
     scene::object::Object,
 };
 
@@ -137,7 +136,8 @@ impl Pattern {
 mod tests {
     use super::*;
     use crate::{
-        approx_eq::ApproxEq, assert_approx_eq_low_prec, math::tuple::Tuple,
+        assert_approx_eq_low_prec,
+        math::{approx_eq::ApproxEq, tuple::Tuple},
         scene::object::primitive::shape::Shape,
     };
 

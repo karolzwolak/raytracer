@@ -1,7 +1,7 @@
 use super::Object;
 use crate::{
-    approx_eq::ApproxEq,
     math::{
+        approx_eq::ApproxEq,
         color::Color,
         matrix::{Matrix, Transform},
         point::Point,

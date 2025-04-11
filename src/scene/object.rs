@@ -12,8 +12,8 @@ use primitive::shape::Shape;
 
 use super::animation::{Animations, Interpolate};
 use crate::{
-    approx_eq::ApproxEq,
     math::{
+        approx_eq::ApproxEq,
         matrix::{Matrix, Transform},
         point::Point,
         tuple::Tuple,

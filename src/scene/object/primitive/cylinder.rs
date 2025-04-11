@@ -1,6 +1,10 @@
 use crate::{
-    approx_eq::{self, ApproxEq},
-    math::{point::Point, tuple::Tuple, vector::Vector},
+    math::{
+        approx_eq::{self, ApproxEq},
+        point::Point,
+        tuple::Tuple,
+        vector::Vector,
+    },
     render::{intersection::IntersectionCollector, ray::Ray},
     scene::object::bounding_box::BoundingBox,
 };
@@ -130,9 +134,8 @@ impl Default for Cylinder {
 mod tests {
     use super::Cylinder;
     use crate::{
-        approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        math::{point::Point, tuple::Tuple, vector::Vector},
+        math::{approx_eq::ApproxEq, point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
         scene::object::{primitive::shape::Shape, Object},
     };

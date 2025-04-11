@@ -51,7 +51,10 @@ impl Ray {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec, math::tuple::Tuple};
+    use crate::{
+        assert_approx_eq_low_prec,
+        math::{approx_eq::ApproxEq, tuple::Tuple},
+    };
 
     #[test]
     fn position() {

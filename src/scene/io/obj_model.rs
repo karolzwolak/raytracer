@@ -195,8 +195,8 @@ impl Default for ObjModelParser {
 mod tests {
     use super::*;
     use crate::{
-        approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
+        math::approx_eq::ApproxEq,
         scene::object::primitive::{smooth_triangle::SmoothTriangle, triangle::Triangle},
     };
 

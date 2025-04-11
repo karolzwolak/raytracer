@@ -40,9 +40,9 @@ mod tests {
     use std::f64::consts::{FRAC_1_SQRT_2, PI};
 
     use crate::{
-        approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         math::{
+            approx_eq::ApproxEq,
             matrix::{Matrix, Transform},
             point::Point,
             tuple::Tuple,

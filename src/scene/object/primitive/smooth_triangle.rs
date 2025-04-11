@@ -1,6 +1,6 @@
 use crate::{
-    approx_eq::ApproxEq,
     math::{
+        approx_eq::ApproxEq,
         matrix::{Matrix, Transform},
         point::Point,
         vector::Vector,
@@ -129,9 +129,8 @@ impl SmoothTriangle {
 #[cfg(test)]
 mod tests {
     use crate::{
-        approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        math::{point::Point, tuple::Tuple, vector::Vector},
+        math::{approx_eq::ApproxEq, point::Point, tuple::Tuple, vector::Vector},
         render::{intersection::Intersection, ray::Ray},
         scene::object::{primitive::shape::Shape, Object},
     };

@@ -1,7 +1,10 @@
 use super::ray::Ray;
 use crate::{
-    approx_eq::{self, ApproxEq},
-    math::{point::Point, vector::Vector},
+    math::{
+        approx_eq::{self, ApproxEq},
+        point::Point,
+        vector::Vector,
+    },
     scene::object::{
         group::ObjectGroup,
         material::{Material, AIR_REFRACTIVE_INDEX},
@@ -529,9 +532,14 @@ mod tests {
 
     use super::*;
     use crate::{
-        approx_eq::{self, ApproxEq},
         assert_approx_eq_low_prec,
-        math::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
+        math::{
+            approx_eq::{self, ApproxEq},
+            matrix::Matrix,
+            point::Point,
+            tuple::Tuple,
+            vector::Vector,
+        },
         scene::object::primitive::shape::Shape,
     };
 

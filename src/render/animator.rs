@@ -180,7 +180,7 @@ impl Animator {
 mod tests {
 
     use crate::{
-        approx_eq::ApproxEq,
+        math::approx_eq::ApproxEq,
         render::animator::Animator,
         scene::{camera::Camera, Scene},
     };

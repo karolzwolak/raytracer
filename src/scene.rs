@@ -9,8 +9,7 @@ use light::{point_light::PointLightSource, schlick_reflectance};
 use object::{group::ObjectGroup, PrimitiveObject};
 
 use crate::{
-    approx_eq::ApproxEq,
-    math::{color::Color, matrix::Matrix, point::Point, tuple::Tuple},
+    math::{approx_eq::ApproxEq, color::Color, matrix::Matrix, point::Point, tuple::Tuple},
     render::{
         canvas::Canvas,
         intersection::{IntersecComputations, IntersectionCollection, IntersectionCollector},

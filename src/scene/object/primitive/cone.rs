@@ -1,6 +1,10 @@
 use crate::{
-    approx_eq::{self, ApproxEq},
-    math::{point::Point, tuple::Tuple, vector::Vector},
+    math::{
+        approx_eq::{self, ApproxEq},
+        point::Point,
+        tuple::Tuple,
+        vector::Vector,
+    },
     render::{intersection::IntersectionCollector, ray::Ray},
     scene::object::bounding_box::BoundingBox,
 };
@@ -139,10 +143,10 @@ mod tests {
 
     use super::Cone;
     use crate::{
-        approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
         math::{point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
+        scene::object::primitive::cone::approx_eq::ApproxEq,
         scene::object::{primitive::shape::Shape, Object},
     };
 

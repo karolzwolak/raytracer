@@ -114,9 +114,10 @@ mod tests {
 
     use super::*;
     use crate::{
-        approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        math::{color::Color, matrix::Transform, tuple::Tuple, vector::Vector},
+        math::{
+            approx_eq::ApproxEq, color::Color, matrix::Transform, tuple::Tuple, vector::Vector,
+        },
         scene::Scene,
     };
 
