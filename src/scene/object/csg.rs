@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use super::{
     bounding_box::{Bounded, BoundingBox},
+    material::Material,
     Object,
 };
 use crate::{
@@ -10,7 +11,6 @@ use crate::{
         intersection::{IntersectionCollection, IntersectionCollector},
         Ray,
     },
-    scene::Material,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

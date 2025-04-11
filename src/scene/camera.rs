@@ -5,7 +5,7 @@ use crate::{
 
 // camera looks toward -z direction from point zero
 // this makes +x to be on the left
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone, Default)]
 pub struct Camera {
     target_width: usize,
     target_height: usize,
@@ -15,6 +15,119 @@ pub struct Camera {
     half_width: f64,
     half_height: f64,
     field_of_view: f64,
+}
+
+pub type CameraBuilderError = derive_builder::UninitializedFieldError;
+
+#[derive(PartialEq, Debug, Clone, Default)]
+/// Builder for the camera, it exists for easy overriding camera options like width or height.
+pub struct CameraBuilder {
+    pub target_width: Option<usize>,
+    pub target_height: Option<usize>,
+    pub field_of_view: Option<f64>,
+    view_transformation: Matrix,
+}
+
+impl CameraBuilder {
+    pub fn target_width(&mut self, target_width: usize) -> &mut Self {
+        self.target_width = Some(target_width);
+        self
+    }
+
+    pub fn default_target_width(&mut self, target_width: usize) -> &mut Self {
+        if self.target_width.is_none() {
+            self.target_width = Some(target_width);
+        }
+        self
+    }
+
+    pub fn optional_target_width(&mut self, target_width: Option<usize>) -> &mut Self {
+        if let Some(target_width) = target_width {
+            self.target_width = Some(target_width);
+        }
+        self
+    }
+
+    pub fn target_height(&mut self, target_height: usize) -> &mut Self {
+        self.target_height = Some(target_height);
+        self
+    }
+
+    pub fn default_target_height(&mut self, target_height: usize) -> &mut Self {
+        if self.target_height.is_none() {
+            self.target_height = Some(target_height);
+        }
+        self
+    }
+
+    pub fn optional_target_height(&mut self, target_height: Option<usize>) -> &mut Self {
+        if let Some(target_height) = target_height {
+            self.target_height = Some(target_height);
+        }
+        self
+    }
+
+    pub fn field_of_view(&mut self, field_of_view: f64) -> &mut Self {
+        self.field_of_view = Some(field_of_view);
+        self
+    }
+
+    pub fn default_field_of_view(&mut self, field_of_view: f64) -> &mut Self {
+        if self.field_of_view.is_none() {
+            self.field_of_view = Some(field_of_view);
+        }
+        self
+    }
+
+    pub fn optional_field_of_view(&mut self, field_of_view: Option<f64>) -> &mut Self {
+        if let Some(field_of_view) = field_of_view {
+            self.field_of_view = Some(field_of_view);
+        }
+        self
+    }
+
+    pub fn view_transformation(&mut self, view_transformation: Matrix) -> &mut Self {
+        self.view_transformation = view_transformation;
+        self
+    }
+}
+
+impl CameraBuilder {
+    fn build_inverse_view_transformation(&self) -> Matrix {
+        self.view_transformation
+            .clone()
+            .inverse()
+            .expect("view transformation must be inversible")
+    }
+
+    pub fn build(&self) -> Result<Camera, CameraBuilderError> {
+        let target_width =
+            self.target_width
+                .ok_or(derive_builder::UninitializedFieldError::from(
+                    "target_width",
+                ))?;
+
+        let target_height =
+            self.target_height
+                .ok_or(derive_builder::UninitializedFieldError::from(
+                    "target_height",
+                ))?;
+
+        let inverse_view = self.build_inverse_view_transformation();
+
+        let field_of_view =
+            self.field_of_view
+                .ok_or(derive_builder::UninitializedFieldError::from(
+                    "field_of_view",
+                ))?;
+
+        Ok(Camera::with_inverse_transformation(
+            target_width,
+            target_height,
+            field_of_view,
+            inverse_view,
+        ))
+    }
 }
 
 impl Camera {
@@ -118,7 +231,7 @@ mod tests {
         math::{
             approx_eq::ApproxEq, color::Color, matrix::Transform, tuple::Tuple, vector::Vector,
         },
-        scene::Scene,
+        render::renderer::Renderer,
     };
 
     #[test]
@@ -179,20 +292,18 @@ mod tests {
 
     #[test]
     fn render_scene_with_camera() {
-        let mut scene = Scene::default_testing();
-
         let from = Point::new(0., 0., -5.);
         let to = Point::new(0., 0., 0.);
         let up_v = Vector::new(0., 1., 0.);
-
         let camera = Camera::with_transformation(
             11,
             11,
             FRAC_PI_2,
             Matrix::view_tranformation(from, to, up_v),
         );
+        let mut renderer = Renderer::default_testing(camera);
 
-        let image = scene.render(&camera);
+        let image = renderer.render();
         assert_approx_eq_low_prec!(image.pixel_at(5, 5), Color::new(0.38066, 0.47583, 0.2855));
     }
 }

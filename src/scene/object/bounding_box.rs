@@ -1,4 +1,8 @@
-use super::Object;
+use super::{
+    material::{pattern::Pattern, Material},
+    primitive::shape::Shape,
+    Object,
+};
 use crate::{
     math::{
         approx_eq::ApproxEq,
@@ -9,7 +13,6 @@ use crate::{
         vector::Vector,
     },
     render::ray::Ray,
-    scene::{Material, Pattern, Scene, Shape},
 };
 
 pub trait Bounded {
@@ -70,7 +73,7 @@ impl BoundingBox {
 }
 
 impl BoundingBox {
-    const MAX_DIM: f64 = Scene::MAX_DIM;
+    pub const MAX_DIM: f64 = 10.0e6;
     pub const DEFAULT_DEBUG_BBOX_MATERIAL: Material = Material {
         pattern: Pattern::Const(Color::with_uniform_intensity(0.5)),
         transparency: 1.,

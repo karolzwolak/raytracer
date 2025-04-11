@@ -310,6 +310,25 @@ impl Object {
     }
 }
 
+#[cfg(test)]
+impl Object {
+    pub fn animated_testing() -> Self {
+        let animation = super::animation::Animation::default();
+        let transform = crate::math::matrix::LocalTransformation::Transformation(
+            crate::math::matrix::Transformation::Translation(1., 2., 3.),
+        );
+        let animations = Animations::with_vec(vec![super::animation::TransformAnimation::new(
+            animation,
+            crate::math::matrix::LocalTransformations::with_vec(vec![transform]),
+        )]);
+
+        Self::animated(
+            ObjectKind::primitive(PrimitiveObject::with_shape(Shape::Cube)),
+            animations,
+        )
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct PrimitiveObject {
     shape: Shape,

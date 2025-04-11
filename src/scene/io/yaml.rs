@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
+use derive_builder::Builder;
 use saphyr::Yaml;
 
 use super::obj_model::ObjModelParser;
@@ -16,6 +17,7 @@ use crate::{
     },
     scene::{
         animation::{Animation, AnimationRepeat, Animations, TransformAnimation},
+        camera::CameraBuilder,
         object::{
             bounding_box::BoundingBox,
             csg::{CsgObject, CsgOperation},
@@ -26,9 +28,30 @@ use crate::{
             },
             Object, ObjectKind, PrimitiveObject,
         },
-        Camera, ObjectGroup, PointLightSource, Scene, SceneBuilder,
+        ObjectGroup, PointLightSource, SceneBuilder,
     },
 };
+
+#[derive(Debug, PartialEq, Builder)]
+/// The output of the parser. It contains builders for scene and camera, because the cli options
+/// can override the values in the yaml file.
+/// It can also specify rendering options like quality options, animation duration and framerate.
+pub struct YamlSceneConfig {
+    #[builder(setter(strip_option), default = "None")]
+    pub animation_duration_sec: Option<f64>,
+    #[builder(setter(strip_option), default = "None")]
+    pub animation_framerate: Option<u32>,
+
+    #[builder(setter(strip_option), default = "None")]
+    pub supersampling_level: Option<usize>,
+    #[builder(setter(strip_option), default = "None")]
+    pub max_reflective_depth: Option<usize>,
+
+    #[builder(field(ty = "CameraBuilder", build = "self.camera_builder.clone()"))]
+    pub camera_builder: CameraBuilder,
+    #[builder(field(ty = "SceneBuilder", build = "self.scene_builder.clone()"))]
+    pub scene_builder: SceneBuilder,
+}
 
 #[derive(Debug)]
 pub enum YamlParseError {
@@ -125,7 +148,7 @@ const PREDEFINED_DEFINES: &str = r#"
 
 - define: SCENE_CAMERA
   value:
-    add: camera
+    camera:
     from: [ 0, 1.5, -5 ]
     to: [ 0, 1, 0 ]
     up: [ 0, 1, 0 ]
@@ -135,15 +158,12 @@ const PREDEFINED_DEFINES: &str = r#"
 // TODO: Actual errors
 pub struct YamlParser<'a> {
     yaml: &'a Yaml,
-    scene_builder: SceneBuilder,
-    objects: ObjectGroup,
-    lights: Vec<PointLightSource>,
-    camera: Camera,
+    result: YamlSceneConfigBuilder,
     defines: HashMap<String, Yaml>,
 }
 
 type YamlParseResult<T> = Result<T, YamlParseError>;
-type YamlParserOutput = YamlParseResult<(Scene, Camera)>;
+type YamlParserOutput = YamlParseResult<YamlSceneConfig>;
 
 macro_rules! parse_optional_field {
     ($self:ident, $yaml_body:ident, $base:ident, $field:ident) => {
@@ -199,14 +219,11 @@ impl<'a> YamlParser<'a> {
     fn new(yaml: &'a Yaml, defines: HashMap<String, Yaml>) -> Self {
         Self {
             yaml,
-            scene_builder: SceneBuilder::default(),
-            objects: ObjectGroup::default(),
-            lights: Vec::new(),
-            camera: Camera::new(1, 1, 1.),
+            result: YamlSceneConfigBuilder::default(),
             defines,
         }
     }
-    fn with_camera(yaml: &'a Yaml, default_camera: Camera) -> Self {
+    pub fn with_predefined_defines(yaml: &'a Yaml) -> Self {
         let parsed = saphyr::Yaml::load_from_str(PREDEFINED_DEFINES).unwrap();
         let predefined = parsed.first().unwrap();
 
@@ -218,7 +235,7 @@ impl<'a> YamlParser<'a> {
 
         YamlParser {
             yaml,
-            camera: default_camera,
+            result: YamlSceneConfigBuilder::default(),
             ..predefined_parser
         }
     }
@@ -315,31 +332,51 @@ impl<'a> YamlParser<'a> {
         value.as_bool().ok_or(YamlParseError::InvalidField)
     }
 
-    fn parse_camera(&self, body: &Yaml) -> YamlParseResult<Camera> {
-        let width = self
-            .parse_num(&body["width"])
-            .map(|w| w as usize)
-            .unwrap_or(self.camera.target_width());
-        let height = self
-            .parse_num(&body["height"])
-            .map(|w| w as usize)
-            .unwrap_or(self.camera.target_height());
-        let fov_body = match &body["field-of-view"] {
-            &Yaml::BadValue => &body["fov"],
-            val => val,
-        };
-        let fov = self.parse_num(fov_body)?;
+    fn parse_camera(&mut self, body: &Yaml) -> YamlParseResult<()> {
+        match &body["width"] {
+            Yaml::BadValue => {}
+            val => {
+                self.result
+                    .camera_builder
+                    .target_width(self.parse_num(val)? as usize);
+            }
+        }
+        match &body["height"] {
+            Yaml::BadValue => {}
+            val => {
+                self.result
+                    .camera_builder
+                    .target_height(self.parse_num(val)? as usize);
+            }
+        }
+        match &body["fov"] {
+            Yaml::BadValue => {}
+            val => {
+                self.result
+                    .camera_builder
+                    .field_of_view(self.parse_num(val)?);
+            }
+        }
+        match &body["field-of-view"] {
+            Yaml::BadValue => {}
+            val => {
+                self.result
+                    .camera_builder
+                    .field_of_view(self.parse_num(val)?);
+            }
+        }
 
         if body["from"].is_badvalue() && body["to"].is_badvalue() && body["up"].is_badvalue() {
-            return Ok(Camera::new(width, height, fov));
+            return Ok(());
         }
         let from = self.parse_point(&body["from"])?;
         let to = self.parse_point(&body["to"])?;
         let up = self.parse_vector(&body["up"])?;
 
         let view = Matrix::view_tranformation(from, to, up);
+        self.result.camera_builder.view_transformation(view);
 
-        Ok(Camera::with_transformation(width, height, fov, view))
+        Ok(())
     }
 
     fn parse_material(&self, body: &Yaml) -> YamlParseResult<Material> {
@@ -677,26 +714,19 @@ impl<'a> YamlParser<'a> {
         Ok(obj)
     }
 
-    fn parse_scene(&mut self, body: &Yaml) -> YamlParseResult<()> {
+    fn parse_options(&mut self, body: &Yaml) -> YamlParseResult<()> {
         match &body["supersampling-level"] {
-            &Yaml::BadValue => {}
+            Yaml::BadValue => {}
             val => {
-                self.scene_builder
+                self.result
                     .supersampling_level(self.parse_num(val)? as usize);
             }
         }
-        match &body["depth"] {
-            &Yaml::BadValue => {}
+        match &body["reflective-depth"] {
+            Yaml::BadValue => {}
             val => {
-                self.scene_builder
-                    .max_recursive_depth(self.parse_num(val)? as usize);
-            }
-        }
-        match &body["use-shadow-intensity"] {
-            &Yaml::BadValue => {}
-            val => {
-                self.scene_builder
-                    .use_shadow_intensity(self.parse_bool(val)?);
+                self.result
+                    .max_reflective_depth(self.parse_num(val)? as usize);
             }
         }
         Ok(())
@@ -706,19 +736,12 @@ impl<'a> YamlParser<'a> {
         match what {
             "light" => {
                 let light = self.parse_light(body)?;
-                self.lights.push(light);
-            }
-            "camera" => {
-                let camera = self.parse_camera(body)?;
-                self.camera = camera;
-            }
-            "scene" => {
-                self.parse_scene(body)?;
+                self.result.scene_builder.add_light_source(light);
             }
             "group" | "obj" | "sphere" | "cube" | "plane" | "cylinder" | "cone" | "triangle"
             | "smooth-triangle" | "csg" => {
                 let object = self.parse_object_with_kind(body, what)?;
-                self.objects.add_child(object);
+                self.result.scene_builder.add_object(object);
             }
             name => {
                 if let Some(def) = self.defines.get(name) {
@@ -820,6 +843,13 @@ impl<'a> YamlParser<'a> {
                         let body = &yaml_obj["value"];
                         self.parse_define(what, extends, body)?;
                     }
+                    "camera" => self.parse_camera(yaml_obj)?,
+                    "options" => self.parse_options(yaml_obj)?,
+                    _ => {}
+                },
+                Some((Yaml::String(operation), Yaml::Null)) => match operation.as_str() {
+                    "camera" => self.parse_camera(yaml_obj)?,
+                    "options" => self.parse_options(yaml_obj)?,
                     _ => {}
                 },
                 _ => {
@@ -839,13 +869,8 @@ impl<'a> YamlParser<'a> {
 
     fn parse_consume(mut self) -> YamlParserOutput {
         self.parse()?;
-        let scene = self
-            .scene_builder
-            .objects(self.objects)
-            .light_sources(self.lights)
-            .build()
-            .unwrap();
-        Ok((scene, self.camera))
+
+        Ok(self.result.build().unwrap())
     }
 }
 
@@ -861,11 +886,9 @@ impl YamlParser<'_> {
     }
 }
 
-pub fn parse_str(source: &str, width: usize, height: usize, fov: f64) -> YamlParserOutput {
-    let camera = Camera::new(width, height, fov);
-
+pub fn parse_str(source: &str) -> YamlParserOutput {
     let yaml = YamlParser::str_to_yaml(source)?;
-    let parser = YamlParser::with_camera(&yaml, camera);
+    let parser = YamlParser::with_predefined_defines(&yaml);
 
     parser.parse_consume()
 }
@@ -883,8 +906,12 @@ mod tests {
     use super::*;
     use crate::{
         math::matrix::Transform,
-        scene::animation::{
-            Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,
+        scene::{
+            animation::{
+                Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,
+            },
+            camera::Camera,
+            Scene,
         },
     };
 
@@ -893,7 +920,17 @@ mod tests {
     const FOV: f64 = std::f64::consts::PI / 2.0;
 
     fn parse(source: &str) -> (Scene, Camera) {
-        parse_str(source, WIDTH, HEIGHT, FOV).unwrap()
+        let mut config = parse_str(source).unwrap();
+        config
+            .camera_builder
+            .default_target_width(WIDTH)
+            .default_target_height(HEIGHT)
+            .default_field_of_view(FOV);
+
+        (
+            config.scene_builder.build(),
+            config.camera_builder.build().unwrap(),
+        )
     }
 
     fn test_parse_object<T, S: ToString, F>(
@@ -910,7 +947,12 @@ mod tests {
             .map(|s| source.replace("{}", &s.to_string()))
             .collect::<String>();
         let (scene, _) = parse(&source);
-        let actual = scene.objects().iter().map(getter).collect::<Vec<_>>();
+        let actual = scene
+            .objects()
+            .children()
+            .iter()
+            .map(getter)
+            .collect::<Vec<_>>();
         assert_eq!(actual, expected);
     }
 
@@ -940,7 +982,7 @@ mod tests {
     #[test]
     fn empty_yaml() {
         let (scene, camera) = parse("");
-        assert_eq!(scene, Scene::empty());
+        assert_eq!(scene, Scene::default());
         assert_eq!(camera, Camera::new(WIDTH, HEIGHT, FOV));
     }
     #[test]
@@ -964,7 +1006,7 @@ mod tests {
     #[test]
     fn parse_camera() {
         const CAMERA_YAML: &str = r#"
-- add: camera
+- camera:
   width: 100
   height: 100
   field-of-view: 0.785
@@ -985,7 +1027,7 @@ mod tests {
     #[test]
     fn camera_without_from_up_to() {
         const CAMERA_YAML: &str = r#"
-- add: camera
+- camera:
   width: 100
   height: 100
   field-of-view: 0.785
@@ -996,17 +1038,15 @@ mod tests {
     }
 
     #[test]
-    fn parse_scene() {
+    fn parse_options() {
         const SCENE_YAML: &str = r#"
-- add: scene
-  max-reflective-depth: 4
+- options:
+  reflective-depth: 4
   supersampling-level: 3
-  use-shadow-intensity: false
 "#;
-        let (scene, _) = parse(SCENE_YAML);
-        assert_eq!(scene.max_recursive_depth(), 4);
-        assert_eq!(scene.supersampling_level(), 3);
-        assert!(!scene.use_shadow_intensity());
+        let config = parse_str(SCENE_YAML).unwrap();
+        assert_eq!(config.max_reflective_depth, Some(4));
+        assert_eq!(config.supersampling_level, Some(3));
     }
 
     #[test]
@@ -1035,7 +1075,8 @@ mod tests {
             .transformed();
         let expected_object =
             Object::primitive(Shape::Plane, expected_material, expected_transformation);
-        assert_eq!(scene.objects(), vec![expected_object]);
+
+        assert_eq!(scene.objects().children(), vec![expected_object]);
     }
 
     #[test]
@@ -1045,7 +1086,7 @@ mod tests {
 "#;
         let (scene, _) = parse(DEFAULT_SPHERE_YAML);
         let sphere = Object::primitive(Shape::Sphere, Material::default(), Matrix::identity());
-        assert_eq!(scene.objects(), vec![sphere]);
+        assert_eq!(scene.objects().children(), vec![sphere]);
     }
 
     #[test]
@@ -1076,7 +1117,7 @@ mod tests {
         let expected_object =
             Object::primitive(Shape::Sphere, expected_material, Matrix::identity());
 
-        assert_eq!(scene.objects(), vec![expected_object]);
+        assert_eq!(scene.objects().children(), vec![expected_object]);
     }
 
     #[test]
@@ -1110,7 +1151,7 @@ mod tests {
         let blue_cube = Object::primitive(Shape::Cube, blue_material, Matrix::identity());
         let expected_objects = vec![white_sphere, blue_cube];
 
-        assert_eq!(scene.objects(), expected_objects);
+        assert_eq!(scene.objects().children(), expected_objects);
     }
 
     #[test]
@@ -1139,7 +1180,7 @@ mod tests {
         let sphere = Object::primitive(Shape::Sphere, Material::default(), standard_transform);
         let cube = Object::primitive(Shape::Cube, Material::default(), large_object_transform);
         let expected_objects = vec![sphere, cube];
-        assert_eq!(scene.objects(), expected_objects);
+        assert_eq!(scene.objects().children(), expected_objects);
     }
 
     #[test]
@@ -1171,7 +1212,7 @@ mod tests {
 
         let group = ObjectGroup::with_transformations(vec![red_sphere, green_cube], transformation);
 
-        assert_eq!(scene.objects(), vec![Object::from_group(group)]);
+        assert_eq!(scene.objects().children(), vec![Object::from_group(group)]);
     }
 
     #[test]
@@ -1190,7 +1231,7 @@ mod tests {
 "#,
         ];
         for source in sources {
-            let res = parse_str(source, WIDTH, HEIGHT, FOV);
+            let res = parse_str(source);
             assert!(matches!(res, Err(YamlParseError::EmptyGroup)));
         }
     }
@@ -1206,7 +1247,10 @@ mod tests {
         let path = "samples/obj/teapot-low.obj";
         let data = std::fs::read_to_string(path).unwrap();
         let expected_group = parser.parse(data).unwrap();
-        assert_eq!(scene.objects(), vec![Object::from_group(expected_group)]);
+        assert_eq!(
+            scene.objects().children(),
+            vec![Object::from_group(expected_group)]
+        );
     }
 
     #[test]
@@ -1226,7 +1270,7 @@ mod tests {
         };
         let red_cube = Object::primitive(Shape::Cube, red_material, Matrix::identity());
         let expected_objects = vec![red_cube];
-        assert_eq!(scene.objects(), expected_objects);
+        assert_eq!(scene.objects().children(), expected_objects);
     }
 
     #[test]
@@ -1246,7 +1290,7 @@ mod tests {
         };
         let red_sphere = Object::primitive(Shape::Sphere, red_material, Matrix::identity());
         let expected_objects = vec![red_sphere];
-        assert_eq!(scene.objects(), expected_objects);
+        assert_eq!(scene.objects().children(), expected_objects);
     }
 
     #[test]
@@ -1261,7 +1305,7 @@ mod tests {
         let (scene, _) = parse(CYLINDER_YAML);
         let cylinder_shape = Cylinder::new(1., 5., true);
         let expected_object = Object::primitive_with_shape(Shape::Cylinder(cylinder_shape));
-        assert_eq!(scene.objects(), vec![expected_object]);
+        assert_eq!(scene.objects().children(), vec![expected_object]);
     }
 
     #[test]
@@ -1280,7 +1324,7 @@ mod tests {
             closed: true,
         };
         let expected_object = Object::primitive_with_shape(Shape::Cone(cylinder_shape));
-        assert_eq!(scene.objects(), vec![expected_object]);
+        assert_eq!(scene.objects().children(), vec![expected_object]);
     }
 
     #[test]
@@ -1299,7 +1343,7 @@ mod tests {
             Point::new(1., 0., 0.),
         )));
         let expected_objects = vec![triangle];
-        assert_eq!(scene.objects(), expected_objects);
+        assert_eq!(scene.objects().children(), expected_objects);
     }
     #[test]
     fn parse_smooth_triangle() {
@@ -1323,7 +1367,7 @@ mod tests {
             Vector::new(1., 0., 0.),
         )));
         let expected_objects = vec![triangle];
-        assert_eq!(scene.objects(), expected_objects);
+        assert_eq!(scene.objects().children(), expected_objects);
     }
 
     #[test]
@@ -1392,7 +1436,7 @@ mod tests {
             Object::primitive(Shape::Cube, ring, Matrix::identity()),
             Object::primitive(Shape::Cube, checkers, Matrix::identity()),
         ];
-        assert_eq!(scene.objects(), expected_objects);
+        assert_eq!(scene.objects().children(), expected_objects);
     }
 
     #[test]
@@ -1411,7 +1455,7 @@ mod tests {
             Object::primitive(Shape::Sphere, Material::mirror(), Matrix::identity());
         let air_sphere = Object::primitive(Shape::Sphere, Material::air(), Matrix::identity());
         let expected_objects = vec![glass_sphere, mirror_sphere, air_sphere];
-        assert_eq!(scene.objects(), expected_objects);
+        assert_eq!(scene.objects().children(), expected_objects);
     }
 
     #[test]
@@ -1462,7 +1506,7 @@ mod tests {
             ..Material::default()
         };
         let sphere = Object::primitive(Shape::Sphere, material, Matrix::identity());
-        assert_eq!(scene.objects(), vec![sphere]);
+        assert_eq!(scene.objects().children(), vec![sphere]);
     }
 
     #[test]
@@ -1494,6 +1538,7 @@ mod tests {
         ];
         let actual_colors = scene
             .objects()
+            .children()
             .iter()
             .map(|obj| match obj.material().unwrap().pattern {
                 Pattern::Const(color) => color,
@@ -1527,7 +1572,7 @@ mod tests {
             ..Material::default()
         };
         let sphere = Object::primitive(Shape::Sphere, green_material, Matrix::identity());
-        assert_eq!(scene.objects(), vec![sphere]);
+        assert_eq!(scene.objects().children(), vec![sphere]);
     }
 
     #[test]
@@ -1546,7 +1591,7 @@ mod tests {
             .rotate_y(FRAC_PI_3)
             .transformed();
         let sphere = Object::primitive(Shape::Sphere, Material::default(), transformation);
-        assert_eq!(scene.objects(), vec![sphere]);
+        assert_eq!(scene.objects().children(), vec![sphere]);
     }
 
     #[test]
@@ -1578,6 +1623,7 @@ mod tests {
         ];
         let actual_transformations = scene
             .objects()
+            .children()
             .iter()
             .map(|obj| obj.transformation())
             .collect::<Vec<_>>();
@@ -1616,7 +1662,7 @@ mod tests {
             .rotate_y(FRAC_PI_3)
             .transformed();
         let sphere = Object::primitive(Shape::Sphere, material, transformation);
-        assert_eq!(scene.objects(), vec![sphere]);
+        assert_eq!(scene.objects().children(), vec![sphere]);
     }
 
     #[test]
@@ -1632,7 +1678,7 @@ mod tests {
             Material::default(),
             Matrix::translation(-1., -std::f64::consts::FRAC_PI_2, -5.5).transformed(),
         );
-        assert_eq!(scene.objects(), vec![sphere]);
+        assert_eq!(scene.objects().children(), vec![sphere]);
     }
 
     #[test]
@@ -1665,7 +1711,10 @@ mod tests {
             .into(),
         )]);
 
-        assert_eq!(scene.objects().first().unwrap().animations(), &animations);
+        assert_eq!(
+            scene.objects().children().first().unwrap().animations(),
+            &animations
+        );
     }
     #[test]
     fn parse_animation_timing() {
@@ -1733,7 +1782,7 @@ mod tests {
         )));
         let expected_object = Object::animated(kind, Animations::default());
         let (scene, _) = parse(source);
-        assert_eq!(scene.objects(), vec![expected_object]);
+        assert_eq!(scene.objects().children(), vec![expected_object]);
     }
 
     #[test]
@@ -1830,8 +1879,7 @@ mod tests {
             let now = std::time::Instant::now();
             let path = scene.to_str().unwrap();
             let source = std::fs::read_to_string(path).unwrap();
-            let _ = parse_str(&source, WIDTH, HEIGHT, FOV)
-                .unwrap_or_else(|_| panic!("Failed to parse {:?}", scene));
+            let _ = parse_str(&source).unwrap_or_else(|_| panic!("Failed to parse {:?}", scene));
             println!("Parsed {:?} in {:?}", scene, now.elapsed());
         });
     }

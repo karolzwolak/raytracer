@@ -1,14 +1,25 @@
 use std::{fs::File, path::PathBuf};
 
 use clap::{Args, Parser, Subcommand};
+use derive_builder::Builder;
 use raytracer::{
-    render::{animator::AnimationFormat, image::ImageFormat},
-    scene::{camera::Camera, io::yaml, Scene},
+    render::{
+        animator::{AnimationFormat, AnimationRendererBuilder},
+        image::ImageFormat,
+        renderer::{Renderer, RendererBuilder},
+    },
+    scene::{
+        camera::Camera,
+        io::yaml::{self, YamlSceneConfig},
+        Scene,
+    },
+    shading::integrator::IntegratorBuilder,
 };
 
 const DEFAULT_WIDTH: usize = 800;
 const DEFAULT_HEIGHT: usize = 800;
 const DEFAULT_FOV: f64 = std::f64::consts::FRAC_PI_3;
+const DEFAULT_FPS: u32 = 60;
 
 #[derive(Args, Debug)]
 struct AnimationCommand {
@@ -18,13 +29,13 @@ struct AnimationCommand {
 
     /// The duration of the output video in seconds.
     #[clap(short = 'd', long)]
-    duration_sec: f64,
+    duration_sec: Option<f64>,
 
     /// Frames per second of the output video.
     /// Note that not all formats support all framerates.
     /// Use lower framerates when rendering to gif (about 30).
-    #[clap(long, default_value = "60")]
-    fps: u32,
+    #[clap(long)]
+    fps: Option<u32>,
 }
 
 #[derive(Args, Debug)]
@@ -102,77 +113,161 @@ Overrides the one in the scene file. If not specified anywhere, defaults to {}",
     supersampling_level: Option<usize>,
 }
 
-fn get_scene_camera(args: &Cli) -> Result<(Scene, Camera), String> {
+#[derive(Debug, PartialEq, Builder)]
+struct ImageConfig {
+    format: ImageFormat,
+}
+
+#[derive(Debug, PartialEq, Builder)]
+struct AnimationConfig {
+    format: AnimationFormat,
+    animation_duration_sec: f64,
+    animation_framerate: u32,
+}
+
+#[derive(Debug, PartialEq, Builder)]
+struct RenderConfig {
+    supersampling_level: usize,
+    max_reflective_depth: usize,
+
+    camera: Camera,
+    scene: Scene,
+}
+
+enum ConfigKind {
+    Animation(AnimationConfig),
+    Image(ImageConfig),
+}
+
+struct Config {
+    kind: ConfigKind,
+    render_config: RenderConfig,
+}
+
+impl Config {
+    fn merge_from_cli_yaml(cli: Cli, mut yaml: YamlSceneConfig) -> Result<Self, String> {
+        let kind = match cli.command {
+            Command::Image(image_command) => ConfigKind::Image(
+                ImageConfigBuilder::default()
+                    .format(image_command.format)
+                    .build()
+                    .map_err(|e| format!("Failed to build image config: {}", e))?,
+            ),
+            Command::Animate(animation_command) => {
+                let duration = animation_command.duration_sec.unwrap_or(
+                    yaml.animation_duration_sec
+                        .ok_or("Animation duration not specified")?,
+                );
+                let framerate = animation_command
+                    .fps
+                    .unwrap_or(yaml.animation_framerate.unwrap_or(DEFAULT_FPS));
+                let animation_config = AnimationConfigBuilder::default()
+                    .format(animation_command.format)
+                    .animation_duration_sec(duration)
+                    .animation_framerate(framerate)
+                    .build()
+                    .map_err(|e| format!("Failed to build animation config: {}", e))?;
+
+                ConfigKind::Animation(animation_config)
+            }
+        };
+
+        yaml.camera_builder.optional_target_width(cli.width);
+        yaml.camera_builder.default_target_width(DEFAULT_WIDTH);
+        yaml.camera_builder.optional_target_height(cli.height);
+        yaml.camera_builder.default_target_height(DEFAULT_HEIGHT);
+        yaml.camera_builder.optional_field_of_view(cli.fov);
+        yaml.camera_builder.default_field_of_view(DEFAULT_FOV);
+
+        let camera = yaml
+            .camera_builder
+            .build()
+            .map_err(|e| format!("Failed to build camera: {}", e))?;
+        let scene = yaml.scene_builder.build();
+
+        let render_config = RenderConfigBuilder::default()
+            .supersampling_level(
+                cli.supersampling_level.unwrap_or(
+                    yaml.supersampling_level
+                        .unwrap_or(Renderer::DEFAULT_SUPERSAMPLING_LEVEL),
+                ),
+            )
+            .max_reflective_depth(
+                cli.depth.unwrap_or(
+                    yaml.max_reflective_depth
+                        .unwrap_or(Renderer::MAX_RECURSIVE_DEPTH),
+                ),
+            )
+            .camera(camera)
+            .scene(scene)
+            .build()
+            .map_err(|e| format!("Failed to build render config: {}", e))?;
+
+        Ok(Self {
+            kind,
+            render_config,
+        })
+    }
+
+    fn render(self, file: File) -> Result<(), String> {
+        let integator = IntegratorBuilder::default()
+            .max_recursive_depth(self.render_config.max_reflective_depth)
+            .build()
+            .map_err(|e| format!("Failed to build integrator: {}", e))?;
+        let mut renderer = RendererBuilder::default()
+            .supersampling_level(self.render_config.supersampling_level)
+            .integrator(integator)
+            .camera(self.render_config.camera)
+            .build()
+            .map_err(|e| format!("Failed to build renderer: {}", e))?;
+
+        match self.kind {
+            ConfigKind::Animation(animation_config) => {
+                let animation_rendrerer = AnimationRendererBuilder::default()
+                    .renderer(renderer)
+                    .duration_sec(animation_config.animation_duration_sec)
+                    .framerate(animation_config.animation_framerate)
+                    .build()
+                    .map_err(|e| format!("Failed to build animation renderer: {}", e))?;
+                animation_rendrerer.render_to_file(file, animation_config.format);
+            }
+            ConfigKind::Image(image_config) => {
+                let image = renderer.render();
+                image
+                    .save_to_file(file, image_config.format)
+                    .map_err(|e| format!("Failed to save image to file: {}", e))?;
+            }
+        }
+        Ok(())
+    }
+}
+
+fn parse_yaml_scene(args: &Cli) -> Result<YamlSceneConfig, String> {
     let scene_source = std::fs::read_to_string(&args.scene_file)
         .map_err(|e| format!("Failed to read scene file: {}", e))?;
-    let (mut scene, camera) =
-        yaml::parse_str(&scene_source, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_FOV)
-            .map_err(|e| format!("Failed to parse scene: {}", e))?;
-    if let Some(max_reflective_depth) = args.depth {
-        scene.set_max_recursive_depth(max_reflective_depth);
-    }
-    if let Some(supersampling_level) = args.supersampling_level {
-        scene.set_supersampling_level(supersampling_level);
-    }
-    let camera = Camera::with_inverse_transformation(
-        args.width.unwrap_or(camera.target_width()),
-        args.height.unwrap_or(camera.target_height()),
-        args.fov.unwrap_or(camera.field_of_view()),
-        camera.inverse_transformation(),
-    );
-    Ok((scene, camera))
-}
 
-fn render_image(
-    image_args: ImageCommand,
-    file: File,
-    mut scene: Scene,
-    camera: Camera,
-) -> Result<(), String> {
-    let image = scene.render(&camera);
-    image
-        .save_to_file(file, image_args.format)
-        .map_err(|e| format!("Failed to save image: {}", e))
-}
-
-fn render_animation(
-    animation_args: AnimationCommand,
-    file: File,
-    scene: Scene,
-    camera: Camera,
-) -> Result<(), String> {
-    let animator = raytracer::render::animator::Animator::new(
-        scene,
-        camera,
-        animation_args.fps,
-        animation_args.duration_sec,
-    )
-    .ok_or_else(|| "Zero framerate or duration".to_string())?;
-    animator.render_to_file(file, animation_args.format);
-
-    // animator.render_to_file(&output_path.to_string_lossy(), animation_args.format);
-    Ok(())
+    yaml::parse_str(&scene_source).map_err(|e| format!("Failed to parse scene: {}", e))
 }
 
 fn render() -> Result<PathBuf, String> {
     let args = Cli::parse();
 
-    let (scene, camera) = get_scene_camera(&args)?;
-    let output_path = args.output_path.unwrap_or_else(|| {
+    let output_path = args.output_path.clone().unwrap_or_else(|| {
         let mut path = args.scene_file.clone();
         path = path.file_name().unwrap().into(); // If scene file is not a file, it would get
                                                  // picked up before parsing
         path.set_extension(args.command.extension());
         path
     });
+    let yaml_config = parse_yaml_scene(&args)?;
+
+    let config = Config::merge_from_cli_yaml(args, yaml_config)
+        .map_err(|e| format!("Failed parse config: {}", e))?;
 
     let file = std::fs::File::create(&output_path)
         .map_err(|e| format!("Failed to create output file: {}", e))?;
+    config.render(file)?;
 
-    match args.command {
-        Command::Image(image_args) => render_image(image_args, file, scene, camera),
-        Command::Animate(animation_args) => render_animation(animation_args, file, scene, camera),
-    }?;
     Ok(output_path)
 }
 

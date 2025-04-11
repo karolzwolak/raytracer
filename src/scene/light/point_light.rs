@@ -9,6 +9,15 @@ pub struct PointLightSource {
     intensity: Color,
 }
 
+impl Default for PointLightSource {
+    fn default() -> Self {
+        Self {
+            position: Point::zero(),
+            intensity: Color::white(),
+        }
+    }
+}
+
 impl PointLightSource {
     pub fn new(position: Point, intensity: Color) -> Self {
         Self {

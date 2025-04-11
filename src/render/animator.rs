@@ -1,6 +1,7 @@
 use std::{fmt::Display, fs::File, io::Write, ops::Deref, thread, time::Duration};
 
 use clap::ValueEnum;
+use derive_builder::Builder;
 use indicatif::ProgressIterator;
 use minimp4::Mp4Muxer;
 use openh264::{
@@ -9,8 +10,8 @@ use openh264::{
 };
 use webp::WebPConfig;
 
-use super::image::Image;
-use crate::scene::{camera::Camera, Scene};
+use super::{image::Image, renderer::Renderer};
+use crate::scene::camera::Camera;
 
 #[derive(Debug, Copy, Clone, PartialEq, ValueEnum)]
 pub enum AnimationFormat {
@@ -29,30 +30,24 @@ impl Display for AnimationFormat {
     }
 }
 
-pub struct Animator {
-    scene: Scene,
-    camera: Camera,
+#[derive(Clone, PartialEq, Debug, Builder)]
+pub struct AnimationRenderer {
+    renderer: Renderer,
     framerate: u32,
     duration_sec: f64,
 }
 
-impl Animator {
-    pub fn new(scene: Scene, camera: Camera, framerate: u32, duration_sec: f64) -> Option<Self> {
-        if framerate == 0 || duration_sec == 0. {
-            return None;
-        }
-        Some(Self {
-            scene,
-            camera,
+impl AnimationRenderer {
+    pub fn new(renderer: Renderer, framerate: u32, duration_sec: f64) -> Self {
+        Self {
+            renderer,
             framerate,
             duration_sec,
-        })
+        }
     }
 
-    fn render_frame(&self, time: f64, progressbar: indicatif::ProgressBar) -> Image {
-        let mut scene = self.scene.clone();
-        scene.animate(time);
-        scene.render_animation_frame(&self.camera, progressbar)
+    fn camera(&self) -> &Camera {
+        self.renderer.camera()
     }
 
     fn frame_count(&self) -> u32 {
@@ -63,6 +58,13 @@ impl Animator {
         1. / self.framerate as f64
     }
 
+    fn render_frame(&self, time: f64, bar: indicatif::ProgressBar) -> Image {
+        let mut renderer = self.renderer.clone();
+        *renderer.scene_mut() = self.renderer.scene().animate(time);
+
+        renderer.render_animation_frame(bar)
+    }
+
     fn render_animation<F>(&self, mut encode_fun: F)
     where
         F: FnMut(Image),
@@ -71,7 +73,8 @@ impl Animator {
             "[{elapsed_precise}] {wide_bar:.cyan/blue} rendering frame: {human_pos}/{human_len} {percent}% ({eta})",
         ).unwrap());
 
-        let pixels_count = self.camera.target_width() as u64 * self.camera.target_height() as u64;
+        let pixels_count =
+            self.camera().target_width() as u64 * self.camera().target_height() as u64;
         let frame_bar = indicatif::ProgressBar::new(pixels_count).with_style(indicatif::ProgressStyle::with_template(
             "[{elapsed_precise}] {bar:.cyan/blue} pixels shaded: {human_pos}/{human_len} {percent}% ({eta})",
         )
@@ -111,8 +114,8 @@ impl Animator {
 
     fn render_mp4(&self, file: File) {
         let mut muxer = Mp4Muxer::new(file);
-        let width = self.camera.target_width();
-        let height = self.camera.target_height();
+        let width = self.camera().target_width();
+        let height = self.camera().target_height();
 
         muxer.init_video(width as i32, height as i32, false, "title");
         let mut h264_encoder = Encoder::new().unwrap();
@@ -130,8 +133,8 @@ impl Animator {
     }
 
     fn render_webp(&self, mut file: File) {
-        let width = self.camera.target_width() as u32;
-        let height = self.camera.target_height() as u32;
+        let width = self.camera().target_width() as u32;
+        let height = self.camera().target_height() as u32;
         let mut config =
             WebPConfig::new_with_preset(libwebp_sys::WebPPreset::WEBP_PRESET_PICTURE, 95.).unwrap();
         config.method = 6;
@@ -162,8 +165,8 @@ impl Animator {
             AnimationFormat::Gif => {
                 let mut encoder = gif::Encoder::new(
                     &mut file,
-                    self.camera.target_width() as u16,
-                    self.camera.target_height() as u16,
+                    self.camera().target_width() as u16,
+                    self.camera().target_height() as u16,
                     &[],
                 )
                 .unwrap();
@@ -181,17 +184,30 @@ mod tests {
 
     use crate::{
         math::approx_eq::ApproxEq,
-        render::animator::Animator,
+        render::{animator::AnimationRenderer, renderer::RendererBuilder},
         scene::{camera::Camera, Scene},
+        shading::integrator::IntegratorBuilder,
     };
 
-    fn animator(framerate: u32, duration_sec: f64) -> Animator {
+    fn animator(framerate: u32, duration_sec: f64) -> AnimationRenderer {
         let scene = Scene::default_testing();
         let camera = Camera::new(10, 10, 1.);
-        Animator::new(scene, camera, framerate, duration_sec).unwrap()
+        let integrator = IntegratorBuilder::default_builder_testing()
+            .scene(scene)
+            .build()
+            .unwrap();
+
+        let renderer = RendererBuilder::default()
+            .camera(camera)
+            .integrator(integrator)
+            .supersampling_level(0)
+            .build()
+            .unwrap();
+
+        AnimationRenderer::new(renderer, framerate, duration_sec)
     }
 
-    fn default_animator() -> Animator {
+    fn default_animator() -> AnimationRenderer {
         let framerate = 24;
         let duration_sec = 10.0;
         animator(framerate, duration_sec)

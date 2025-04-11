@@ -27,6 +27,12 @@ impl Bounded for ObjectGroup {
     }
 }
 
+impl From<Vec<Object>> for ObjectGroup {
+    fn from(children: Vec<Object>) -> Self {
+        ObjectGroup::new(children)
+    }
+}
+
 impl ObjectGroup {
     const CANDIDATE_POS_NUMBER: usize = 5;
 
