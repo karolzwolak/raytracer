@@ -1,3 +1,7 @@
+use super::{
+    cone::Cone, cube::UnitCube, cylinder::Cylinder, plane::PlaneXZ,
+    smooth_triangle::SmoothTriangle, sphere::UnitSphere, triangle::Triangle,
+};
 use crate::{
     math::{point::Point, vector::Vector},
     render::{
@@ -5,11 +9,6 @@ use crate::{
         ray::Ray,
     },
     scene::object::bounding_box::BoundingBox,
-};
-
-use super::{
-    cone::Cone, cube::UnitCube, cylinder::Cylinder, plane::PlaneXZ,
-    smooth_triangle::SmoothTriangle, sphere::UnitSphere, triangle::Triangle,
 };
 
 #[derive(Clone, Debug, PartialEq)]

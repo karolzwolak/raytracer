@@ -1,3 +1,4 @@
+use super::ray::Ray;
 use crate::{
     approx_eq::{self, ApproxEq},
     math::{point::Point, vector::Vector},
@@ -7,8 +8,6 @@ use crate::{
         Object,
     },
 };
-
-use super::ray::Ray;
 
 /// Will panic if you try to add intersection without setting next_object to Some first
 pub struct IntersectionCollector<'a> {
@@ -529,13 +528,12 @@ mod tests {
     use std::f64::consts;
 
     use super::*;
-    use crate::approx_eq::{self, ApproxEq};
-    use crate::assert_approx_eq_low_prec;
-    use crate::math::matrix::Matrix;
-    use crate::math::point::Point;
-    use crate::math::tuple::Tuple;
-    use crate::math::vector::Vector;
-    use crate::scene::object::primitive::shape::Shape;
+    use crate::{
+        approx_eq::{self, ApproxEq},
+        assert_approx_eq_low_prec,
+        math::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
+        scene::object::primitive::shape::Shape,
+    };
 
     #[test]
     fn intersect_sphere() {

@@ -1,40 +1,34 @@
-use crate::scene::object::bounding_box::BoundingBox;
-use crate::scene::object::csg::CsgObject;
-use crate::scene::object::csg::CsgOperation;
-use crate::scene::object::material::pattern::Pattern;
-use crate::scene::object::material::Material;
-use crate::scene::object::primitive::cone::Cone;
-use crate::scene::object::primitive::cylinder::Cylinder;
-use crate::scene::object::primitive::shape::Shape;
-use crate::scene::object::primitive::smooth_triangle::SmoothTriangle;
-use crate::scene::object::primitive::triangle::Triangle;
-use crate::scene::object::Object;
-use crate::scene::object::ObjectKind;
-use crate::scene::object::PrimitiveObject;
-use crate::scene::Camera;
-use crate::scene::ObjectGroup;
-use crate::scene::PointLightSource;
-use crate::scene::SceneBuilder;
 use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use saphyr::Yaml;
 
-use crate::math::matrix::{
-    LocalTransform, LocalTransformation, LocalTransformations, Matrix, Transformation,
-    Transformations,
-};
-use crate::scene::animation::{Animation, AnimationRepeat, Animations, TransformAnimation};
+use super::obj_model::ObjModelParser;
 use crate::{
     math::{
         color::Color,
+        matrix::{
+            LocalTransform, LocalTransformation, LocalTransformations, Matrix, Transformation,
+            Transformations,
+        },
         point::Point,
         tuple::{Axis, Tuple},
         vector::Vector,
     },
-    scene::Scene,
+    scene::{
+        animation::{Animation, AnimationRepeat, Animations, TransformAnimation},
+        object::{
+            bounding_box::BoundingBox,
+            csg::{CsgObject, CsgOperation},
+            material::{pattern::Pattern, Material},
+            primitive::{
+                cone::Cone, cylinder::Cylinder, shape::Shape, smooth_triangle::SmoothTriangle,
+                triangle::Triangle,
+            },
+            Object, ObjectKind, PrimitiveObject,
+        },
+        Camera, ObjectGroup, PointLightSource, Scene, SceneBuilder,
+    },
 };
-
-use super::obj_model::ObjModelParser;
 
 #[derive(Debug)]
 pub enum YamlParseError {
@@ -886,14 +880,13 @@ mod tests {
 
     use std::{f64::consts::FRAC_PI_3, fmt::Debug, path::PathBuf};
 
+    use super::*;
     use crate::{
         math::matrix::Transform,
         scene::animation::{
             Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,
         },
     };
-
-    use super::*;
 
     const WIDTH: usize = 600;
     const HEIGHT: usize = 800;

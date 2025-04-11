@@ -37,7 +37,7 @@ impl UnitSphere {
 
 #[cfg(test)]
 mod tests {
-    use std::{f64::consts::FRAC_1_SQRT_2, f64::consts::PI};
+    use std::f64::consts::{FRAC_1_SQRT_2, PI};
 
     use crate::{
         approx_eq::ApproxEq,

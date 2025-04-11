@@ -1,7 +1,8 @@
+use std::{fmt::Display, fs::File, io::Write};
+
 use clap::ValueEnum;
 use indicatif::ParallelProgressIterator;
 use rayon::prelude::*;
-use std::{fmt::Display, fs::File, io::Write};
 
 use crate::math::color::Color;
 
@@ -184,10 +185,8 @@ impl Canvas {
 
 #[cfg(test)]
 mod tests {
-    use crate::approx_eq::ApproxEq;
-    use crate::assert_approx_eq_low_prec;
-
     use super::*;
+    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec};
 
     #[test]
     fn index() {

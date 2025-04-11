@@ -137,6 +137,7 @@ impl Default for Cone {
 mod tests {
     use std::f64::consts::SQRT_2;
 
+    use super::Cone;
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
@@ -144,8 +145,6 @@ mod tests {
         render::ray::Ray,
         scene::object::{primitive::shape::Shape, Object},
     };
-
-    use super::Cone;
 
     #[test]
     fn intersecting_cone() {

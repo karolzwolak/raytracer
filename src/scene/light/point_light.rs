@@ -72,6 +72,7 @@ impl PointLightSource {
 mod tests {
     use std::f64::consts::FRAC_1_SQRT_2;
 
+    use super::*;
     use crate::{
         assert_approx_eq_low_prec,
         math::tuple::Tuple,
@@ -81,8 +82,6 @@ mod tests {
             PrimitiveObject,
         },
     };
-
-    use super::*;
 
     #[test]
     fn lighting_with_surface_in_shadow() {

@@ -112,15 +112,13 @@ impl Camera {
 mod tests {
     use std::f64::consts::{FRAC_1_SQRT_2, FRAC_PI_2, FRAC_PI_4};
 
-    use crate::math::color::Color;
+    use super::*;
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        math::{matrix::Transform, tuple::Tuple, vector::Vector},
+        math::{color::Color, matrix::Transform, tuple::Tuple, vector::Vector},
         scene::Scene,
     };
-
-    use super::*;
 
     #[test]
     fn identity_matrix_is_default_transformation() {

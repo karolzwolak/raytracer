@@ -108,14 +108,15 @@ impl Triangle {
 
 #[cfg(test)]
 mod tests {
-    use crate::approx_eq::ApproxEq;
-    use crate::assert_approx_eq_low_prec;
-    use crate::scene::object::primitive::shape::Shape;
-    use crate::scene::object::primitive::triangle::Triangle;
-    use crate::scene::object::Object;
     use crate::{
+        approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
         math::{point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
+        scene::object::{
+            primitive::{shape::Shape, triangle::Triangle},
+            Object,
+        },
     };
 
     #[test]

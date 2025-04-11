@@ -1,7 +1,4 @@
-use crate::scene::Material;
-use crate::scene::Pattern;
-use crate::scene::Scene;
-use crate::scene::Shape;
+use super::Object;
 use crate::{
     approx_eq::ApproxEq,
     math::{
@@ -12,9 +9,8 @@ use crate::{
         vector::Vector,
     },
     render::ray::Ray,
+    scene::{Material, Pattern, Scene, Shape},
 };
-
-use super::Object;
 
 pub trait Bounded {
     fn bounding_box(&self) -> &BoundingBox;

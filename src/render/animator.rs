@@ -1,4 +1,4 @@
-use std::{fmt::Display, fs::File, io::Write, ops::Deref};
+use std::{fmt::Display, fs::File, io::Write, ops::Deref, thread, time::Duration};
 
 use clap::ValueEnum;
 use indicatif::ProgressIterator;
@@ -7,13 +7,10 @@ use openh264::{
     encoder::Encoder,
     formats::{RgbSliceU8, YUVBuffer},
 };
-use std::thread;
-use std::time::Duration;
 use webp::WebPConfig;
 
-use crate::scene::{camera::Camera, Scene};
-
 use super::canvas::Canvas;
+use crate::scene::{camera::Camera, Scene};
 
 #[derive(Debug, Copy, Clone, PartialEq, ValueEnum)]
 pub enum AnimationFormat {
@@ -182,9 +179,11 @@ impl Animator {
 #[cfg(test)]
 mod tests {
 
-    use crate::scene::camera::Camera;
-    use crate::scene::Scene;
-    use crate::{approx_eq::ApproxEq, render::animator::Animator};
+    use crate::{
+        approx_eq::ApproxEq,
+        render::animator::Animator,
+        scene::{camera::Camera, Scene},
+    };
 
     fn animator(framerate: u32, duration_sec: f64) -> Animator {
         let scene = Scene::default_testing();

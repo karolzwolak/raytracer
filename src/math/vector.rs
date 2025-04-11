@@ -1,10 +1,10 @@
-use crate::approx_eq::ApproxEq;
+use std::ops::{self, Index};
 
 use super::{
     point::Point,
     tuple::{Axis, Tuple},
 };
-use std::ops::{self, Index};
+use crate::approx_eq::ApproxEq;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Vector {
@@ -159,11 +159,10 @@ impl ops::Div<f64> for Vector {
 
 #[cfg(test)]
 mod tests {
-    use crate::approx_eq::ApproxEq;
-    use crate::assert_approx_eq_low_prec;
     use std::f64::consts::FRAC_1_SQRT_2;
 
     use super::*;
+    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec};
 
     #[test]
     fn add_point() {

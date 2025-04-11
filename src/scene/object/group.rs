@@ -1,15 +1,14 @@
+use super::{
+    bounding_box::{Bounded, BoundingBox},
+    material::Material,
+    Object, ObjectKind,
+};
 use crate::{
     math::{
         matrix::{Matrix, Transform},
         tuple::Axis,
     },
     render::{intersection::IntersectionCollector, ray::Ray},
-};
-
-use super::{
-    bounding_box::{Bounded, BoundingBox},
-    material::Material,
-    Object, ObjectKind,
 };
 
 #[derive(Clone, Debug, PartialEq, Default)]

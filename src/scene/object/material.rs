@@ -1,9 +1,8 @@
 pub mod pattern;
 use pattern::Pattern;
 
-use crate::math::{color::Color, point::Point};
-
 use super::Object;
+use crate::math::{color::Color, point::Point};
 
 pub const AIR_REFRACTIVE_INDEX: f64 = 1.0;
 
@@ -105,10 +104,8 @@ impl Material {
 
 #[cfg(test)]
 mod tests {
-    use crate::approx_eq::ApproxEq;
-    use crate::assert_approx_eq_low_prec;
-
     use super::*;
+    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec};
 
     #[test]
     fn default_material() {

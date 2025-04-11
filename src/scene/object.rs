@@ -10,6 +10,7 @@ use group::ObjectGroup;
 use material::Material;
 use primitive::shape::Shape;
 
+use super::animation::{Animations, Interpolate};
 use crate::{
     approx_eq::ApproxEq,
     math::{
@@ -23,8 +24,6 @@ use crate::{
         ray::Ray,
     },
 };
-
-use super::animation::{Animations, Interpolate};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ObjectKind {
@@ -433,13 +432,12 @@ mod tests {
 
     use std::f64;
 
+    use super::*;
     use crate::{
         assert_approx_eq_low_prec,
         math::{color::Color, matrix::LocalTransformations},
         scene::animation::{Animation, TransformAnimation},
     };
-
-    use super::*;
 
     #[test]
     fn identiy_matrix_is_obj_default_transformation() {

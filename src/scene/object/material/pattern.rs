@@ -135,12 +135,11 @@ impl Pattern {
 
 #[cfg(test)]
 mod tests {
-    use crate::approx_eq::ApproxEq;
-    use crate::assert_approx_eq_low_prec;
-    use crate::math::tuple::Tuple;
-    use crate::scene::object::primitive::shape::Shape;
-
     use super::*;
+    use crate::{
+        approx_eq::ApproxEq, assert_approx_eq_low_prec, math::tuple::Tuple,
+        scene::object::primitive::shape::Shape,
+    };
 
     #[test]
     fn stripe_pattern_const_in_y() {

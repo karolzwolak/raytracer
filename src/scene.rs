@@ -4,11 +4,6 @@ pub mod io;
 pub mod light;
 pub mod object;
 
-use crate::scene::camera::Camera;
-use crate::scene::object::material::pattern::Pattern;
-use crate::scene::object::material::Material;
-use crate::scene::object::primitive::shape::Shape;
-use crate::scene::object::Object;
 use derive_builder::Builder;
 use light::{point_light::PointLightSource, schlick_reflectance};
 use object::{group::ObjectGroup, PrimitiveObject};
@@ -16,10 +11,20 @@ use object::{group::ObjectGroup, PrimitiveObject};
 use crate::{
     approx_eq::ApproxEq,
     math::{color::Color, matrix::Matrix, point::Point, tuple::Tuple},
-    render::{canvas::Canvas, intersection::IntersectionCollector, ray::Ray},
+    render::{
+        canvas::Canvas,
+        intersection::{IntersecComputations, IntersectionCollection, IntersectionCollector},
+        ray::Ray,
+    },
+    scene::{
+        camera::Camera,
+        object::{
+            material::{pattern::Pattern, Material},
+            primitive::shape::Shape,
+            Object,
+        },
+    },
 };
-
-use crate::render::intersection::{IntersecComputations, IntersectionCollection};
 
 #[derive(PartialEq, Debug, Clone, Builder)]
 #[builder(default)]
@@ -464,11 +469,10 @@ impl Scene {
 mod tests {
     use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 
+    use super::*;
     use crate::{
         assert_approx_eq_low_prec, math::vector::Vector, render::intersection::Intersection,
     };
-
-    use super::*;
 
     #[test]
     fn intersect_scene_with_ray() {

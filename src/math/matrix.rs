@@ -1,16 +1,16 @@
-use crate::{
-    approx_eq::{self, ApproxEq},
-    scene::{
-        animation::{Base, Interpolate, SelfInterpolate},
-        object::bounding_box::{Bounded, BoundingBox},
-    },
-};
 use std::ops;
 
 use super::{
     point::Point,
     tuple::{Axis, Tuple},
     vector::Vector,
+};
+use crate::{
+    approx_eq::{self, ApproxEq},
+    scene::{
+        animation::{Base, Interpolate, SelfInterpolate},
+        object::bounding_box::{Bounded, BoundingBox},
+    },
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -21,12 +21,13 @@ pub struct Matrix {
 
 #[cfg(test)]
 mod local_transform_tests {
-    use crate::scene::object::primitive::shape::Shape;
     use std::f64::consts::FRAC_PI_3;
 
     use super::*;
     use crate::{
-        assert_approx_eq_low_prec, math::point::Point, scene::object::bounding_box::BoundingBox,
+        assert_approx_eq_low_prec,
+        math::point::Point,
+        scene::object::{bounding_box::BoundingBox, primitive::shape::Shape},
     };
 
     fn bbox(min: (f64, f64, f64), max: (f64, f64, f64)) -> BoundingBox {
@@ -1012,12 +1013,11 @@ pub trait Transform: Sized + Clone {
 mod tests {
     use std::f64::consts;
 
+    use super::*;
     use crate::{
         assert_approx_eq_low_prec,
         math::{point::Point, vector::Vector},
     };
-
-    use super::*;
 
     #[test]
     #[rustfmt::skip]

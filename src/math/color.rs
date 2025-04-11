@@ -147,9 +147,8 @@ impl ops::Div<f64> for Color {
 
 #[cfg(test)]
 mod tests {
-    use crate::assert_approx_eq_low_prec;
-
     use super::*;
+    use crate::assert_approx_eq_low_prec;
 
     #[test]
     fn add() {

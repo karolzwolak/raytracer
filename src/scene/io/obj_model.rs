@@ -193,11 +193,12 @@ impl Default for ObjModelParser {
 
 #[cfg(test)]
 mod tests {
-    use crate::scene::object::primitive::smooth_triangle::SmoothTriangle;
-    use crate::scene::object::primitive::triangle::Triangle;
-    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec};
-
     use super::*;
+    use crate::{
+        approx_eq::ApproxEq,
+        assert_approx_eq_low_prec,
+        scene::object::primitive::{smooth_triangle::SmoothTriangle, triangle::Triangle},
+    };
 
     #[test]
     fn ignoring_unrecognized_lines() {

@@ -128,6 +128,7 @@ impl Default for Cylinder {
 
 #[cfg(test)]
 mod tests {
+    use super::Cylinder;
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
@@ -135,8 +136,6 @@ mod tests {
         render::ray::Ray,
         scene::object::{primitive::shape::Shape, Object},
     };
-
-    use super::Cylinder;
 
     #[test]
     fn ray_misses_cylinder() {

@@ -1,9 +1,10 @@
+use std::ops::{self, Index};
+
 use super::{
     tuple::{Axis, Tuple},
     vector::Vector,
 };
 use crate::approx_eq::ApproxEq;
-use std::ops::{self, Index};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Point {
@@ -136,10 +137,11 @@ impl ops::Sub<Vector> for Point {
 
 #[cfg(test)]
 mod tests {
-    use crate::assert_approx_eq_low_prec;
-    use crate::math::matrix::{Matrix, Transform};
-
     use super::*;
+    use crate::{
+        assert_approx_eq_low_prec,
+        math::matrix::{Matrix, Transform},
+    };
 
     #[test]
     fn apply_vec() {

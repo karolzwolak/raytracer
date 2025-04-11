@@ -1,17 +1,16 @@
-use crate::scene::Material;
 use std::str::FromStr;
 
+use super::{
+    bounding_box::{Bounded, BoundingBox},
+    Object,
+};
 use crate::{
     math::matrix::{Matrix, Transform},
     render::{
         intersection::{IntersectionCollection, IntersectionCollector},
         ray::Ray,
     },
-};
-
-use super::{
-    bounding_box::{Bounded, BoundingBox},
-    Object,
+    scene::Material,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -171,14 +170,15 @@ impl Bounded for CsgObject {
 
 #[cfg(test)]
 mod tests {
-    use crate::math::point::Point;
-    use crate::math::tuple::Tuple;
-    use crate::math::vector::Vector;
-    use crate::render::intersection::Intersection;
-    use crate::scene::object::primitive::shape::Shape;
-
-    use super::LeftRight::{Left, Right};
-    use super::*;
+    use super::{
+        LeftRight::{Left, Right},
+        *,
+    };
+    use crate::{
+        math::{point::Point, tuple::Tuple, vector::Vector},
+        render::intersection::Intersection,
+        scene::object::primitive::shape::Shape,
+    };
 
     #[test]
     fn csg_creation() {
