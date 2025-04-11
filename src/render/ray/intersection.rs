@@ -1,4 +1,3 @@
-use super::ray::Ray;
 use crate::{
     math::{
         approx_eq::{self, ApproxEq},
@@ -11,6 +10,8 @@ use crate::{
         Object,
     },
 };
+
+use super::Ray;
 
 /// Will panic if you try to add intersection without setting next_object to Some first
 pub struct IntersectionCollector<'a> {

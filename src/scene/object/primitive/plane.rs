@@ -1,6 +1,6 @@
 use crate::{
     math::{approx_eq::ApproxEq, point::Point, tuple::Tuple, vector::Vector},
-    render::{intersection::IntersectionCollector, ray::Ray},
+    render::ray::{intersection::IntersectionCollector, Ray},
     scene::object::bounding_box::BoundingBox,
 };
 

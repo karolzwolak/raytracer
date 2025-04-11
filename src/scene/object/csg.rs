@@ -6,9 +6,9 @@ use super::{
 };
 use crate::{
     math::matrix::{Matrix, Transform},
-    render::{
+    render::ray::{
         intersection::{IntersectionCollection, IntersectionCollector},
-        ray::Ray,
+        Ray,
     },
     scene::Material,
 };
@@ -176,7 +176,7 @@ mod tests {
     };
     use crate::{
         math::{point::Point, tuple::Tuple, vector::Vector},
-        render::intersection::Intersection,
+        render::ray::intersection::Intersection,
         scene::object::primitive::shape::Shape,
     };
 

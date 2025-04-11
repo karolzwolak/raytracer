@@ -12,8 +12,10 @@ use crate::{
     math::{approx_eq::ApproxEq, color::Color, matrix::Matrix, point::Point, tuple::Tuple},
     render::{
         image::Image,
-        intersection::{IntersecComputations, IntersectionCollection, IntersectionCollector},
-        ray::Ray,
+        ray::{
+            intersection::{IntersecComputations, IntersectionCollection, IntersectionCollector},
+            Ray,
+        },
     },
     scene::{
         camera::Camera,
@@ -470,7 +472,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        assert_approx_eq_low_prec, math::vector::Vector, render::intersection::Intersection,
+        assert_approx_eq_low_prec, math::vector::Vector, render::ray::intersection::Intersection,
     };
 
     #[test]

@@ -1,3 +1,5 @@
+pub mod intersection;
+
 use crate::math::{
     matrix::{Matrix, Transform},
     point::Point,

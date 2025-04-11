@@ -19,9 +19,9 @@ use crate::{
         tuple::Tuple,
         vector::Vector,
     },
-    render::{
+    render::ray::{
         intersection::{Intersection, IntersectionCollection, IntersectionCollector},
-        ray::Ray,
+        Ray,
     },
 };
 

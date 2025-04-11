@@ -1,4 +1,4 @@
-use crate::render::intersection::IntersecComputations;
+use crate::render::ray::intersection::IntersecComputations;
 
 pub mod point_light;
 
@@ -33,7 +33,7 @@ mod tests {
     use crate::{
         assert_approx_eq_low_prec,
         math::{approx_eq::ApproxEq, matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
-        render::{intersection::IntersectionCollection, ray::Ray},
+        render::ray::{intersection::IntersectionCollection, Ray},
         scene::{
             light::schlick_reflectance,
             object::{material::Material, primitive::shape::Shape, Object},

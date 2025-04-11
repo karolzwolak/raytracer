@@ -8,7 +8,7 @@ use crate::{
         matrix::{Matrix, Transform},
         tuple::Axis,
     },
-    render::{intersection::IntersectionCollector, ray::Ray},
+    render::ray::{intersection::IntersectionCollector, Ray},
 };
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -264,7 +264,7 @@ mod tests {
             tuple::Tuple,
             vector::Vector,
         },
-        render::{intersection::IntersectionCollection, ray::Ray},
+        render::ray::{intersection::IntersectionCollection, Ray},
         scene::{
             animation::{
                 Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,

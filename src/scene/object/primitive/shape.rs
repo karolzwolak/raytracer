@@ -4,9 +4,9 @@ use super::{
 };
 use crate::{
     math::{point::Point, vector::Vector},
-    render::{
+    render::ray::{
         intersection::{Intersection, IntersectionCollector},
-        ray::Ray,
+        Ray,
     },
     scene::object::bounding_box::BoundingBox,
 };

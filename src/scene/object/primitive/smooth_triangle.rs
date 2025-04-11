@@ -5,9 +5,9 @@ use crate::{
         point::Point,
         vector::Vector,
     },
-    render::{
+    render::ray::{
         intersection::{Intersection, IntersectionCollector},
-        ray::Ray,
+        Ray,
     },
     scene::object::bounding_box::BoundingBox,
 };
@@ -131,7 +131,7 @@ mod tests {
     use crate::{
         assert_approx_eq_low_prec,
         math::{approx_eq::ApproxEq, point::Point, tuple::Tuple, vector::Vector},
-        render::{intersection::Intersection, ray::Ray},
+        render::ray::{intersection::Intersection, Ray},
         scene::object::{primitive::shape::Shape, Object},
     };
 
