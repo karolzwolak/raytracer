@@ -1,14 +1,6 @@
 pub mod approx_eq;
 
-pub mod math {
-    pub mod color;
-    pub mod matrix;
-    pub mod point;
-    pub mod tuple;
-    pub mod vector;
-
-    pub use color::Color;
-}
+pub mod math;
 
 pub mod scene;
 
@@ -30,9 +22,4 @@ pub use scene::{
     Scene,
 };
 
-pub mod render {
-    pub mod animator;
-    pub mod canvas;
-    pub mod intersection;
-    pub mod ray;
-}
+pub mod render;
