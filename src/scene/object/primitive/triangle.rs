@@ -1,7 +1,7 @@
 use crate::BoundingBox;
 use crate::{
     approx_eq::ApproxEq,
-    core::{
+    math::{
         matrix::{Matrix, Transform},
         point::Point,
         vector::Vector,
@@ -112,7 +112,7 @@ mod tests {
     use crate::primitive::triangle::Triangle;
     use crate::{assert_approx_eq_low_prec, Object, Shape};
     use crate::{
-        core::{point::Point, tuple::Tuple, vector::Vector},
+        math::{point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
     };
 

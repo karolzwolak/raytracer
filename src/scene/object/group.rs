@@ -1,7 +1,7 @@
 use crate::Material;
 use crate::ObjectKind;
 use crate::{
-    core::{
+    math::{
         matrix::{Matrix, Transform},
         tuple::Axis,
     },
@@ -258,7 +258,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        core::{
+        math::{
             matrix::{LocalTransformations, Matrix, Transformation},
             point::Point,
             tuple::Tuple,

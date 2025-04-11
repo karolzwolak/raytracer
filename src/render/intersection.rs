@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::{self, ApproxEq},
-    core::{point::Point, vector::Vector},
+    math::{point::Point, vector::Vector},
     scene::object::{group::ObjectGroup, material::AIR_REFRACTIVE_INDEX},
     Material, Object,
 };
@@ -528,10 +528,10 @@ mod tests {
     use super::*;
     use crate::approx_eq::{self, ApproxEq};
     use crate::assert_approx_eq_low_prec;
-    use crate::core::matrix::Matrix;
-    use crate::core::point::Point;
-    use crate::core::tuple::Tuple;
-    use crate::core::vector::Vector;
+    use crate::math::matrix::Matrix;
+    use crate::math::point::Point;
+    use crate::math::tuple::Tuple;
+    use crate::math::vector::Vector;
     use crate::Shape;
 
     #[test]

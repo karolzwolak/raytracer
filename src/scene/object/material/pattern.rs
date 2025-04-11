@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    core::{matrix::Matrix, point::Point, tuple::Tuple, Color},
+    math::{matrix::Matrix, point::Point, tuple::Tuple, Color},
     Object,
 };
 
@@ -137,7 +137,7 @@ impl Pattern {
 mod tests {
     use crate::approx_eq::ApproxEq;
     use crate::assert_approx_eq_low_prec;
-    use crate::{core::tuple::Tuple, Shape};
+    use crate::{math::tuple::Tuple, Shape};
 
     use super::*;
 

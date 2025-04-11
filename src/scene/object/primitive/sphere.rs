@@ -1,5 +1,5 @@
 use crate::{
-    core::{point::Point, tuple::Tuple, vector::Vector},
+    math::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
     scene::object::bounding_box::BoundingBox,
 };
@@ -42,7 +42,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        core::{
+        math::{
             matrix::{Matrix, Transform},
             point::Point,
             tuple::Tuple,

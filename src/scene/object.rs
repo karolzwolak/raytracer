@@ -10,7 +10,7 @@ use group::ObjectGroup;
 
 use crate::{
     approx_eq::ApproxEq,
-    core::{
+    math::{
         matrix::{Matrix, Transform},
         point::Point,
         tuple::Tuple,
@@ -436,7 +436,7 @@ mod tests {
 
     use crate::{
         assert_approx_eq_low_prec,
-        core::{matrix::LocalTransformations, Color},
+        math::{matrix::LocalTransformations, Color},
     };
 
     use super::*;

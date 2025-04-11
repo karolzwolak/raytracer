@@ -3,7 +3,7 @@ use std::{ops, str::FromStr};
 
 use crate::{
     approx_eq::ApproxEq,
-    core::matrix::{LocalTransformations, Matrix},
+    math::matrix::{LocalTransformations, Matrix},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -290,7 +290,7 @@ mod tests {
     use crate::scene::object::bounding_box::BoundingBox;
     use std::f64::{self};
 
-    use crate::core::{
+    use crate::math::{
         matrix::{Transform, Transformation, Transformations},
         tuple::Axis,
     };

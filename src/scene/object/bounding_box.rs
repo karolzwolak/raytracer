@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    core::{
+    math::{
         matrix::{Matrix, Transform},
         point::Point,
         tuple::{Axis, Tuple},
@@ -339,7 +339,7 @@ impl BoundingBox {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{assert_approx_eq_low_prec, core::matrix::Matrix};
+    use crate::{assert_approx_eq_low_prec, math::matrix::Matrix};
 
     #[test]
     fn test_empty() {

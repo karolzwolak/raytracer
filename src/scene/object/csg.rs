@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    core::matrix::{Matrix, Transform},
+    math::matrix::{Matrix, Transform},
     render::{
         intersection::{IntersectionCollection, IntersectionCollector},
         ray::Ray,
@@ -171,9 +171,9 @@ impl Bounded for CsgObject {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::point::Point;
-    use crate::core::tuple::Tuple;
-    use crate::core::vector::Vector;
+    use crate::math::point::Point;
+    use crate::math::tuple::Tuple;
+    use crate::math::vector::Vector;
     use crate::render::intersection::Intersection;
     use crate::Shape;
 

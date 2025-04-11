@@ -1,4 +1,4 @@
-use crate::core::{
+use crate::math::{
     matrix::{Matrix, Transform},
     point::Point,
     tuple::Tuple,
@@ -50,7 +50,7 @@ impl Ray {
 
 #[cfg(test)]
 mod tests {
-    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec, core::tuple::Tuple};
+    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec, math::tuple::Tuple};
 
     use super::*;
 

@@ -1,6 +1,6 @@
 pub mod pattern;
 use crate::{
-    core::{point::Point, Color},
+    math::{point::Point, Color},
     Pattern,
 };
 

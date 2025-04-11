@@ -137,7 +137,7 @@ impl ops::Sub<Vector> for Point {
 #[cfg(test)]
 mod tests {
     use crate::assert_approx_eq_low_prec;
-    use crate::core::matrix::{Matrix, Transform};
+    use crate::math::matrix::{Matrix, Transform};
 
     use super::*;
 

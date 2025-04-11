@@ -1,6 +1,6 @@
 pub mod approx_eq;
 
-pub mod core {
+pub mod math {
     pub mod color;
     pub mod matrix;
     pub mod point;

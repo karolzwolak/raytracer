@@ -1,5 +1,5 @@
 use crate::{
-    core::{matrix::Matrix, point::Point, tuple::Tuple},
+    math::{matrix::Matrix, point::Point, tuple::Tuple},
     render::{canvas::Canvas, ray::Ray},
 };
 
@@ -115,7 +115,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        core::{matrix::Transform, tuple::Tuple, vector::Vector, Color},
+        math::{matrix::Transform, tuple::Tuple, vector::Vector, Color},
         scene::Scene,
     };
 

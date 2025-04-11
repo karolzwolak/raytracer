@@ -16,13 +16,13 @@ use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use saphyr::Yaml;
 
-use crate::core::matrix::{
+use crate::math::matrix::{
     LocalTransform, LocalTransformation, LocalTransformations, Matrix, Transformation,
     Transformations,
 };
 use crate::scene::animation::{Animation, AnimationRepeat, Animations, TransformAnimation};
 use crate::{
-    core::{
+    math::{
         point::Point,
         tuple::{Axis, Tuple},
         vector::Vector,
@@ -882,7 +882,7 @@ mod tests {
     use std::{f64::consts::FRAC_PI_3, fmt::Debug, path::PathBuf};
 
     use crate::{
-        core::matrix::Transform,
+        math::matrix::Transform,
         scene::animation::{
             Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,
         },

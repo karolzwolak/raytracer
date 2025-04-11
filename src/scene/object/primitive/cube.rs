@@ -1,5 +1,5 @@
 use crate::{
-    core::{point::Point, tuple::Tuple, vector::Vector},
+    math::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
 };
 
@@ -67,7 +67,7 @@ impl UnitCube {
 #[cfg(test)]
 mod tests {
     use crate::{
-        core::{point::Point, tuple::Tuple, vector::Vector},
+        math::{point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
         Object, Shape,
     };

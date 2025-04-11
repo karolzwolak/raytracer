@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::{self, ApproxEq},
-    core::{point::Point, tuple::Tuple, vector::Vector},
+    math::{point::Point, tuple::Tuple, vector::Vector},
     render::{intersection::IntersectionCollector, ray::Ray},
 };
 
@@ -141,7 +141,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        core::{point::Point, tuple::Tuple, vector::Vector},
+        math::{point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
         Object, Shape,
     };

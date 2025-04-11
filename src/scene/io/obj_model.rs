@@ -3,7 +3,7 @@ use crate::Shape;
 use std::collections::HashMap;
 
 use crate::{
-    core::{point::Point, tuple::Tuple, vector::Vector},
+    math::{point::Point, tuple::Tuple, vector::Vector},
     ObjectGroup,
 };
 

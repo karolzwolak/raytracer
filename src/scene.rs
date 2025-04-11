@@ -11,7 +11,7 @@ use object::{group::ObjectGroup, PrimitiveObject};
 
 use crate::{
     approx_eq::ApproxEq,
-    core::{matrix::Matrix, point::Point, tuple::Tuple, Color},
+    math::{matrix::Matrix, point::Point, tuple::Tuple, Color},
     render::{canvas::Canvas, intersection::IntersectionCollector, ray::Ray},
     Material, Object, Pattern, PointLightSource, Shape,
 };
@@ -462,7 +462,7 @@ mod tests {
     use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
 
     use crate::{
-        assert_approx_eq_low_prec, core::vector::Vector, render::intersection::Intersection,
+        assert_approx_eq_low_prec, math::vector::Vector, render::intersection::Intersection,
         Material, Pattern, Shape,
     };
 

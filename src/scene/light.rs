@@ -33,8 +33,8 @@ mod tests {
 
     use crate::{
         assert_approx_eq_low_prec,
-        core::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
         light::schlick_reflectance,
+        math::{matrix::Matrix, point::Point, tuple::Tuple, vector::Vector},
         render::{intersection::IntersectionCollection, ray::Ray},
     };
 

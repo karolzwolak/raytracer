@@ -1,6 +1,6 @@
 use crate::{
     approx_eq::ApproxEq,
-    core::{
+    math::{
         matrix::{Matrix, Transform},
         point::Point,
         vector::Vector,
@@ -131,7 +131,7 @@ mod tests {
     use crate::{
         approx_eq::ApproxEq,
         assert_approx_eq_low_prec,
-        core::{point::Point, tuple::Tuple, vector::Vector},
+        math::{point::Point, tuple::Tuple, vector::Vector},
         render::{intersection::Intersection, ray::Ray},
         Object, Shape,
     };
