@@ -1,4 +1,4 @@
-- add: scene
+- options:
   max-reflective-depth: 10
   supersampling-level: 2
 
@@ -18,10 +18,9 @@
         - cyan
         - beige
       transform:
-      - [translate, 0.5, 0.5, 0.5]
-      - [rotate-y, FRAC_PI_4]
-      - [scale-uniform, 0.5]
-
+        - [translate, 0.5, 0.5, 0.5]
+        - [rotate-y, FRAC_PI_4]
+        - [scale-uniform, 0.5]
 
 - add: SCENE_LIGHT
 - add: SCENE_CAMERA
@@ -61,17 +60,17 @@
             - [translate, 0, 0, 2]
       children:
         # mid sphere
-      - add: sphere
-        material: GLASS_MATERIAL
-        # mid sphere air pocket
-      - add: sphere
-        animate: 
-          - duration: 2
-            direction: alternate-reverse
-            timing: ease
-            transform:
-              - [translate, 0, 1, 0]
-              - [scale-uniform, 0.1]
-        material: AIR_MATERIAL
-        transform:
-          - [scale-uniform, 0.6]
+        - add: sphere
+          material: GLASS_MATERIAL
+          # mid sphere air pocket
+        - add: sphere
+          animate:
+            - duration: 2
+              direction: alternate-reverse
+              timing: ease
+              transform:
+                - [translate, 0, 1, 0]
+                - [scale-uniform, 0.1]
+          material: AIR_MATERIAL
+          transform:
+            - [scale-uniform, 0.6]

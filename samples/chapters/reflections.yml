@@ -1,4 +1,4 @@
-- add: scene
+- options:
   max-reflective-depth: 8
 
 - define: gray

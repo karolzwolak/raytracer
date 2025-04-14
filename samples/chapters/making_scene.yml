@@ -1,4 +1,4 @@
-- add: scene
+- options:
   max-reflective-depth: 5
 
 - define: green1

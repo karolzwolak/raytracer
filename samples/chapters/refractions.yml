@@ -1,4 +1,4 @@
-- add: scene
+- options:
   max-reflective-depth: 8
 
 - define: cyan
@@ -17,10 +17,9 @@
         - cyan
         - beige
       transform:
-      - [translate, 0.5, 0.5, 0.5]
-      - [rotate-y, FRAC_PI_4]
-      - [scale-uniform, 0.5]
-
+        - [translate, 0.5, 0.5, 0.5]
+        - [rotate-y, FRAC_PI_4]
+        - [scale-uniform, 0.5]
 
 - add: SCENE_LIGHT
 - add: SCENE_CAMERA
