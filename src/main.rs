@@ -154,10 +154,13 @@ impl Config {
                     .map_err(|e| format!("Failed to build image config: {}", e))?,
             ),
             Command::Animate(animation_command) => {
-                let duration = animation_command.duration_sec.unwrap_or(
-                    yaml.animation_duration_sec
-                        .ok_or("Animation duration not specified")?,
-                );
+                let duration = match (animation_command.duration_sec, yaml.animation_duration_sec) {
+                    (Some(d), _) => d,
+                    (None, Some(d)) => d,
+                    (None, None) => {
+                        return Err("Animation duration not specified".to_string());
+                    }
+                };
                 let framerate = animation_command
                     .fps
                     .unwrap_or(yaml.animation_framerate.unwrap_or(DEFAULT_FPS));
