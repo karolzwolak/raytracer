@@ -72,6 +72,7 @@ impl Renderer {
 
     pub fn render(&mut self) -> Image {
         let now = std::time::Instant::now();
+        self.integrator.scene_mut().compute_bvh();
         println!("partitioning time: {:?}", now.elapsed());
 
         let mut image = self.camera.image();
