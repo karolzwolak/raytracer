@@ -215,8 +215,10 @@ impl Config {
     fn render(self, file: File) -> Result<(), String> {
         let integator = IntegratorBuilder::default()
             .max_recursive_depth(self.render_config.max_reflective_depth)
+            .scene(self.render_config.scene)
             .build()
             .map_err(|e| format!("Failed to build integrator: {}", e))?;
+
         let mut renderer = RendererBuilder::default()
             .supersampling_level(self.render_config.supersampling_level)
             .integrator(integator)
