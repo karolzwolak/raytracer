@@ -129,9 +129,6 @@ struct AnimationConfig {
 struct RenderConfig {
     supersampling_level: usize,
     max_reflective_depth: usize,
-
-    camera: Camera,
-    scene: Scene,
 }
 
 enum ConfigKind {
@@ -142,6 +139,8 @@ enum ConfigKind {
 struct Config {
     kind: ConfigKind,
     render_config: RenderConfig,
+    scene: Scene,
+    camera: Camera,
 }
 
 impl Config {
@@ -201,28 +200,28 @@ impl Config {
                         .unwrap_or(Renderer::MAX_RECURSIVE_DEPTH),
                 ),
             )
-            .camera(camera)
-            .scene(scene)
             .build()
             .map_err(|e| format!("Failed to build render config: {}", e))?;
 
         Ok(Self {
             kind,
             render_config,
+            camera,
+            scene,
         })
     }
 
     fn render(self, file: File) -> Result<(), String> {
         let integator = IntegratorBuilder::default()
             .max_recursive_depth(self.render_config.max_reflective_depth)
-            .scene(self.render_config.scene)
+            .scene(self.scene)
             .build()
             .map_err(|e| format!("Failed to build integrator: {}", e))?;
 
         let mut renderer = RendererBuilder::default()
             .supersampling_level(self.render_config.supersampling_level)
             .integrator(integator)
-            .camera(self.render_config.camera)
+            .camera(self.camera)
             .build()
             .map_err(|e| format!("Failed to build renderer: {}", e))?;
 
