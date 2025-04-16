@@ -6,7 +6,7 @@ use super::{
     Object,
 };
 use crate::{
-    math::matrix::{Matrix, Transform},
+    math::{matrix::Matrix, transform::Transform},
     render::ray::{
         intersection::{IntersectionCollection, IntersectionCollector},
         Ray,

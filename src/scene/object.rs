@@ -13,10 +13,7 @@ use primitive::shape::Shape;
 use super::animation::{Animations, Interpolate};
 use crate::{
     math::{
-        approx_eq::ApproxEq,
-        matrix::{Matrix, Transform},
-        point::Point,
-        tuple::Tuple,
+        approx_eq::ApproxEq, matrix::Matrix, point::Point, transform::Transform, tuple::Tuple,
         vector::Vector,
     },
     render::ray::{
@@ -312,14 +309,24 @@ impl Object {
 
 #[cfg(test)]
 impl Object {
+    #[cfg(test)]
     pub fn animated_testing() -> Self {
-        let animation = super::animation::Animation::default();
-        let transform = crate::math::matrix::LocalTransformation::Transformation(
-            crate::math::matrix::Transformation::Translation(1., 2., 3.),
-        );
-        let animations = Animations::with_vec(vec![super::animation::TransformAnimation::new(
+        use crate::{
+            math::transform::{
+                local_transform::{LocalTransformation, LocalTransformations},
+                Transformation,
+            },
+            scene::animation::Animation,
+        };
+
+        use super::animation::TransformAnimation;
+
+        let animation = Animation::default();
+        let transform =
+            LocalTransformation::Transformation(Transformation::Translation(1., 2., 3.));
+        let animations = Animations::with_vec(vec![TransformAnimation::new(
             animation,
-            crate::math::matrix::LocalTransformations::with_vec(vec![transform]),
+            LocalTransformations::with_vec(vec![transform]),
         )]);
 
         Self::animated(
@@ -454,7 +461,7 @@ mod tests {
     use super::*;
     use crate::{
         assert_approx_eq_low_prec,
-        math::{color::Color, matrix::LocalTransformations},
+        math::{color::Color, transform::local_transform::LocalTransformations},
         scene::animation::{Animation, TransformAnimation},
     };
 

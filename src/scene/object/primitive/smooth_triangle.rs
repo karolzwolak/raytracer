@@ -1,9 +1,6 @@
 use crate::{
     math::{
-        approx_eq::ApproxEq,
-        matrix::{Matrix, Transform},
-        point::Point,
-        vector::Vector,
+        approx_eq::ApproxEq, matrix::Matrix, point::Point, transform::Transform, vector::Vector,
     },
     render::ray::{
         intersection::{Intersection, IntersectionCollector},

@@ -1,10 +1,7 @@
 pub mod intersection;
 
 use crate::math::{
-    matrix::{Matrix, Transform},
-    point::Point,
-    tuple::Tuple,
-    vector::Vector,
+    matrix::Matrix, point::Point, transform::Transform, tuple::Tuple, vector::Vector,
 };
 
 #[derive(Clone, Default)]

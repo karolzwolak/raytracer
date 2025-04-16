@@ -1,10 +1,7 @@
 use std::{ops, str::FromStr};
 
 use crate::{
-    math::{
-        approx_eq::ApproxEq,
-        matrix::{LocalTransformations, Matrix},
-    },
+    math::{approx_eq::ApproxEq, matrix::Matrix, transform::local_transform::LocalTransformations},
     scene::object::bounding_box::Bounded,
 };
 
@@ -293,7 +290,7 @@ mod tests {
 
     use crate::{
         math::{
-            matrix::{Transform, Transformation, Transformations},
+            transform::{Transform, Transformation, Transformations},
             tuple::Axis,
         },
         scene::object::bounding_box::BoundingBox,

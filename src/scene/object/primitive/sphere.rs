@@ -42,10 +42,7 @@ mod tests {
     use crate::{
         assert_approx_eq_low_prec,
         math::{
-            approx_eq::ApproxEq,
-            matrix::{Matrix, Transform},
-            point::Point,
-            tuple::Tuple,
+            approx_eq::ApproxEq, matrix::Matrix, point::Point, transform::Transform, tuple::Tuple,
             vector::Vector,
         },
         render::ray::Ray,

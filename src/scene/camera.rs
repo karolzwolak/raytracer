@@ -229,7 +229,7 @@ mod tests {
     use crate::{
         assert_approx_eq_low_prec,
         math::{
-            approx_eq::ApproxEq, color::Color, matrix::Transform, tuple::Tuple, vector::Vector,
+            approx_eq::ApproxEq, color::Color, transform::Transform, tuple::Tuple, vector::Vector,
         },
         render::renderer::Renderer,
     };

@@ -1,5 +1,6 @@
-use super::matrix::{Matrix, Transform};
 use crate::math::approx_eq::ApproxEq;
+
+use super::{matrix::Matrix, transform::Transform};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Axis {

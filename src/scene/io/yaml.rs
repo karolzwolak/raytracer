@@ -7,11 +7,12 @@ use super::obj_model::ObjModelParser;
 use crate::{
     math::{
         color::Color,
-        matrix::{
-            LocalTransform, LocalTransformation, LocalTransformations, Matrix, Transformation,
-            Transformations,
-        },
+        matrix::Matrix,
         point::Point,
+        transform::{
+            local_transform::{LocalTransform, LocalTransformation, LocalTransformations},
+            Transformation, Transformations,
+        },
         tuple::{Axis, Tuple},
         vector::Vector,
     },
@@ -905,7 +906,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        math::matrix::Transform,
+        math::transform::Transform,
         scene::{
             animation::{
                 Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,

@@ -4,10 +4,7 @@ use super::{
     Object, ObjectKind,
 };
 use crate::{
-    math::{
-        matrix::{Matrix, Transform},
-        tuple::Axis,
-    },
+    math::{matrix::Matrix, transform::Transform, tuple::Axis},
     render::ray::{intersection::IntersectionCollector, Ray},
 };
 
@@ -265,8 +262,9 @@ mod tests {
         assert_approx_eq_low_prec,
         math::{
             approx_eq::ApproxEq,
-            matrix::{LocalTransformations, Matrix, Transformation},
+            matrix::Matrix,
             point::Point,
+            transform::{local_transform::LocalTransformations, Transformation},
             tuple::Tuple,
             vector::Vector,
         },

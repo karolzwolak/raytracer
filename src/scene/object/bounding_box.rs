@@ -7,8 +7,9 @@ use crate::{
     math::{
         approx_eq::ApproxEq,
         color::Color,
-        matrix::{Matrix, Transform},
+        matrix::Matrix,
         point::Point,
+        transform::Transform,
         tuple::{Axis, Tuple},
         vector::Vector,
     },
