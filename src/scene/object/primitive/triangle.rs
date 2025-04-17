@@ -2,7 +2,7 @@ use crate::{
     math::{
         approx_eq::ApproxEq, matrix::Matrix, point::Point, transform::Transform, vector::Vector,
     },
-    render::ray::{intersection::IntersectionCollector, Ray},
+    render::ray::{Ray, intersection::IntersectionCollector},
     scene::object::bounding_box::BoundingBox,
 };
 
@@ -110,8 +110,8 @@ mod tests {
         math::{approx_eq::ApproxEq, point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
         scene::object::{
-            primitive::{shape::Shape, triangle::Triangle},
             Object,
+            primitive::{shape::Shape, triangle::Triangle},
         },
     };
 
@@ -140,7 +140,7 @@ mod tests {
     fn finding_normal_on_triangle() {
         let t = get_triangle();
         let t_shape = match t.as_primitive().unwrap().shape() {
-            Shape::Triangle(ref triangle) => triangle.clone(),
+            Shape::Triangle(triangle) => triangle.clone(),
             _ => unreachable!(),
         };
 

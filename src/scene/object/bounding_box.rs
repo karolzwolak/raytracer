@@ -1,7 +1,7 @@
 use super::{
-    material::{pattern::Pattern, Material},
-    primitive::shape::Shape,
     Object,
+    material::{Material, pattern::Pattern},
+    primitive::shape::Shape,
 };
 use crate::{
     math::{

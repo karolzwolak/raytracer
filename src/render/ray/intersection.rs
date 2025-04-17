@@ -5,9 +5,9 @@ use crate::{
         vector::Vector,
     },
     scene::object::{
-        group::ObjectGroup,
-        material::{Material, AIR_REFRACTIVE_INDEX},
         Object,
+        group::ObjectGroup,
+        material::{AIR_REFRACTIVE_INDEX, Material},
     },
 };
 

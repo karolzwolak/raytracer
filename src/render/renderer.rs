@@ -2,7 +2,7 @@ use derive_builder::Builder;
 
 use crate::{
     math::color::Color,
-    scene::{camera::Camera, Scene},
+    scene::{Scene, camera::Camera},
     shading::integrator::Integrator,
 };
 

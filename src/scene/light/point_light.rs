@@ -85,9 +85,9 @@ mod tests {
         assert_approx_eq_low_prec,
         math::tuple::Tuple,
         scene::object::{
-            material::{pattern::Pattern, Material},
-            primitive::shape::Shape,
             PrimitiveObject,
+            material::{Material, pattern::Pattern},
+            primitive::shape::Shape,
         },
     };
 

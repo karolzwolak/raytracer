@@ -5,8 +5,8 @@ use super::{
 use crate::{
     math::{point::Point, vector::Vector},
     render::ray::{
-        intersection::{Intersection, IntersectionCollector},
         Ray,
+        intersection::{Intersection, IntersectionCollector},
     },
     scene::object::bounding_box::BoundingBox,
 };

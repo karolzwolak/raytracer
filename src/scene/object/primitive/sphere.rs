@@ -1,6 +1,6 @@
 use crate::{
     math::{point::Point, tuple::Tuple, vector::Vector},
-    render::ray::{intersection::IntersectionCollector, Ray},
+    render::ray::{Ray, intersection::IntersectionCollector},
     scene::object::bounding_box::BoundingBox,
 };
 
@@ -46,7 +46,7 @@ mod tests {
             vector::Vector,
         },
         render::ray::Ray,
-        scene::object::{primitive::shape::Shape, Object, PrimitiveObject},
+        scene::object::{Object, PrimitiveObject, primitive::shape::Shape},
     };
 
     #[test]

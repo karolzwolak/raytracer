@@ -3,13 +3,13 @@ use derive_builder::Builder;
 use crate::{
     math::{approx_eq::ApproxEq, color::Color, point::Point},
     render::ray::{
-        intersection::{IntersecComputations, IntersectionCollection, IntersectionCollector},
         Ray,
+        intersection::{IntersecComputations, IntersectionCollection, IntersectionCollector},
     },
     scene::{
+        Scene,
         light::{point_light::PointLightSource, schlick_reflectance},
         object::group::ObjectGroup,
-        Scene,
     },
 };
 
@@ -285,9 +285,9 @@ mod tests {
     use crate::{
         math::{matrix::Matrix, tuple::Tuple},
         scene::object::{
-            material::{pattern::Pattern, Material},
-            primitive::shape::Shape,
             Object,
+            material::{Material, pattern::Pattern},
+            primitive::shape::Shape,
         },
     };
     use std::f64::consts::{FRAC_1_SQRT_2, SQRT_2};
@@ -439,9 +439,11 @@ mod tests {
         let i = Intersection::new(SQRT_2, integrator.objects().children().last().unwrap());
         let comps = i.computations(&r);
 
-        assert!(integrator
-            .shade_hit(comps)
-            .approx_eq_low_prec(&Color::new(0.87677, 0.92436, 0.82918)));
+        assert!(
+            integrator
+                .shade_hit(comps)
+                .approx_eq_low_prec(&Color::new(0.87677, 0.92436, 0.82918))
+        );
     }
 
     #[test]

@@ -10,26 +10,26 @@ use crate::{
         matrix::Matrix,
         point::Point,
         transform::{
-            local_transform::{LocalTransform, LocalTransformation, LocalTransformations},
             Transformation, Transformations,
+            local_transform::{LocalTransform, LocalTransformation, LocalTransformations},
         },
         tuple::{Axis, Tuple},
         vector::Vector,
     },
     scene::{
+        ObjectGroup, PointLightSource, SceneBuilder,
         animation::{Animation, AnimationRepeat, Animations, TransformAnimation},
         camera::CameraBuilder,
         object::{
+            Object, ObjectKind, PrimitiveObject,
             bounding_box::BoundingBox,
             csg::{CsgObject, CsgOperation},
-            material::{pattern::Pattern, Material},
+            material::{Material, pattern::Pattern},
             primitive::{
                 cone::Cone, cylinder::Cylinder, shape::Shape, smooth_triangle::SmoothTriangle,
                 triangle::Triangle,
             },
-            Object, ObjectKind, PrimitiveObject,
         },
-        ObjectGroup, PointLightSource, SceneBuilder,
     },
 };
 
@@ -411,7 +411,7 @@ impl<'a> YamlParser<'a> {
 
         parse_optional_field!(self, body, res, "reflective", reflectivity);
         parse_optional_field!(self, body, res, reflectivity); // not a mistake, we permit both
-                                                              // names
+        // names
         parse_optional_field!(self, body, res, "refractive-index", refractive_index);
 
         Ok(res)
@@ -483,7 +483,7 @@ impl<'a> YamlParser<'a> {
             _ => {
                 return self
                     .parse_singular_transformation_literal(kind, values)
-                    .map(LocalTransformation::Transformation)
+                    .map(LocalTransformation::Transformation);
             }
         })
     }
@@ -783,12 +783,10 @@ impl<'a> YamlParser<'a> {
         Ok(match (define_yaml, use_yaml) {
             (&Yaml::BadValue, val) => val.clone(),
             (val, &Yaml::BadValue) => val.clone(),
-            (Yaml::Hash(ref define_hash), Yaml::Hash(ref use_hash)) => {
+            (Yaml::Hash(define_hash), Yaml::Hash(use_hash)) => {
                 return self.merge_hash(name, define_hash, use_hash);
             }
-            (Yaml::Array(ref define_array), Yaml::Array(ref use_array))
-                if key_str == "transform" =>
-            {
+            (Yaml::Array(define_array), Yaml::Array(use_array)) if key_str == "transform" => {
                 let mut new_array = define_array.clone();
                 new_array.extend(use_array.iter().cloned());
                 Yaml::Array(new_array)
@@ -908,11 +906,11 @@ mod tests {
     use crate::{
         math::transform::Transform,
         scene::{
+            Scene,
             animation::{
                 Animation, AnimationDirection, AnimationRepeat, AnimationTiming, TransformAnimation,
             },
             camera::Camera,
-            Scene,
         },
     };
 

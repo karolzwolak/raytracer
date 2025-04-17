@@ -91,11 +91,7 @@ impl Pattern {
 
             Pattern::Ring { c1, c2, .. } => {
                 let val = (point.x().powi(2) + point.z().powi(2)).sqrt().floor();
-                if (val % 2.).approx_eq(&0.) {
-                    *c1
-                } else {
-                    *c2
-                }
+                if (val % 2.).approx_eq(&0.) { *c1 } else { *c2 }
             }
 
             Pattern::Checkers { c1, c2, .. } => {

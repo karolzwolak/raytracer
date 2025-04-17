@@ -63,7 +63,7 @@ impl SceneBuilder {
     // Default testing scene without bvh
     pub fn default_builder_testing() -> Self {
         use object::{
-            material::{pattern::Pattern, Material},
+            material::{Material, pattern::Pattern},
             primitive::shape::Shape,
         };
 

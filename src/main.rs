@@ -9,9 +9,9 @@ use raytracer::{
         renderer::{Renderer, RendererBuilder},
     },
     scene::{
+        Scene,
         camera::Camera,
         io::yaml::{self, YamlSceneConfig},
-        Scene,
     },
     shading::integrator::IntegratorBuilder,
 };
@@ -259,7 +259,7 @@ fn render() -> Result<PathBuf, String> {
     let output_path = args.output_path.clone().unwrap_or_else(|| {
         let mut path = args.scene_file.clone();
         path = path.file_name().unwrap().into(); // If scene file is not a file, it would get
-                                                 // picked up before parsing
+        // picked up before parsing
         path.set_extension(args.command.extension());
         path
     });

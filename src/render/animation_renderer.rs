@@ -87,9 +87,11 @@ impl AnimationRenderer {
 
         // Spawn a thread to update the main progress bar's elapsed time
         let main_bar_clone = main_bar.clone();
-        thread::spawn(move || loop {
-            thread::sleep(Duration::from_millis(100));
-            main_bar_clone.tick();
+        thread::spawn(move || {
+            loop {
+                thread::sleep(Duration::from_millis(100));
+                main_bar_clone.tick();
+            }
         });
 
         let frame_duration = self.frame_duration();
@@ -185,7 +187,7 @@ mod tests {
     use crate::{
         math::approx_eq::ApproxEq,
         render::{animation_renderer::AnimationRenderer, renderer::RendererBuilder},
-        scene::{camera::Camera, Scene},
+        scene::{Scene, camera::Camera},
         shading::integrator::IntegratorBuilder,
     };
 

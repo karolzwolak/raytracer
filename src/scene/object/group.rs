@@ -1,11 +1,11 @@
 use super::{
+    Object, ObjectKind,
     bounding_box::{Bounded, BoundingBox},
     material::Material,
-    Object, ObjectKind,
 };
 use crate::{
     math::{matrix::Matrix, transform::Transform, tuple::Axis},
-    render::ray::{intersection::IntersectionCollector, Ray},
+    render::ray::{Ray, intersection::IntersectionCollector},
 };
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -264,18 +264,18 @@ mod tests {
             approx_eq::ApproxEq,
             matrix::Matrix,
             point::Point,
-            transform::{local_transform::LocalTransformations, Transformation},
+            transform::{Transformation, local_transform::LocalTransformations},
             tuple::Tuple,
             vector::Vector,
         },
-        render::ray::{intersection::IntersectionCollection, Ray},
+        render::ray::{Ray, intersection::IntersectionCollection},
         scene::{
             animation::{
                 Animation, AnimationDirection, AnimationRepeat, AnimationTiming, Animations,
                 TransformAnimation,
             },
             object::{
-                bounding_box::Bounded, primitive::shape::Shape, Object, ObjectKind, PrimitiveObject,
+                Object, ObjectKind, PrimitiveObject, bounding_box::Bounded, primitive::shape::Shape,
             },
         },
     };

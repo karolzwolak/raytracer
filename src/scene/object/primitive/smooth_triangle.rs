@@ -3,8 +3,8 @@ use crate::{
         approx_eq::ApproxEq, matrix::Matrix, point::Point, transform::Transform, vector::Vector,
     },
     render::ray::{
-        intersection::{Intersection, IntersectionCollector},
         Ray,
+        intersection::{Intersection, IntersectionCollector},
     },
     scene::object::bounding_box::BoundingBox,
 };
@@ -128,8 +128,8 @@ mod tests {
     use crate::{
         assert_approx_eq_low_prec,
         math::{approx_eq::ApproxEq, point::Point, tuple::Tuple, vector::Vector},
-        render::ray::{intersection::Intersection, Ray},
-        scene::object::{primitive::shape::Shape, Object},
+        render::ray::{Ray, intersection::Intersection},
+        scene::object::{Object, primitive::shape::Shape},
     };
 
     fn get_smooth_triangle() -> Object {

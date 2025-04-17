@@ -17,8 +17,8 @@ use crate::{
         vector::Vector,
     },
     render::ray::{
-        intersection::{Intersection, IntersectionCollection, IntersectionCollector},
         Ray,
+        intersection::{Intersection, IntersectionCollection, IntersectionCollector},
     },
 };
 
@@ -313,8 +313,8 @@ impl Object {
     pub fn animated_testing() -> Self {
         use crate::{
             math::transform::{
-                local_transform::{LocalTransformation, LocalTransformations},
                 Transformation,
+                local_transform::{LocalTransformation, LocalTransformations},
             },
             scene::animation::Animation,
         };

@@ -1,15 +1,15 @@
 use std::str::FromStr;
 
 use super::{
+    Object,
     bounding_box::{Bounded, BoundingBox},
     material::Material,
-    Object,
 };
 use crate::{
     math::{matrix::Matrix, transform::Transform},
     render::ray::{
-        intersection::{IntersectionCollection, IntersectionCollector},
         Ray,
+        intersection::{IntersectionCollection, IntersectionCollector},
     },
 };
 

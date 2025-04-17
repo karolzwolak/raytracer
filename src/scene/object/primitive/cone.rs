@@ -5,7 +5,7 @@ use crate::{
         tuple::Tuple,
         vector::Vector,
     },
-    render::ray::{intersection::IntersectionCollector, Ray},
+    render::ray::{Ray, intersection::IntersectionCollector},
     scene::object::bounding_box::BoundingBox,
 };
 
@@ -147,7 +147,7 @@ mod tests {
         math::{point::Point, tuple::Tuple, vector::Vector},
         render::ray::Ray,
         scene::object::primitive::cone::approx_eq::ApproxEq,
-        scene::object::{primitive::shape::Shape, Object},
+        scene::object::{Object, primitive::shape::Shape},
     };
 
     #[test]

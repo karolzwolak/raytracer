@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     math::{point::Point, tuple::Tuple, vector::Vector},
-    scene::object::{group::ObjectGroup, primitive::shape::Shape, Object},
+    scene::object::{Object, group::ObjectGroup, primitive::shape::Shape},
 };
 
 pub struct ObjModelParser {
