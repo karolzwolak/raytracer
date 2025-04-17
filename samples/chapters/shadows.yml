@@ -11,7 +11,7 @@
   intensity: WHITE
   at: [3, 1, 4]
 
-- add: camera
+- camera:
   fov: FRAC_PI_4
 
 # Background wall

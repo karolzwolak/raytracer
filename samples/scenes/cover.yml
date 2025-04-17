@@ -8,7 +8,7 @@
   to: [6, 0, 6]
   up: [-0.45, 1, 0]
 
-- add: world
+- add: scene
   max-reflective-depth: 4
   supersampling-level: 5
 

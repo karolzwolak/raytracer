@@ -1,8 +1,7 @@
-use crate::primitive::{
-    matrix::{Matrix, Transform},
-    point::Point,
-    tuple::Tuple,
-    vector::Vector,
+pub mod intersection;
+
+use crate::math::{
+    matrix::Matrix, point::Point, transform::Transform, tuple::Tuple, vector::Vector,
 };
 
 #[derive(Clone, Default)]
@@ -50,9 +49,11 @@ impl Ray {
 
 #[cfg(test)]
 mod tests {
-    use crate::{approx_eq::ApproxEq, assert_approx_eq_low_prec, primitive::tuple::Tuple};
-
     use super::*;
+    use crate::{
+        assert_approx_eq_low_prec,
+        math::{approx_eq::ApproxEq, tuple::Tuple},
+    };
 
     #[test]
     fn position() {
