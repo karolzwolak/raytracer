@@ -184,7 +184,7 @@ mod tests {
 
     use crate::{
         math::approx_eq::ApproxEq,
-        render::{animator::AnimationRenderer, renderer::RendererBuilder},
+        render::{animation_renderer::AnimationRenderer, renderer::RendererBuilder},
         scene::{camera::Camera, Scene},
         shading::integrator::IntegratorBuilder,
     };

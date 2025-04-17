@@ -4,7 +4,7 @@ use clap::{Args, Parser, Subcommand};
 use derive_builder::Builder;
 use raytracer::{
     render::{
-        animator::{AnimationFormat, AnimationRendererBuilder},
+        animation_renderer::{AnimationFormat, AnimationRendererBuilder},
         image::ImageFormat,
         renderer::{Renderer, RendererBuilder},
     },
