@@ -69,11 +69,11 @@ impl Integrator {
         self.color_at_depth(ray, 0)
     }
 
-    /// 0. means no shadow, 1. means full shadow
-    fn point_shadow_intensity(
+    /// Calculates occlusion based on intersections with objects in the scene.
+    fn occlusion_from_intersections(
         &self,
-        distance: f64,
         mut intersections: IntersectionCollection,
+        distance: f64,
     ) -> f64 {
         if !self.use_shadow_intensity {
             return match intersections.hit() {
@@ -88,9 +88,8 @@ impl Integrator {
             };
         }
 
-        // calculate shadow intensity by summation of transparency of all objects
-        // (1 - transparency to be exact)
-        let mut intensity = 0.;
+        // calculate occlusion by summing the transparencies of all objects
+        let mut occlusion = 0.;
         for inter in intersections.vec_sorted() {
             // skip intersections behind light source
             if inter.time() < 0. {
@@ -99,46 +98,35 @@ impl Integrator {
             if inter.time().approx_eq(&distance) || inter.time() > distance {
                 break;
             }
-            intensity += 1. - inter.object().material_unwrapped().transparency;
-            if intensity >= 1. {
+            occlusion += 1. - inter.object().material_unwrapped().transparency;
+            if occlusion >= 1. {
                 return 1.;
             }
         }
-        intensity
+        occlusion
     }
 
-    fn get_point_shadow_dist_ray(
-        &self,
-        light_source: &PointLightSource,
-        point: Point,
-    ) -> (f64, Ray) {
-        let v = light_source.position() - point;
-
-        let distance = v.magnitude();
-        let direction = v.normalize();
-
-        let ray = Ray::new(point, direction);
-
-        (distance, ray)
-    }
-
-    pub fn point_shadow_intensity_point(
-        &self,
-        light_source: &PointLightSource,
-        point: Point,
-    ) -> f64 {
-        let (distance, ray) = self.get_point_shadow_dist_ray(light_source, point);
+    /// Computes occlusion for the given point and light source position.
+    pub fn occlusion_for_points(&self, from: Point, light_position: Point) -> f64 {
+        let (dir, distance) = from.dir_and_dist_to(light_position);
+        let ray = Ray::new(from, dir);
         let intersections = self.intersect(ray);
 
-        self.point_shadow_intensity(distance, intersections)
+        self.occlusion_from_intersections(intersections, distance)
     }
 
-    fn point_shadow_intensity_comps(
+    pub fn occlusion_for_light(&self, from: Point, light_source: &PointLightSource) -> f64 {
+        let position = light_source.position();
+
+        self.occlusion_for_points(from, position)
+    }
+
+    fn occlusion_for_light_comps(
         &self,
-        light_source: &PointLightSource,
         comps: &IntersecComputations,
+        light_source: &PointLightSource,
     ) -> f64 {
-        let (dist, ray) = self.get_point_shadow_dist_ray(light_source, comps.over_point());
+        let (ray, dist) = comps.over_point().ray_and_dist_to(light_source.position());
         let mut collector =
             IntersectionCollector::with_dest_obj_shadow_intensity(comps.object(), dist);
 
@@ -205,7 +193,7 @@ impl Integrator {
                     hit_comps.over_point(),
                     hit_comps.eye_v(),
                     hit_comps.normal_v(),
-                    self.point_shadow_intensity_comps(light_source, &hit_comps),
+                    self.occlusion_for_light_comps(&hit_comps, light_source),
                 );
                 let reflected = self.reflected_color_at_depth(&hit_comps, depth);
                 let refracted = self.refracted_color_at_depth(&hit_comps, depth);
@@ -321,7 +309,7 @@ mod tests {
         let integrator = Integrator::default_testing(Scene::default_testing());
 
         assert_approx_eq_low_prec!(
-            integrator.point_shadow_intensity_point(&integrator.light_sources()[0], point),
+            integrator.occlusion_for_light(point, &integrator.light_sources()[0]),
             expected_intensity
         );
     }

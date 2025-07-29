@@ -4,7 +4,7 @@ use super::{
     tuple::{Axis, Tuple},
     vector::Vector,
 };
-use crate::math::approx_eq::ApproxEq;
+use crate::{math::approx_eq::ApproxEq, render::ray::Ray};
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Point {
@@ -70,6 +70,19 @@ impl Point {
             self.y.round() as usize,
             self.z.round() as usize,
         ))
+    }
+
+    /// Returns the direction vector from `self` to `to` and its magnitude.
+    pub fn dir_and_dist_to(&self, to: Point) -> (Vector, f64) {
+        let direction = to - *self;
+        let magnitude = direction.magnitude();
+
+        (direction.normalize(), magnitude)
+    }
+
+    pub fn ray_and_dist_to(&self, to: Point) -> (Ray, f64) {
+        let (direction, distance) = self.dir_and_dist_to(to);
+        (Ray::new(*self, direction), distance)
     }
 }
 
