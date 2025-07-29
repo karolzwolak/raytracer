@@ -675,4 +675,23 @@ mod tests {
         assert_eq!(builded, expected);
         assert_eq!(default, expected);
     }
+
+    #[test]
+    fn occlussion_between_2_points() {
+        let integrator = Integrator::default_testing(Scene::default_testing());
+        let light_position = Point::new(-10., -10., -10.);
+
+        let point_to_expected_res = vec![
+            (Point::new(-10., -10., -10.), 0.),
+            (Point::new(10., 10., 10.), 1.),
+            (Point::new(-20., -20., -20.), 0.),
+            (Point::new(-5., -5., -5.), 0.),
+        ];
+
+        for (point, expected) in point_to_expected_res {
+            let actual = integrator.occlusion_for_points(point, light_position);
+
+            assert_eq!(actual, expected, "Failed for point: {point:?}");
+        }
+    }
 }

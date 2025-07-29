@@ -83,7 +83,7 @@ mod tests {
     use super::*;
     use crate::{
         assert_approx_eq_low_prec,
-        math::tuple::Tuple,
+        math::{matrix::Matrix, tuple::Tuple},
         scene::object::{
             PrimitiveObject,
             material::{Material, pattern::Pattern},
@@ -200,5 +200,38 @@ mod tests {
             light.color_of_illuminated_point(&obj, Point::new(1.1, 0., 0.), eye_v, normal_v, 0.),
             Color::black()
         );
+    }
+
+    #[test]
+    fn shadow_intensity_affects_color() {
+        let light = PointLightSource::new(Point::new(0., 0., -10.), Color::white());
+
+        let sphere = Object::primitive(
+            Shape::Sphere,
+            Material {
+                pattern: Pattern::Const(Color::white()),
+                ambient: 0.1,
+                diffuse: 0.9,
+                specular: 0.,
+                ..Default::default()
+            },
+            Matrix::identity(),
+        );
+
+        let point = Point::new(0., 0., -1.);
+        let eye_v = Vector::new(0., 0., -1.);
+        let normal_v = Vector::new(0., 0., -1.);
+
+        let shadow_intensity_to_expected_color = vec![
+            (0.0, Color::white()),
+            (0.5, Color::new(0.55, 0.55, 0.55)),
+            (1.0, Color::new(0.1, 0.1, 0.1)),
+        ];
+
+        for (shadow_intensity, expected_color) in shadow_intensity_to_expected_color {
+            let color =
+                light.color_of_illuminated_point(&sphere, point, eye_v, normal_v, shadow_intensity);
+            assert_approx_eq_low_prec!(color, expected_color);
+        }
     }
 }
