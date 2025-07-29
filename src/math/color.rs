@@ -70,7 +70,7 @@ impl Color {
         let g = Self::scale_val_to_u8(self.g);
         let b = Self::scale_val_to_u8(self.b);
 
-        format!("{} {} {}", r, g, b)
+        format!("{r} {g} {b}")
     }
 }
 

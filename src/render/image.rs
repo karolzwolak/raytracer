@@ -133,9 +133,9 @@ impl Image {
                         if id == 0 && j == 0 {
                             val_str
                         } else if id == self.width * self.height - 1 && j == 2 {
-                            format!("{}{}\n", sep, val_str)
+                            format!("{sep}{val_str}\n")
                         } else {
-                            format!("{}{}", sep, val_str)
+                            format!("{sep}{val_str}")
                         }
                     })
                     .collect::<String>()

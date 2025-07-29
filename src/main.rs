@@ -150,7 +150,7 @@ impl Config {
                 ImageConfigBuilder::default()
                     .format(image_command.format)
                     .build()
-                    .map_err(|e| format!("Failed to build image config: {}", e))?,
+                    .map_err(|e| format!("Failed to build image config: {e}"))?,
             ),
             Command::Animate(animation_command) => {
                 let duration = match (animation_command.duration_sec, yaml.animation_duration_sec) {
@@ -168,7 +168,7 @@ impl Config {
                     .animation_duration_sec(duration)
                     .animation_framerate(framerate)
                     .build()
-                    .map_err(|e| format!("Failed to build animation config: {}", e))?;
+                    .map_err(|e| format!("Failed to build animation config: {e}"))?;
 
                 ConfigKind::Animation(animation_config)
             }
@@ -184,7 +184,7 @@ impl Config {
         let camera = yaml
             .camera_builder
             .build()
-            .map_err(|e| format!("Failed to build camera: {}", e))?;
+            .map_err(|e| format!("Failed to build camera: {e}"))?;
         let scene = yaml.scene_builder.build();
 
         let render_config = RenderConfigBuilder::default()
@@ -201,7 +201,7 @@ impl Config {
                 ),
             )
             .build()
-            .map_err(|e| format!("Failed to build render config: {}", e))?;
+            .map_err(|e| format!("Failed to build render config: {e}"))?;
 
         Ok(Self {
             kind,
@@ -216,14 +216,14 @@ impl Config {
             .max_recursive_depth(self.render_config.max_reflective_depth)
             .scene(self.scene)
             .build()
-            .map_err(|e| format!("Failed to build integrator: {}", e))?;
+            .map_err(|e| format!("Failed to build integrator: {e}"))?;
 
         let mut renderer = RendererBuilder::default()
             .supersampling_level(self.render_config.supersampling_level)
             .integrator(integator)
             .camera(self.camera)
             .build()
-            .map_err(|e| format!("Failed to build renderer: {}", e))?;
+            .map_err(|e| format!("Failed to build renderer: {e}"))?;
 
         match self.kind {
             ConfigKind::Animation(animation_config) => {
@@ -232,14 +232,14 @@ impl Config {
                     .duration_sec(animation_config.animation_duration_sec)
                     .framerate(animation_config.animation_framerate)
                     .build()
-                    .map_err(|e| format!("Failed to build animation renderer: {}", e))?;
+                    .map_err(|e| format!("Failed to build animation renderer: {e}"))?;
                 animation_rendrerer.render_to_file(file, animation_config.format);
             }
             ConfigKind::Image(image_config) => {
                 let image = renderer.render();
                 image
                     .save_to_file(file, image_config.format)
-                    .map_err(|e| format!("Failed to save image to file: {}", e))?;
+                    .map_err(|e| format!("Failed to save image to file: {e}"))?;
             }
         }
         Ok(())
@@ -248,9 +248,9 @@ impl Config {
 
 fn parse_yaml_scene(args: &Cli) -> Result<YamlSceneConfig, String> {
     let scene_source = std::fs::read_to_string(&args.scene_file)
-        .map_err(|e| format!("Failed to read scene file: {}", e))?;
+        .map_err(|e| format!("Failed to read scene file: {e}"))?;
 
-    yaml::parse_str(&scene_source).map_err(|e| format!("Failed to parse scene: {}", e))
+    yaml::parse_str(&scene_source).map_err(|e| format!("Failed to parse scene: {e}"))
 }
 
 fn render() -> Result<PathBuf, String> {
@@ -266,10 +266,10 @@ fn render() -> Result<PathBuf, String> {
     let yaml_config = parse_yaml_scene(&args)?;
 
     let config = Config::merge_from_cli_yaml(args, yaml_config)
-        .map_err(|e| format!("Failed parse config: {}", e))?;
+        .map_err(|e| format!("Failed parse config: {e}"))?;
 
     let file = std::fs::File::create(&output_path)
-        .map_err(|e| format!("Failed to create output file: {}", e))?;
+        .map_err(|e| format!("Failed to create output file: {e}"))?;
     config.render(file)?;
 
     Ok(output_path)
@@ -282,7 +282,7 @@ fn main() {
             println!("Rendered to {}", output_path.to_string_lossy());
         }
         Err(e) => {
-            eprintln!("{}", e);
+            eprintln!("{e}");
         }
     }
 }

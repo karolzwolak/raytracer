@@ -74,8 +74,7 @@ pub enum YamlParseError {
 impl YamlParseError {
     fn unsupported(feature: &str, _for: &str) -> Self {
         Self::UnsupportedFeature(format!(
-            "The feature `{}` is unsupported for `{}`.",
-            feature, _for
+            "The feature `{feature}` is unsupported for `{_for}`."
         ))
     }
 }
@@ -557,8 +556,7 @@ impl<'a> YamlParser<'a> {
                 .parse()
                 .map_err(|_| YamlParseError::UnknownVariant(val.to_owned())),
             _ => Err(YamlParseError::InvalidType(format!(
-                "{} must be a string",
-                key
+                "{key} must be a string"
             )))?,
         }
     }
@@ -971,7 +969,7 @@ mod tests {
                 if s.is_empty() {
                     String::new()
                 } else {
-                    format!("{}: {}", field, s)
+                    format!("{field}: {s}")
                 }
             })
             .collect::<Vec<String>>();
@@ -1878,7 +1876,7 @@ mod tests {
             let now = std::time::Instant::now();
             let path = scene.to_str().unwrap();
             let source = std::fs::read_to_string(path).unwrap();
-            let _ = parse_str(&source).unwrap_or_else(|_| panic!("Failed to parse {:?}", scene));
+            let _ = parse_str(&source).unwrap_or_else(|_| panic!("Failed to parse {scene:?}"));
             println!("Parsed {:?} in {:?}", scene, now.elapsed());
         });
     }

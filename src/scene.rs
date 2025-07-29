@@ -173,8 +173,7 @@ mod tests {
 
         assert_ne!(
             expected, wrong,
-            "The test logic is broken, expected == wrong; {:?}",
-            expected
+            "The test logic is broken, expected == wrong; {expected:?}"
         );
 
         assert_eq!(scene, expected);

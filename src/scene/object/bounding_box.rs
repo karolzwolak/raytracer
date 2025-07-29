@@ -362,7 +362,7 @@ mod tests {
         let mut bb = BoundingBox::empty();
         assert!(bb.is_empty());
         bb.add_point(Point::zero());
-        println!("{:?}", bb);
+        println!("{bb:?}");
         assert!(!bb.is_empty());
     }
 

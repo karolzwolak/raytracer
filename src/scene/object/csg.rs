@@ -41,7 +41,7 @@ impl FromStr for CsgOperation {
             "union" => Ok(CsgOperation::Union),
             "intersection" => Ok(CsgOperation::Intersection),
             "difference" => Ok(CsgOperation::Difference),
-            _ => Err(format!("Invalid CSG operation: {}", s)),
+            _ => Err(format!("Invalid CSG operation: {s}")),
         }
     }
 }
@@ -201,7 +201,7 @@ mod tests {
         expected.iter().for_each(|(input, expected)| {
             let input = bool_vec_to_intersection_kind(input);
             let result = operation.is_intersection_allowed(input);
-            assert_eq!(result, *expected, "input: {:?}", input);
+            assert_eq!(result, *expected, "input: {input:?}");
         });
     }
 
