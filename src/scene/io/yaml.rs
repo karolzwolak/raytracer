@@ -733,6 +733,7 @@ impl<'a> YamlParser<'a> {
 
     fn parse_add(&mut self, what: &str, body: &Yaml) -> YamlParseResult<()> {
         match what {
+            "camera" => self.parse_camera(body)?,
             "light" => {
                 let light = self.parse_light(body)?;
                 self.result.scene_builder.add_light_source(light);
@@ -1031,6 +1032,28 @@ mod tests {
 "#;
         let (_, camera) = parse(CAMERA_YAML);
         let expected_camera = Camera::new(100, 100, 0.785);
+        assert_eq!(camera, expected_camera);
+    }
+
+    #[test]
+    fn add_camera() {
+        const CAMERA_YAML: &str = r#"
+- add: camera
+  from: [0, 2.5, -10]
+  to: [0, 1, 0]
+  up: [0, 1, 0]
+  "#;
+        let (_, camera) = parse(CAMERA_YAML);
+        let expected_camera = Camera::with_transformation(
+            WIDTH,
+            HEIGHT,
+            FOV,
+            Matrix::view_tranformation(
+                Point::new(0., 2.5, -10.),
+                Point::new(0., 1., 0.),
+                Vector::new(0., 1., 0.),
+            ),
+        );
         assert_eq!(camera, expected_camera);
     }
 
