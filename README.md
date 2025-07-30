@@ -254,7 +254,7 @@ Example usage:
 
 ### Notable Examples
 
-- [Rotating dragon animation](samples/animations/dragon.yml)
+- [Rotating dragon animation](samples/animations/rotating_dragon.yml)
 - [Glass sphere scene](samples/scenes/glass_sphere.yml)
 - [Refraction demo](samples/scenes/refractions.yml)
 
