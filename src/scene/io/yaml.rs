@@ -64,7 +64,7 @@ pub enum YamlParseError {
     InvalidType(String),
     YamlSyntaxError(String),
     MultipleDocuments,
-    FileReadError,
+    FileReadError(String),
     ObjParsingError,
     InternalError,
     UnsupportedFeature(String),
@@ -213,6 +213,14 @@ macro_rules! rotation_transformation {
             Ok(Transformation::Rotation($axis, $values[0]))
         }
     };
+}
+
+impl<'a> YamlParser<'a> {
+    fn file_read_error(path: &str, err: std::io::Error) -> YamlParseError {
+        YamlParseError::FileReadError(format!(
+            "Failed to read file specified in the scene (`{path}`): {err}"
+        ))
+    }
 }
 
 impl<'a> YamlParser<'a> {
@@ -539,7 +547,7 @@ impl<'a> YamlParser<'a> {
 
     fn parse_obj_model(&self, body: &Yaml) -> YamlParseResult<ObjectGroup> {
         let file = body["file"].as_str().ok_or(YamlParseError::MissingField)?;
-        let data = std::fs::read_to_string(file).map_err(|_| YamlParseError::FileReadError)?;
+        let data = std::fs::read_to_string(file).map_err(|err| Self::file_read_error(file, err))?;
         let parser = ObjModelParser::new();
         parser
             .parse(data)
@@ -1867,6 +1875,25 @@ mod tests {
                 .material_unwrapped()
                 .clone()
         });
+    }
+
+    #[test]
+    fn bad_file_in_scene() {
+        let source = r#"
+- add: obj
+  file: {}
+    "#;
+        let non_existent_file = "non_existent_file.obj";
+        assert!(
+            !PathBuf::from(non_existent_file).exists(),
+            "Test file should not exist"
+        );
+        let source = source.replace("{}", non_existent_file);
+        let res = parse_str(&source);
+        assert!(
+            matches!(res, Err(YamlParseError::FileReadError(_)),),
+            "{res:?}"
+        );
     }
 
     fn get_sample_scenes() -> Vec<PathBuf> {
