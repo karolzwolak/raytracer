@@ -1,6 +1,7 @@
 use std::{
     fs::File,
     path::{Path, PathBuf},
+    process::ExitCode,
 };
 
 use clap::{Args, Parser, Subcommand};
@@ -325,14 +326,16 @@ fn render() -> Result<PathBuf, String> {
     Ok(output_path)
 }
 
-fn main() {
+fn main() -> ExitCode {
     let res = render();
     match res {
         Ok(output_path) => {
             println!("Rendered to {}", output_path.to_string_lossy());
+            ExitCode::SUCCESS
         }
         Err(e) => {
             eprintln!("{e}");
+            ExitCode::FAILURE
         }
     }
 }
