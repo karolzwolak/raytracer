@@ -58,16 +58,24 @@ cargo run -r -- samples/animations/sphere.yml animate -d 2
 
 ```
 Simple raytracer that renders yaml scenes. Supports basic shapes and materials and .obj models. Can render single images and animations
+
 Usage: raytracer [OPTIONS] <SCENE_FILE> <COMMAND>
+
 Commands:
   image    Render a single image
   animate  Render an animation. Use `animate` field on an object to add animation to it
   help     Print this message or the help of the given subcommand(s)
+
 Arguments:
   <SCENE_FILE>  The scene file to render
+
 Options:
-  -o, --output-path <OUTPUT_PATH>
-          The output path of the rendered image. By default it's `./<scene_filename>.<image_format>`
+      --help
+          Print help information
+  -d, --output-dir <OUTPUT_DIR>
+          The output directory of the rendered image. The output file will have following path: `<output_dir>/<scene_filename>.<image_format>`. This cannot be used with `--output-file`. The directory will be created if it does not exist
+  -o, --output-file <OUTPUT_FILE>
+          The output path of the rendered image. This cannot be used with `--output-dir`
   -w, --width <WIDTH>
           Width (in pixels) of the output image.
           Overrides the one in the scene file. If not specified anywhere, defaults to 800
@@ -76,12 +84,10 @@ Options:
           Overrides the one in the scene file. If not specified anywhere, defaults to 800
       --fov <FOV>
           Field of view of the camera in radians. Overrides the one in the scene file. If not specified anywhere, defaults to π/3
-  -d, --depth <DEPTH>
+      --depth <DEPTH>
           Maximum number of times a ray can bounce (change direction). Direction change occurs when a ray hits a reflective or refractive surface. Overrides the one in the scene file
   -s, --supersampling-level <SUPERSAMPLING_LEVEL>
           Controls how many rays are shot per pixel. In other words, the quality of the anti-aliasing (supersampling). Overrides the one in the scene file
-  -h, --help
-          Print help
 ```
 
 ### Rendering images

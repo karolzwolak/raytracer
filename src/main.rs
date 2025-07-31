@@ -1,4 +1,7 @@
-use std::{fs::File, path::PathBuf};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use clap::{Args, Parser, Subcommand};
 use derive_builder::Builder;
@@ -79,10 +82,18 @@ struct Cli {
     /// The scene file to render.
     scene_file: PathBuf,
 
+    /// The output directory of the rendered image.
+    /// The output file will have following path:
+    /// `<output_dir>/<scene_filename>.<image_format>`.
+    /// This cannot be used with `--output-file`.
+    /// The directory will be created if it does not exist.
+    #[clap(short = 'd', long, conflicts_with = "output_file")]
+    output_dir: Option<PathBuf>,
+
     /// The output path of the rendered image.
-    /// By default it's `./<scene_filename>.<image_format>`.
-    #[clap(short, long)]
-    output_path: Option<PathBuf>,
+    /// This cannot be used with `--output-dir`.
+    #[clap(short, long, conflicts_with = "output_dir")]
+    output_file: Option<PathBuf>,
 
     /// Width (in pixels) of the output image.
     #[clap(short, long, help = format!("Width (in pixels) of the output image.
@@ -103,7 +114,7 @@ Overrides the one in the scene file. If not specified anywhere, defaults to {}",
     /// Maximum number of times a ray can bounce (change direction).
     /// Direction change occurs when a ray hits a reflective or refractive surface.
     /// Overrides the one in the scene file.
-    #[clap(short, long)]
+    #[clap(long)]
     depth: Option<usize>,
 
     /// Controls how many rays are shot per pixel.
@@ -111,6 +122,48 @@ Overrides the one in the scene file. If not specified anywhere, defaults to {}",
     /// Overrides the one in the scene file.
     #[clap(short, long)]
     supersampling_level: Option<usize>,
+}
+
+impl Cli {
+    fn generate_output_path_for_dir(
+        output_dir: &Path,
+        scene_file: &Path,
+        image_format: &str,
+    ) -> PathBuf {
+        let scene_filename = scene_file
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("scene");
+        output_dir.join(format!("{scene_filename}.{image_format}"))
+    }
+
+    fn output_path(&self) -> Result<PathBuf, String> {
+        if let Some(output_file) = &self.output_file {
+            return Ok(output_file.clone());
+        }
+        let output_dir = self.output_dir.as_deref().unwrap_or(Path::new("."));
+
+        if !output_dir.exists() {
+            std::fs::create_dir_all(output_dir)
+                .map_err(|e| format!("Failed to create output directory: {e}"))?;
+        }
+
+        if !output_dir.is_dir() {
+            return Err(format!(
+                "Output directory '{}' is not a directory.",
+                output_dir.to_string_lossy()
+            ));
+        }
+
+        let scene_file = &self.scene_file;
+        let image_format = self.command.extension();
+
+        Ok(Self::generate_output_path_for_dir(
+            output_dir,
+            scene_file,
+            &image_format,
+        ))
+    }
 }
 
 #[derive(Debug, PartialEq, Builder)]
@@ -256,13 +309,10 @@ fn parse_yaml_scene(args: &Cli) -> Result<YamlSceneConfig, String> {
 fn render() -> Result<PathBuf, String> {
     let args = Cli::parse();
 
-    let output_path = args.output_path.clone().unwrap_or_else(|| {
-        let mut path = args.scene_file.clone();
-        path = path.file_name().unwrap().into(); // If scene file is not a file, it would get
-        // picked up before parsing
-        path.set_extension(args.command.extension());
-        path
-    });
+    let output_path = args
+        .output_path()
+        .map_err(|e| format!("Failed to get output path: {e}"))?;
+
     let yaml_config = parse_yaml_scene(&args)?;
 
     let config = Config::merge_from_cli_yaml(args, yaml_config)
