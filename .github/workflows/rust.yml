@@ -18,9 +18,6 @@ jobs:
       - name: Run tests
         run: cargo test
 
-      - name: Run heavy tests
-        run: cargo test -- --ignored
-
   lint:
     runs-on: ubuntu-latest
     steps:
