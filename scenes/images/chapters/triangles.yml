@@ -17,7 +17,7 @@
         - [scale-uniform, 0.125]
 
 - add: obj
-  file: samples/obj/dragon.obj
+  file: ../../obj_models/dragon.obj
   transform:
     - [normalize-all-axes]
     - [center]

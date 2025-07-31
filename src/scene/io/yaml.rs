@@ -938,9 +938,9 @@ pub fn parse_file(source: &str, input_path: &Path) -> YamlParserOutput {
 #[cfg(test)]
 mod tests {
     const SAMPLE_SCENES_DIRS: [&str; 3] = [
-        "samples/chapters/",
-        "samples/scenes/",
-        "samples/animations/",
+        "scenes/chapters/",
+        "scenes/scenes/",
+        "scenes/animations/general/",
     ];
 
     use std::{f64::consts::FRAC_PI_3, fmt::Debug, path::PathBuf};
@@ -1306,13 +1306,14 @@ mod tests {
 
     #[test]
     fn parse_obj() {
+        let path = "scenes/obj_models/teapot-low.obj";
         const OBJ_YAML: &str = r#"
 - add: obj
-  file: samples/obj/teapot-low.obj
+  file: {}
 "#;
-        let (scene, _) = test_parse(OBJ_YAML);
+        let source = OBJ_YAML.replace("{}", path);
+        let (scene, _) = test_parse(&source);
         let parser = ObjModelParser::new();
-        let path = "samples/obj/teapot-low.obj";
         let data = std::fs::read_to_string(path).unwrap();
         let expected_group = parser.parse(data).unwrap();
         assert_eq!(

@@ -16,15 +16,15 @@ A high-performance raytracer written in Rust that renders 3D scenes defined in Y
 
 ## Sample Renders
 
-| Description          | Image                                                              |
-| -------------------- | ------------------------------------------------------------------ |
-| Cover image          | ![Cover image](samples/renders/cover.png)                          |
-| Rotating dragon      | ![Rotating dragon](samples/renders/rotating_dragon.webp)           |
-| Animated lens        | ![Animated lens](samples/renders/csg.webp)                         |
-| Animated refractions | ![Animated refractions](samples/renders/animated_refractions.webp) |
-| Refraction example   | ![Refraction chapter](samples/renders/refractions.png)             |
-| Cubes scene          | ![Cubes chapter](samples/renders/cubes.png)                        |
-| Dragon models        | ![Dragons](samples/renders/dragons.png)                            |
+| Description          | Image                                                                 |
+| -------------------- | --------------------------------------------------------------------- |
+| Cover image          | ![Cover image](renders/images/cover.png)                              |
+| Rotating dragon      | ![Rotating dragon](renders/animations/rotating_dragon.webp)           |
+| Animated lens        | ![Animated lens](renders/animations/csg.webp)                         |
+| Animated refractions | ![Animated refractions](renders/animations/animated_refractions.webp) |
+| Refraction example   | ![Refraction chapter](renders/images/refractions.png)                 |
+| Cubes scene          | ![Cubes chapter](renders/images/cubes.png)                            |
+| Dragon models        | ![Dragons](renders/images/dragons.png)                                |
 
 ## Installation
 
@@ -45,13 +45,13 @@ cargo build --release
 Render a single image:
 
 ```bash
-cargo run -r -- samples/scenes/dragon.yml image
+cargo run -r -- scenes/scenes/dragon.yml image
 ```
 
 Render an animation:
 
 ```bash
-cargo run -r -- samples/animations/sphere.yml animate
+cargo run -r -- scenes/animations/general/sphere.yml animate -d 2
 ```
 
 ### General usage
@@ -268,9 +268,9 @@ Example usage:
 
 ### Notable Examples
 
-- [Rotating dragon animation](samples/animations/rotating_dragon.yml)
-- [Glass sphere scene](samples/scenes/glass_sphere.yml)
-- [Refraction demo](samples/scenes/refractions.yml)
+- [Rotating dragon animation](scenes/animations/general/rotating_dragon.yml)
+- [Glass sphere scene](scenes/scenes/glass_sphere.yml)
+- [Refraction demo](scenes/scenes/refractions.yml)
 
 ## Configuration
 
