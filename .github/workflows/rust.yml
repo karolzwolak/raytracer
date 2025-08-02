@@ -29,7 +29,7 @@ jobs:
           sudo apt-get install -y libfontconfig-dev
 
       - name: Install ssimulacra2_rs
-        run: cargo install ssimulacra2_rs
+        run: cargo install ssimulacra2_rs --no-default-features
 
       - name: Check ssimulacra2_rs
         run: ssimulacra2_rs --help
