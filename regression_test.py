@@ -162,13 +162,13 @@ def main():
                     )
                     print_exception(e)
 
-        print_summary(summary)
+        passed = print_summary(summary)
 
         # Clean up temporary files
         if not skip_comparison:
             shutil.rmtree(output_dir)
 
-        if summary["render_failures"] or summary["regressions"]:
+        if not passed:
             return TEST_FAILED_CODE
         return 0
 
@@ -659,7 +659,8 @@ def print_summary(summary):
     print(format_color("=" * 50, Color.MAGENTA))
 
     # Final status
-    if passed == total:
+    all_passed = passed == total
+    if all_passed:
         final_msg = "ALL TESTS PASSED"
         color = Color.GREEN
     else:
@@ -668,6 +669,8 @@ def print_summary(summary):
 
     print(format_color(f"\n{final_msg}", color + Color.BOLD))
     print(format_color("=" * 50, Color.MAGENTA))
+
+    return all_passed
 
 
 if __name__ == "__main__":
