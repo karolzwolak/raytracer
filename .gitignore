@@ -4,7 +4,9 @@
 *.gif
 *.mp4
 *.webp
-!/samples/renders/*
+!/scenes/**
+!/tests_golden_renders/**
+!/showcase_renders/*
 *.svg
 perf*
 /images
