@@ -57,7 +57,7 @@ def main():
     parser.add_argument("command", choices=["test", "render"], help="Subcommand to run")
     parser.add_argument(
         "--output-dir",
-        default="renders",
+        default=GOLDEN_DIR,
         help="Output directory for renders (default: renders)",
     )
     output_group = parser.add_mutually_exclusive_group()
@@ -322,13 +322,14 @@ def render_test(
     print(format_color(f"Command: {' '.join(cmd)}", Color.CYAN))
     print(format_color("=" * 50, Color.MAGENTA))
 
-    # Compute golden_path and check existence
-    golden_path = os.path.join(GOLDEN_DIR, f"{scene_name}{config['ext']}")
-    if not os.path.exists(golden_path):
-        return {
-            "type": "missing_reference",
-            "message": "Missing golden reference",
-        }
+    golden_path = None
+    if not skip_comparison:
+        golden_path = os.path.join(GOLDEN_DIR, f"{scene_name}{config['ext']}")
+        if not os.path.exists(golden_path):
+            return {
+                "type": "missing_reference",
+                "message": "Missing golden reference",
+            }
 
     start_time = time.time()
 
