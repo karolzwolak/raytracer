@@ -1,4 +1,9 @@
-use std::{collections::HashMap, fmt::Display, str::FromStr};
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use derive_builder::Builder;
 use saphyr::Yaml;
@@ -158,6 +163,7 @@ const PREDEFINED_DEFINES: &str = r#"
 // TODO: Actual errors
 pub struct YamlParser<'a> {
     yaml: &'a Yaml,
+    input_path: Option<&'a Path>,
     result: YamlSceneConfigBuilder,
     defines: HashMap<String, Yaml>,
 }
@@ -216,26 +222,35 @@ macro_rules! rotation_transformation {
 }
 
 impl<'a> YamlParser<'a> {
-    fn file_read_error(path: &str, err: std::io::Error) -> YamlParseError {
+    fn file_read_error(&self, og_path: &str, path: &Path, err: std::io::Error) -> YamlParseError {
+        let warning = if path.is_absolute() {
+            ""
+        } else {
+            ".The path is relative, so it was resolved relative to the input file."
+        };
+        let scene_path = self.input_path.unwrap_or(Path::new(".")).to_string_lossy();
+        let path = path.to_string_lossy();
+
         YamlParseError::FileReadError(format!(
-            "Failed to read file specified in the scene (`{path}`): {err}"
+            "Failed to read file `{path}`. Resolved from `{og_path}` specified in the scene `{scene_path}` : `{err}`{warning}"
         ))
     }
 }
 
 impl<'a> YamlParser<'a> {
-    fn new(yaml: &'a Yaml, defines: HashMap<String, Yaml>) -> Self {
+    fn new(yaml: &'a Yaml, input_path: Option<&'a Path>, defines: HashMap<String, Yaml>) -> Self {
         Self {
             yaml,
+            input_path,
             result: YamlSceneConfigBuilder::default(),
             defines,
         }
     }
-    pub fn with_predefined_defines(yaml: &'a Yaml) -> Self {
+    pub fn with_predefined_defines(yaml: &'a Yaml, input_path: Option<&'a Path>) -> Self {
         let parsed = saphyr::Yaml::load_from_str(PREDEFINED_DEFINES).unwrap();
         let predefined = parsed.first().unwrap();
 
-        let mut predefined_parser = YamlParser::new(predefined, HashMap::new());
+        let mut predefined_parser = YamlParser::new(predefined, None, HashMap::new());
         predefined_parser
             .parse()
             .expect("Error parsing predefined defines");
@@ -244,6 +259,7 @@ impl<'a> YamlParser<'a> {
         YamlParser {
             yaml,
             result: YamlSceneConfigBuilder::default(),
+            input_path,
             ..predefined_parser
         }
     }
@@ -545,9 +561,22 @@ impl<'a> YamlParser<'a> {
             .map(ObjectGroup::new)
     }
 
+    fn resolve_path_from_scene(&self, path: &Path) -> PathBuf {
+        let input_dir = match self.input_path {
+            Some(input_path) => input_path.parent().unwrap_or_else(|| Path::new(".")),
+            None => Path::new("."),
+        };
+
+        input_dir.join(PathBuf::from(path))
+    }
+
     fn parse_obj_model(&self, body: &Yaml) -> YamlParseResult<ObjectGroup> {
-        let file = body["file"].as_str().ok_or(YamlParseError::MissingField)?;
-        let data = std::fs::read_to_string(file).map_err(|err| Self::file_read_error(file, err))?;
+        let file_path = body["file"].as_str().ok_or(YamlParseError::MissingField)?;
+        let path = self.resolve_path_from_scene(&PathBuf::from(file_path));
+
+        let data = std::fs::read_to_string(&path)
+            .map_err(|err| self.file_read_error(file_path, &path, err))?;
+
         let parser = ObjModelParser::new();
         parser
             .parse(data)
@@ -892,11 +921,15 @@ impl YamlParser<'_> {
     }
 }
 
-pub fn parse_str(source: &str) -> YamlParserOutput {
+fn parse(source: &str, input_path: Option<&Path>) -> YamlParserOutput {
     let yaml = YamlParser::str_to_yaml(source)?;
-    let parser = YamlParser::with_predefined_defines(&yaml);
+    let parser = YamlParser::with_predefined_defines(&yaml, input_path);
 
     parser.parse_consume()
+}
+
+pub fn parse_file(source: &str, input_path: &Path) -> YamlParserOutput {
+    parse(source, Some(input_path))
 }
 
 #[cfg(test)]
@@ -925,7 +958,11 @@ mod tests {
     const HEIGHT: usize = 800;
     const FOV: f64 = std::f64::consts::PI / 2.0;
 
-    fn parse(source: &str) -> (Scene, Camera) {
+    fn parse_str(source: &str) -> YamlParserOutput {
+        parse(source, None)
+    }
+
+    fn test_parse(source: &str) -> (Scene, Camera) {
         let mut config = parse_str(source).unwrap();
         config
             .camera_builder
@@ -952,7 +989,7 @@ mod tests {
             .into_iter()
             .map(|s| source.replace("{}", &s.to_string()))
             .collect::<String>();
-        let (scene, _) = parse(&source);
+        let (scene, _) = test_parse(&source);
         let actual = scene
             .objects()
             .children()
@@ -987,14 +1024,14 @@ mod tests {
 
     #[test]
     fn empty_yaml() {
-        let (scene, camera) = parse("");
+        let (scene, camera) = test_parse("");
         assert_eq!(scene, Scene::default());
         assert_eq!(camera, Camera::new(WIDTH, HEIGHT, FOV));
     }
     #[test]
     fn comments_are_supported() {
         let source = "#comment";
-        let _ = parse(source);
+        let _ = test_parse(source);
     }
 
     #[test]
@@ -1004,7 +1041,7 @@ mod tests {
   at: [ 50, 100, -50 ]
   intensity: [ 1, 1, 1]
 "#;
-        let (scene, _) = parse(LIGHT_YAML);
+        let (scene, _) = test_parse(LIGHT_YAML);
         let expected_light = PointLightSource::new(Point::new(50., 100., -50.), Color::white());
         assert_eq!(scene.light_sources().first(), Some(&expected_light));
     }
@@ -1020,7 +1057,7 @@ mod tests {
   to: [ 6, 0, 6 ]
   up: [ -0.45, 1, 0 ]
 "#;
-        let (_, camera) = parse(CAMERA_YAML);
+        let (_, camera) = test_parse(CAMERA_YAML);
         let view = Matrix::view_tranformation(
             Point::new(-6., 6., -10.),
             Point::new(6., 0., 6.),
@@ -1038,7 +1075,7 @@ mod tests {
   height: 100
   field-of-view: 0.785
 "#;
-        let (_, camera) = parse(CAMERA_YAML);
+        let (_, camera) = test_parse(CAMERA_YAML);
         let expected_camera = Camera::new(100, 100, 0.785);
         assert_eq!(camera, expected_camera);
     }
@@ -1051,7 +1088,7 @@ mod tests {
   to: [0, 1, 0]
   up: [0, 1, 0]
   "#;
-        let (_, camera) = parse(CAMERA_YAML);
+        let (_, camera) = test_parse(CAMERA_YAML);
         let expected_camera = Camera::with_transformation(
             WIDTH,
             HEIGHT,
@@ -1090,7 +1127,7 @@ mod tests {
     - [ rotate-x, 1.5707963267948966 ] # pi/2
     - [ translate, 0, 0, 500 ]
 "#;
-        let (scene, _) = parse(PLANE_YAML);
+        let (scene, _) = test_parse(PLANE_YAML);
         let expected_material = Material {
             pattern: Pattern::Const(Color::white()),
             ambient: 1.,
@@ -1112,7 +1149,7 @@ mod tests {
         const DEFAULT_SPHERE_YAML: &str = r#"
 - add: sphere
 "#;
-        let (scene, _) = parse(DEFAULT_SPHERE_YAML);
+        let (scene, _) = test_parse(DEFAULT_SPHERE_YAML);
         let sphere = Object::primitive(Shape::Sphere, Material::default(), Matrix::identity());
         assert_eq!(scene.objects().children(), vec![sphere]);
     }
@@ -1131,7 +1168,7 @@ mod tests {
     transparency: 0.7
     refractive-index: 1.5
 "#;
-        let (scene, _) = parse(SPHERE_YAML);
+        let (scene, _) = test_parse(SPHERE_YAML);
         let expected_material = Material {
             pattern: Pattern::Const(Color::new(0.373, 0.404, 0.550)),
             ambient: 0.,
@@ -1164,7 +1201,7 @@ mod tests {
 - add: cube
   material: blue-material
 "#;
-        let (scene, _) = parse(DEFINE_MATERIALS_YAML);
+        let (scene, _) = test_parse(DEFINE_MATERIALS_YAML);
         let white_material = Material {
             pattern: Pattern::Const(Color::white()),
             diffuse: 0.7,
@@ -1200,7 +1237,7 @@ mod tests {
   transform: 
     - large-object
 "#;
-        let (scene, _) = parse(DEFINE_TRANSFORMS_YAML);
+        let (scene, _) = test_parse(DEFINE_TRANSFORMS_YAML);
         let standard_transform = Matrix::translation(1., -1., 1.)
             .scale(0.5, 0.5, 0.5)
             .transformed();
@@ -1225,7 +1262,7 @@ mod tests {
       material:
         color: [ 0, 1, 0 ]
 "#;
-        let (scene, _) = parse(GROUP_YAML);
+        let (scene, _) = test_parse(GROUP_YAML);
         let red_material = Material {
             pattern: Pattern::Const(Color::red()),
             ..Material::default()
@@ -1270,7 +1307,7 @@ mod tests {
 - add: obj
   file: samples/obj/teapot-low.obj
 "#;
-        let (scene, _) = parse(OBJ_YAML);
+        let (scene, _) = test_parse(OBJ_YAML);
         let parser = ObjModelParser::new();
         let path = "samples/obj/teapot-low.obj";
         let data = std::fs::read_to_string(path).unwrap();
@@ -1291,7 +1328,7 @@ mod tests {
   material:
     color: [ 1, 0, 0 ]
 "#;
-        let (scene, _) = parse(USE_DEFINE_IN_ADD_YAML);
+        let (scene, _) = test_parse(USE_DEFINE_IN_ADD_YAML);
         let red_material = Material {
             pattern: Pattern::Const(Color::red()),
             ..Material::default()
@@ -1311,7 +1348,7 @@ mod tests {
     color: red
 "#;
 
-        let (scene, _) = parse(DEFINE_COLOR_YAML);
+        let (scene, _) = test_parse(DEFINE_COLOR_YAML);
         let red_material = Material {
             pattern: Pattern::Const(Color::red()),
             ..Material::default()
@@ -1330,7 +1367,7 @@ mod tests {
   closed: true
 "#;
 
-        let (scene, _) = parse(CYLINDER_YAML);
+        let (scene, _) = test_parse(CYLINDER_YAML);
         let cylinder_shape = Cylinder::new(1., 5., true);
         let expected_object = Object::primitive_with_shape(Shape::Cylinder(cylinder_shape));
         assert_eq!(scene.objects().children(), vec![expected_object]);
@@ -1345,7 +1382,7 @@ mod tests {
   closed: true
 "#;
 
-        let (scene, _) = parse(CONE_YAML);
+        let (scene, _) = test_parse(CONE_YAML);
         let cylinder_shape = Cone {
             y_min: 1.,
             y_max: 5.,
@@ -1364,7 +1401,7 @@ mod tests {
   p3: [ 1, 0, 0 ]
 "#;
 
-        let (scene, _) = parse(TRIANGLE_YAML);
+        let (scene, _) = test_parse(TRIANGLE_YAML);
         let triangle = Object::primitive_with_shape(Shape::Triangle(Triangle::new(
             Point::new(0., 1., 0.),
             Point::new(-1., 0., 0.),
@@ -1385,7 +1422,7 @@ mod tests {
   n3: [ 1, 0, 0 ]
 "#;
 
-        let (scene, _) = parse(SMOOTH_TRIANGLE_YAML);
+        let (scene, _) = test_parse(SMOOTH_TRIANGLE_YAML);
         let triangle = Object::primitive_with_shape(Shape::SmoothTriangle(SmoothTriangle::new(
             Point::new(0., 1., 0.),
             Point::new(-1., 0., 0.),
@@ -1450,7 +1487,7 @@ mod tests {
       transform:
         - transformation
 "#;
-        let (scene, _) = parse(PATTERNS_YAML);
+        let (scene, _) = test_parse(PATTERNS_YAML);
         let red = Color::red();
         let green = Color::green();
         let transformation = Matrix::scaling_uniform(0.1);
@@ -1477,7 +1514,7 @@ mod tests {
 - add: sphere
   material: AIR_MATERIAL
 "#;
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         let glass_sphere = Object::primitive(Shape::Sphere, Material::glass(), Matrix::identity());
         let mirror_sphere =
             Object::primitive(Shape::Sphere, Material::mirror(), Matrix::identity());
@@ -1492,7 +1529,7 @@ mod tests {
 - add: SCENE_LIGHT
 - add: SCENE_CAMERA
 "#;
-        let (scene, camera) = parse(source);
+        let (scene, camera) = test_parse(source);
         let expected_camera = Camera::with_transformation(
             WIDTH,
             HEIGHT,
@@ -1522,7 +1559,7 @@ mod tests {
     transparency: FRAC_1_SQRT_2
     refractive-index: 2_PI
 "#;
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         let material = Material {
             refractive_index: 2. * std::f64::consts::PI,
             ambient: std::f64::consts::PI,
@@ -1556,7 +1593,7 @@ mod tests {
   material:
     color: BLUE
 "#;
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         let colors = vec![
             Color::white(),
             Color::black(),
@@ -1592,7 +1629,7 @@ mod tests {
 - add: sphere
   material: green-material
 "#;
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         let green_material = Material {
             pattern: Pattern::Const(Color::green()),
             ambient: 1.,
@@ -1614,7 +1651,7 @@ mod tests {
   - rotation-x
   - [rotate-y, FRAC_PI_3]
 "#;
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         let transformation = Matrix::rotation_x(FRAC_PI_3)
             .rotate_y(FRAC_PI_3)
             .transformed();
@@ -1637,7 +1674,7 @@ mod tests {
 - add: cube
   transform: fancy-transform
 "#;
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         let fancy_transformation = Matrix::rotation_x(FRAC_PI_3)
             .scale(1., 2., 3.)
             .transformed();
@@ -1679,7 +1716,7 @@ mod tests {
   transform:
     - [rotate-y, FRAC_PI_3]
 "#;
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         let material = Material {
             pattern: Pattern::Const(Color::green()),
             ambient: 1.,
@@ -1700,7 +1737,7 @@ mod tests {
   transform:
     - [translate, -1, -FRAC_PI_2, -5.5]
 "#;
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         let sphere = Object::primitive(
             Shape::Sphere,
             Material::default(),
@@ -1723,7 +1760,7 @@ mod tests {
         - [translate, 1, -2, 10]
         - [rotate-y, -FRAC_PI_3]
 "#;
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         let animations = Animations::with_vec(vec![TransformAnimation::new(
             Animation::new(
                 2.,
@@ -1809,7 +1846,7 @@ mod tests {
             Object::primitive_with_transformation(Shape::Cube, Matrix::translation(1., 2., 3.)),
         )));
         let expected_object = Object::animated(kind, Animations::default());
-        let (scene, _) = parse(source);
+        let (scene, _) = test_parse(source);
         assert_eq!(scene.objects().children(), vec![expected_object]);
     }
 
@@ -1893,6 +1930,20 @@ mod tests {
         assert!(
             matches!(res, Err(YamlParseError::FileReadError(_)),),
             "{res:?}"
+        );
+    }
+
+    #[test]
+    fn files_in_scenes_are_resolved_relative_to_input_path() {
+        let file = PathBuf::from("some/path/to/file/model.obj");
+        let input_path = PathBuf::from("input/path/to/scene.yml");
+
+        let parser = YamlParser::new(&Yaml::Null, Some(&input_path), HashMap::new());
+
+        let resolved_path = parser.resolve_path_from_scene(&file);
+        assert_eq!(
+            resolved_path,
+            PathBuf::from("input/path/to/some/path/to/file/model.obj")
         );
     }
 

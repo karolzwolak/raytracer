@@ -304,7 +304,8 @@ fn parse_yaml_scene(args: &Cli) -> Result<YamlSceneConfig, String> {
     let scene_source = std::fs::read_to_string(&args.scene_file)
         .map_err(|e| format!("Failed to read scene file: {e}"))?;
 
-    yaml::parse_str(&scene_source).map_err(|e| format!("Failed to parse scene: {e}"))
+    yaml::parse_file(&scene_source, &args.scene_file)
+        .map_err(|e| format!("Failed to parse scene: {e}"))
 }
 
 fn render() -> Result<PathBuf, String> {
