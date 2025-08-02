@@ -10,7 +10,7 @@ use group::ObjectGroup;
 use material::Material;
 use primitive::shape::Shape;
 
-use super::animation::{Animations, Interpolate};
+use super::animation::{Animations, Interpolate, animation_cycle};
 use crate::{
     math::{
         approx_eq::ApproxEq, matrix::Matrix, point::Point, transform::Transform, tuple::Tuple,
@@ -53,6 +53,24 @@ impl From<PrimitiveObject> for Object {
 impl From<ObjectGroup> for Object {
     fn from(group: ObjectGroup) -> Self {
         Self::from_group(group)
+    }
+}
+
+impl Object {
+    pub fn animation_cycle_duration_ms(&self) -> u32 {
+        let mut dur = self.animations.cycle_duration_ms();
+
+        match &self.kind {
+            ObjectKind::Group(group) => animation_cycle(dur, group.animation_cycle_duration_ms()),
+
+            ObjectKind::Csg(csg) => {
+                dur = animation_cycle(dur, csg.left.animation_cycle_duration_ms());
+                dur = animation_cycle(dur, csg.right.animation_cycle_duration_ms());
+                dur
+            }
+
+            ObjectKind::Primitive(_) => dur,
+        }
     }
 }
 

@@ -51,7 +51,7 @@ cargo run -r -- samples/scenes/dragon.yml image
 Render an animation:
 
 ```bash
-cargo run -r -- samples/animations/sphere.yml animate -d 2
+cargo run -r -- samples/animations/sphere.yml animate
 ```
 
 ### General usage
@@ -104,12 +104,18 @@ Options:
 
 ```
 Render an animation. Use `animate` field on an object to add animation to it
-Usage: raytracer <SCENE_FILE> animate [OPTIONS] --duration-sec <DURATION_SEC>
+
+Usage: raytracer <SCENE_FILE> animate [OPTIONS]
+
 Options:
-  -f, --format <FORMAT>              The format of the output video [default: mp4] [possible values: gif, mp4, webp]
-  -d, --duration-sec <DURATION_SEC>  The duration of the output video in seconds
-      --fps <FPS>                    Frames per second of the output video. Note that not all formats support all framerates. Use lower framerates when rendering to gif (about 30) [default: 60]
-  -h, --help                         Print help
+  -f, --format <FORMAT>
+          The format of the output video [default: mp4] [possible values: gif, mp4, webp]
+  -s, --duration-sec <DURATION_SEC>
+          The duration of the output video in seconds
+  -c, --duration-cycle <DURATION_CYCLE>
+          The duration of the output video in animation cycles. Animation cycle is the time it takes for the animation to loop [default: 1]
+      --fps <FPS>
+          Frames per second of the output video. Note that not all formats support all framerates. Use lower framerates when rendering to gif (about 30)
 ```
 
 ## Scene File Format

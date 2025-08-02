@@ -44,8 +44,6 @@ use crate::{
 /// It can also specify rendering options like quality options, animation duration and framerate.
 pub struct YamlSceneConfig {
     #[builder(setter(strip_option), default = "None")]
-    pub animation_duration_sec: Option<f64>,
-    #[builder(setter(strip_option), default = "None")]
     pub animation_framerate: Option<u32>,
 
     #[builder(setter(strip_option), default = "None")]

@@ -38,6 +38,10 @@ impl Scene {
     pub fn compute_bvh(&mut self) {
         self.objects.build_bvh();
     }
+
+    pub fn animation_cycle_duration(&self) -> f64 {
+        self.objects.animation_cycle_duration_s()
+    }
 }
 
 #[cfg(test)]

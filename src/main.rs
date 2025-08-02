@@ -32,8 +32,18 @@ struct AnimationCommand {
     format: AnimationFormat,
 
     /// The duration of the output video in seconds.
-    #[clap(short = 'd', long)]
+    #[clap(short = 's', long)]
     duration_sec: Option<f64>,
+
+    /// The duration of the output video in animation cycles.
+    /// Animation cycle is the time it takes for the animation to loop.
+    #[clap(
+        short = 'c',
+        long,
+        conflicts_with = "duration_sec",
+        default_value = "1"
+    )]
+    duration_cycle: Option<f64>,
 
     /// Frames per second of the output video.
     /// Note that not all formats support all framerates.
@@ -207,19 +217,30 @@ impl Config {
                     .map_err(|e| format!("Failed to build image config: {e}"))?,
             ),
             Command::Animate(animation_command) => {
-                let duration = match (animation_command.duration_sec, yaml.animation_duration_sec) {
-                    (Some(d), _) => d,
-                    (None, Some(d)) => d,
-                    (None, None) => {
-                        return Err("Animation duration not specified".to_string());
-                    }
+                let actual_cycle_duration = yaml
+                    .scene_builder
+                    .get_objects()
+                    .animation_cycle_duration_s();
+
+                if actual_cycle_duration == 0. {
+                    return Err("Scene does not contain any animated objects".to_string());
+                }
+                println!("Scene animation cycle duration: {actual_cycle_duration} seconds");
+
+                let duratation_sec = match (
+                    animation_command.duration_sec,
+                    animation_command.duration_cycle,
+                ) {
+                    (Some(s), _) => s,
+                    (None, Some(c)) => c * actual_cycle_duration,
+                    _ => unreachable!(),
                 };
                 let framerate = animation_command
                     .fps
                     .unwrap_or(yaml.animation_framerate.unwrap_or(DEFAULT_FPS));
                 let animation_config = AnimationConfigBuilder::default()
                     .format(animation_command.format)
-                    .animation_duration_sec(duration)
+                    .animation_duration_sec(duratation_sec)
                     .animation_framerate(framerate)
                     .build()
                     .map_err(|e| format!("Failed to build animation config: {e}"))?;

@@ -6,6 +6,7 @@ use super::{
 use crate::{
     math::{matrix::Matrix, transform::Transform, tuple::Axis},
     render::ray::{Ray, intersection::IntersectionCollector},
+    scene::animation::animation_cycle,
 };
 
 #[derive(Clone, Debug, PartialEq, Default)]
@@ -243,6 +244,19 @@ impl ObjectGroup {
             self.transform(&transform);
         }
         self.animate(time);
+    }
+}
+
+impl ObjectGroup {
+    pub fn animation_cycle_duration_ms(&self) -> u32 {
+        self.children()
+            .iter()
+            .map(Object::animation_cycle_duration_ms)
+            .fold(0, animation_cycle)
+    }
+
+    pub fn animation_cycle_duration_s(&self) -> f64 {
+        self.animation_cycle_duration_ms() as f64 * 0.001
     }
 }
 
