@@ -5,6 +5,7 @@
 *.mp4
 *.webp
 !/samples/renders/*
+!/showcase_renders/*
 *.svg
 perf*
 /images
