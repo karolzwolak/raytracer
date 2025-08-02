@@ -17,7 +17,7 @@ from pathlib import Path
 # Configuration
 RENDERER = "./target/release/raytracer"
 SCENES_DIR = "scenes"
-GOLDEN_DIR = "renders"
+GOLDEN_DIR = "tests_golden_renders"
 SSIM_THRESHOLD = 80.0  # Adjust threshold as needed (higher = stricter)
 BUILD_FAILED_CODE = 2
 TEST_FAILED_CODE = 1
