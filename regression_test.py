@@ -85,7 +85,7 @@ def main():
     # Initialize summary
     summary = {
         "total": 0,
-        "passed": 0,
+        "passes": [],
         "render_failures": [],
         "regressions": [],
         "missing_references": [],
@@ -143,18 +143,19 @@ def main():
                         skip_comparison,
                         show_output,
                     )
+                    full_message = f"{result['scene']}: {result['message']}"
                     if result["type"] == "passed":
-                        summary["passed"] += 1
+                        summary["passes"].append(full_message)
                     elif result["type"] == "render_failure":
-                        summary["render_failures"].append(result["message"])
+                        summary["render_failures"].append(full_message)
                     elif result["type"] == "regression":
-                        summary["regressions"].append(result["message"])
+                        summary["regressions"].append(full_message)
                     elif result["type"] == "missing_reference":
-                        summary["missing_references"].append(result["message"])
+                        summary["missing_references"].append(full_message)
                 except Exception as e:
                     # Catch any unexpected errors and log them
                     summary["render_failures"].append(
-                        f"{scene_path}: Internal script error - {str(e)}"
+                        f"Internal script error - {str(e)}"
                     )
                     print_exception(e)
 
@@ -322,7 +323,7 @@ def render_test(
     if not os.path.exists(golden_path):
         return {
             "type": "missing_reference",
-            "message": f"{scene_path}: Missing golden reference",
+            "message": "Missing golden reference",
         }
 
     start_time = time.time()
@@ -339,12 +340,10 @@ def render_test(
     if interrupted:
         return {
             "type": "render_failure",
-            "message": f"{scene_path}: Renderer was interrupted by user",
+            "message": "Renderer was interrupted by user",
         }
     if returncode != 0:
-        failure_msg = (
-            f"{scene_path}: Renderer failed. Last 10 lines of output:\n{last_10_str}"
-        )
+        failure_msg = f"Renderer failed. Last 10 lines of output:\n{last_10_str}"
         return {
             "type": "render_failure",
             "message": failure_msg,
@@ -399,7 +398,7 @@ def run_test(scene_path, scene_type, config, output_dir, skip_comparison, show_o
 
     except Exception as e:
         # Catch errors during rendering or comparison
-        failure_msg = f"Unhandled exception for {scene_path}: {str(e)}"
+        failure_msg = f"Unhandled exception for {str(e)}"
         print_exception(e)
         result = {"type": "render_failure", "message": failure_msg, "scene": scene_path}
 
@@ -422,8 +421,8 @@ def run_test(scene_path, scene_type, config, output_dir, skip_comparison, show_o
         message = result["message"]
         if show_output and result["type"] == "render_failure":
             # if the renderer failed, and the output was shown, don't reprint the errors now
-            message = "Renderer failure."
-        print(format_color(f"[{status_str}] {message}", color))
+            message = "Renderer failed"
+        print(format_color(f"[{status_str}] {scene_name}: {message}", color))
 
     print(format_color("-" * 50, Color.MAGENTA))
     # Reset interrupted flag after handling
@@ -439,7 +438,7 @@ def compare_images(golden_path, test_path, scene_name):
         if result.returncode != 0:
             return {
                 "type": "regression",
-                "message": f"{scene_name}: Comparison failed (exit code {result.returncode})",
+                "message": f"Comparison failed (exit code {result.returncode})",
                 "scene": scene_name,
             }
 
@@ -450,7 +449,7 @@ def compare_images(golden_path, test_path, scene_name):
         except (IndexError, ValueError):
             return {
                 "type": "regression",
-                "message": f"{scene_name}: Failed to parse SSIM score",
+                "message": "Failed to parse SSIM score",
                 "scene": scene_name,
             }
 
@@ -458,20 +457,20 @@ def compare_images(golden_path, test_path, scene_name):
         if score >= SSIM_THRESHOLD:
             return {
                 "type": "passed",
-                "message": f"{scene_name}: Image pass with SSIM: {score}",
+                "message": f"Image pass with SSIM: {score}",
                 "scene": scene_name,
             }
         else:
             return {
                 "type": "regression",
-                "message": f"{scene_name}: Difference exceeds threshold (SSIM={score:.1f} < {SSIM_THRESHOLD})",
+                "message": f"Difference exceeds threshold (SSIM={score:.1f} < {SSIM_THRESHOLD})",
                 "scene": scene_name,
             }
 
     except FileNotFoundError:
         return {
             "type": "regression",
-            "message": f"Comparison tool missing for image {scene_name}",
+            "message": "Comparison tool missing",
             "scene": scene_name,
         }
 
@@ -488,14 +487,14 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
             if not extract_video_frames(golden_path, ref_dir):
                 return {
                     "type": "regression",
-                    "message": f"{scene_name}: Failed to extract reference frames",
+                    "message": "Failed to extract reference frames",
                     "scene": scene_name,
                 }
 
             if not extract_video_frames(test_path, test_dir):
                 return {
                     "type": "regression",
-                    "message": f"{scene_name}: Failed to extract test frames",
+                    "message": "Failed to extract test frames",
                     "scene": scene_name,
                 }
 
@@ -508,7 +507,7 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                 return {
                     "type": "regression",
                     "message": (
-                        f"{scene_name}: Frame count mismatch: "
+                        f" Frame count mismatch: "
                         f"ref={len(ref_frames)} vs test={len(test_frames)}"
                     ),
                     "scene": scene_name,
@@ -527,7 +526,7 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                 if math.isinf(score):
                     return {
                         "type": "regression",
-                        "message": f"{scene_name}: Failed to compare frame {frame}",
+                        "message": "Failed to compare frame {frame}",
                         "scene": scene_name,
                     }
 
@@ -540,7 +539,7 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                 return {
                     "type": "passed",
                     "message": (
-                        f"{scene_name}: Animation passed in {elapsed_time:.2f}s. "
+                        f"Animation passed in {elapsed_time:.2f}s. "
                         f"Worst frame: {worst_frame} ({worst_score})"
                     ),
                     "scene": scene_name,
@@ -549,7 +548,7 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                 return {
                     "type": "regression",
                     "message": (
-                        f"{scene_name}: Difference in frame {worst_frame} exceeds threshold "
+                        f"Difference in frame {worst_frame} exceeds threshold "
                         f"(SSIM={worst_score:.1f} < {SSIM_THRESHOLD})"
                     ),
                     "scene": scene_name,
@@ -558,7 +557,7 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
     except Exception as e:
         return {
             "type": "regression",
-            "message": f"Animation comparison error for {scene_name}: {str(e)}",
+            "message": f"Animation comparison error: {str(e)}",
             "scene": scene_name,
         }
 
@@ -606,7 +605,7 @@ def print_summary(summary):
     print(format_color("=" * 50, Color.MAGENTA))
 
     total = summary["total"]
-    passed = summary["passed"]
+    passed = len(summary["passes"])
     render_failures = len(summary["render_failures"])
     regressions = len(summary["regressions"])
     missing_references = len(summary["missing_references"])
@@ -616,6 +615,14 @@ def print_summary(summary):
     print(f"Render fails:  {format_color(str(render_failures), Color.RED)}")
     print(f"Regressions:   {format_color(str(regressions), Color.RED)}")
     print(f"Missing refs:  {format_color(str(missing_references), Color.YELLOW)}")
+
+    # Print passes if any
+    if passed > 0:
+        print("\n" + format_color("Passes:", Color.GREEN + Color.BOLD))
+        for _pass in summary["passes"]:
+            print(f"  • {_pass}")
+    else:
+        print(format_color("No tests passed.", Color.YELLOW + Color.BOLD))
 
     # Print render failures if any
     if render_failures > 0:
