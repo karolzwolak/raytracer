@@ -18,6 +18,23 @@ jobs:
       - name: Run tests
         run: cargo test
 
+  regression_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install ssimulacra2_rs
+        run: cargo install ssimulacra2_rs
+
+      - name: Check ssimulacra2_rs
+        run: ssimulacra2_rs --help
+
+      - name: Check FFmpeg
+        run: ffmpeg -version
+
+      - name: Run regression tests
+        run: python3 regression_test.py test
+
   lint:
     runs-on: ubuntu-latest
     steps:
