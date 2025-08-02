@@ -104,7 +104,7 @@ def main():
         print(f"Temporary output dir: {output_dir}")
 
     # Build renderer
-    if not build_renderer():
+    if not build_renderer(show_output):
         return BUILD_FAILED_CODE
 
     # Process scenes
