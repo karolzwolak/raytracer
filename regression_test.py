@@ -88,6 +88,7 @@ def main():
         "passes": [],
         "render_failures": [],
         "regressions": [],
+        "unexpected_failures": [],
         "missing_references": [],
     }
 
@@ -150,11 +151,13 @@ def main():
                         summary["render_failures"].append(full_message)
                     elif result["type"] == "regression":
                         summary["regressions"].append(full_message)
+                    elif result["type"] == "unexpected_failure":
+                        summary["unexpected_failures"].append(full_message)
                     elif result["type"] == "missing_reference":
                         summary["missing_references"].append(full_message)
                 except Exception as e:
                     # Catch any unexpected errors and log them
-                    summary["render_failures"].append(
+                    summary["unexpected_failures"].append(
                         f"Internal script error - {str(e)}"
                     )
                     print_exception(e)
@@ -407,12 +410,14 @@ def run_test(scene_path, scene_type, config, output_dir, skip_comparison, show_o
         "passed": Color.GREEN,
         "render_failure": Color.RED,
         "regression": Color.RED,
+        "unexpected_failure": Color.RED,
         "missing_reference": Color.YELLOW,
     }
     status_map = {
         "passed": "PASS",
         "render_failure": "FAIL",
         "regression": "REGRESSION",
+        "unexpected_failure": "UNEXPECTED FAIL",
         "missing_reference": "MISSING REF",
     }
     if result is not None:
@@ -486,14 +491,14 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
             # Extract frames
             if not extract_video_frames(golden_path, ref_dir):
                 return {
-                    "type": "regression",
+                    "type": "unexpected_failure",
                     "message": "Failed to extract reference frames",
                     "scene": scene_name,
                 }
 
             if not extract_video_frames(test_path, test_dir):
                 return {
-                    "type": "regression",
+                    "type": "unexpected_failure",
                     "message": "Failed to extract test frames",
                     "scene": scene_name,
                 }
@@ -525,7 +530,7 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                 score = get_frame_score(ref_path, test_path)
                 if math.isinf(score):
                     return {
-                        "type": "regression",
+                        "type": "unexpected_failure",
                         "message": "Failed to compare frame {frame}",
                         "scene": scene_name,
                     }
@@ -607,14 +612,16 @@ def print_summary(summary):
     total = summary["total"]
     passed = len(summary["passes"])
     render_failures = len(summary["render_failures"])
+    unexpected_failures = len(summary["unexpected_failures"])
     regressions = len(summary["regressions"])
     missing_references = len(summary["missing_references"])
 
-    print(f"Total tests:   {format_color(str(total), Color.CYAN)}")
-    print(f"Passed tests:  {format_color(str(passed), Color.GREEN)}")
-    print(f"Render fails:  {format_color(str(render_failures), Color.RED)}")
-    print(f"Regressions:   {format_color(str(regressions), Color.RED)}")
-    print(f"Missing refs:  {format_color(str(missing_references), Color.YELLOW)}")
+    print(f"Total tests:      {format_color(str(total), Color.CYAN)}")
+    print(f"Passed tests:     {format_color(str(passed), Color.GREEN)}")
+    print(f"Render fails:     {format_color(str(render_failures), Color.RED)}")
+    print(f"Regressions:      {format_color(str(regressions), Color.RED)}")
+    print(f"Unexpected fails: {format_color(str(unexpected_failures), Color.RED)}")
+    print(f"Missing refs:     {format_color(str(missing_references), Color.YELLOW)}")
 
     # Print passes if any
     if passed > 0:
@@ -637,6 +644,12 @@ def print_summary(summary):
             print(f"  • {regression}")
 
     # Print missing references if any
+    if unexpected_failures > 0:
+        print("\n" + format_color("Unexpected failures:", Color.RED + Color.BOLD))
+        for fail in summary["unexpected_failures"]:
+            print(f"  • {fail}")
+
+    # Print missing references if any
     if missing_references > 0:
         print("\n" + format_color("Missing References:", Color.YELLOW + Color.BOLD))
         for ref in summary["missing_references"]:
@@ -645,8 +658,7 @@ def print_summary(summary):
     print(format_color("=" * 50, Color.MAGENTA))
 
     # Final status
-    missing_references = len(summary["missing_references"])
-    if render_failures == 0 and regressions == 0 and missing_references == 0:
+    if passed == total:
         final_msg = "ALL TESTS PASSED"
         color = Color.GREEN
     else:
