@@ -199,16 +199,17 @@ def print_warning(message):
     print(format_color(f"Warning: {message}", Color.YELLOW))
 
 
-def build_renderer():
+def build_renderer(show_output=True):
     """Build the release binary and return success status"""
     print(format_color("Building renderer...", Color.CYAN))
     try:
-        result = subprocess.run(
-            ["cargo", "build", "--release"], capture_output=True, text=True
-        )
-        if result.returncode != 0:
-            print_error("Build failed:")
-            print(result.stderr)
+        cmd = ["cargo", "build", "--release"]
+        _, interrupted, returncode = run_command_with_pty(cmd, show_output)
+        if interrupted:
+            print_warning("Build interrupted by user")
+            return False
+        elif returncode != 0:
+            print_error("Build failed")
             return False
         print(format_color("Build succeeded.", Color.GREEN))
         return True
