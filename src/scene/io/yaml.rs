@@ -492,6 +492,11 @@ impl<'a> YamlParser<'a> {
 
         Ok(match kind {
             "center" => LocalTransformation::Center,
+
+            "normalize-to-x" => LocalTransformation::NormalizeToAxis(Axis::X),
+            "normalize-to-y" => LocalTransformation::NormalizeToAxis(Axis::Y),
+            "normalize-to-z" => LocalTransformation::NormalizeToAxis(Axis::Z),
+
             "normalize-all-axes" => LocalTransformation::NormalizeAllAxes,
             "normalize-to-longest-axis" => LocalTransformation::NormalizeToLongestAxis,
 

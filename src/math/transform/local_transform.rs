@@ -29,6 +29,8 @@ pub enum LocalTransformation {
     TranslateAbove(Axis),
     /// Translates the object so it's bounding box is below at the axis
     TranslateBelow(Axis),
+    /// Scales the object so that it's length along the axis is 1
+    NormalizeToAxis(Axis),
     /// Scales the object so that it's bounding box is a cube of side 1
     NormalizeAllAxes,
     /// Scales the object uniformly in all axes such that lenght of the longest side becomes 1
@@ -88,6 +90,15 @@ impl LocalTransformation {
                     Axis::Y => Transformation::Translation(0., -bbox.max.y(), 0.),
                     Axis::Z => Transformation::Translation(0., 0., -bbox.max.z()),
                 }]
+            }
+            Self::NormalizeToAxis(axis) => {
+                let size = bbox.size();
+                let len = match axis {
+                    Axis::X => size.x(),
+                    Axis::Y => size.y(),
+                    Axis::Z => size.z(),
+                };
+                self.local_transform(bbox, Transformation::scaling_uniform(1. / len))
             }
             Self::NormalizeToLongestAxis => {
                 let (_, len) = bbox.longest_axis();
@@ -314,6 +325,23 @@ mod local_transform_tests {
         assert_approx_eq_low_prec!(size.x(), 1.0);
         assert_approx_eq_low_prec!(size.y(), 1.0);
         assert_approx_eq_low_prec!(size.z(), 1.0);
+    }
+
+    #[test]
+    fn normalize_to_axis() {
+        let obj = bbox((0., 0., 0.), (2., 4., 8.));
+
+        let axis_to_expected_factor = [(Axis::X, 0.5), (Axis::Y, 0.25), (Axis::Z, 0.125)];
+
+        let size = Vector::new(2., 4., 8.);
+        for (axis, factor) in axis_to_expected_factor {
+            let mut obj_copy = obj.clone();
+            let transform = LocalTransformation::NormalizeToAxis(axis).matrix_at(&obj_copy, 1.0);
+            obj_copy.transform(&transform);
+
+            let expected_size = size * factor;
+            assert_eq!(obj_copy.size(), expected_size, "Failed for axis: {axis:?}",);
+        }
     }
     #[test]
     fn local_rotate_90_degree_multiple_keeps_bounding_box() {
