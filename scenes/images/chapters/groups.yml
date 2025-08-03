@@ -1,0 +1,62 @@
+- add: light
+  intensity: WHITE
+  at: [-10, 10, 10]
+
+# Hexagon part (cylinder + corner sphere)
+- define: hexagon-part
+  value:
+    add: group
+    children:
+      - add: cylinder
+        min: 0
+        max: 1
+        closed: false
+        transform:
+          - [scale, 0.25, 1, 0.25]
+          - [rotate-z, -FRAC_PI_2]
+          - [rotate-y, -FRAC_PI_6]
+          - [translate, 0, 0, -1]
+      - add: sphere
+        transform:
+          - [scale-uniform, 0.25]
+          - [translate, 0, 0, -1]
+
+# Complete hexagon (6 rotated parts)
+- add: group
+  transform:
+    - [rotate-x, FRAC_PI_3]
+    - [rotate-z, -FRAC_PI_6]
+    - [translate, 0, 0, -3]
+  children:
+    - add: group
+      transform:
+        - [rotate-y, FRAC_PI_3]
+      children:
+        - add: hexagon-part
+        - add: group
+          transform:
+            - [rotate-y, FRAC_PI_3]
+          children:
+            - add: hexagon-part
+              material:
+                value: GREEN
+            - add: group
+              transform:
+                - [rotate-y, FRAC_PI_3]
+              children:
+                - add: hexagon-part
+                - add: group
+                  transform:
+                    - [rotate-y, FRAC_PI_3]
+                  children:
+                    - add: hexagon-part
+                    - add: group
+                      transform:
+                        - [rotate-y, FRAC_PI_3]
+                      children:
+                        - add: hexagon-part
+                        - add: group
+                          transform:
+                            - [rotate-y, FRAC_PI_3]
+                          children:
+                            - add: hexagon-part

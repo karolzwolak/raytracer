@@ -1,0 +1,62 @@
+- define: green1
+  value: [0.1, 1.0, 0.5]
+- define: green2
+  value: [0.5, 1.0, 0.1]
+- define: yellow
+  value: [1.0, 0.8, 0.1]
+- define: light-pink
+  value: [1.0, 0.9, 0.9]
+
+- add: light
+  intensity: WHITE
+  at: [-10, 10, -10]
+
+- add: SCENE_CAMERA
+  from: [0, 1.5, -5]
+  to: [0, 1, 0]
+  up: [0, 1, 0]
+  fov: FRAC_PI_3
+
+# Floor plane
+- add: plane
+  material:
+    color: light-pink
+    specular: 0
+
+# Wall plane
+- add: plane
+  material:
+    color: light-pink
+    specular: 0
+  transform:
+    - [rotate-x, FRAC_PI_2]
+    - [translate, 0, 0, 5]
+
+# Middle sphere
+- add: sphere
+  material:
+    color: green1
+    diffuse: 0.7
+    specular: 0.3
+  transform:
+    - [translate, -0.5, 1, 0.5]
+
+# Right sphere
+- add: sphere
+  material:
+    color: green2
+    diffuse: 0.7
+    specular: 0.3
+  transform:
+    - [scale-uniform, 0.5]
+    - [translate, 1.5, 0.5, -0.5]
+
+# Left sphere
+- add: sphere
+  material:
+    color: yellow
+    diffuse: 0.7
+    specular: 0.3
+  transform:
+    - [scale-uniform, 0.33]
+    - [translate, -1.5, 0.33, -0.75]

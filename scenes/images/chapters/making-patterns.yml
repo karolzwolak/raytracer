@@ -1,0 +1,38 @@
+- define: cyan
+  value: [0.15, 0.6, 0.7]
+- define: magenta
+  value: [0.5, 0.1, 0.4]
+- define: white
+  value: [1.0, 1.0, 1.0]
+- define: red
+  value: [1.0, 0.0, 0.0]
+
+- add: light
+  intensity: white
+  at: [-10, 10, -10]
+
+- add: SCENE_CAMERA
+
+# Floor plane with ring pattern
+- add: plane
+  material:
+    pattern:
+      type: ring
+      colors:
+        - cyan
+        - magenta
+      transform:
+        - [scale-uniform, 0.25]
+
+# Sphere with checkered pattern
+- add: sphere
+  material:
+    pattern:
+      type: checkers
+      colors:
+        - white
+        - red
+      transform:
+        - [scale-uniform, 0.5]
+  transform:
+    - [translate, 0, 1, 0]

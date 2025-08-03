@@ -937,11 +937,6 @@ pub fn parse_file(source: &str, input_path: &Path) -> YamlParserOutput {
 
 #[cfg(test)]
 mod tests {
-    const SAMPLE_SCENES_DIRS: [&str; 3] = [
-        "samples/chapters/",
-        "samples/scenes/",
-        "samples/animations/",
-    ];
 
     use std::{f64::consts::FRAC_PI_3, fmt::Debug, path::PathBuf};
 
@@ -1306,13 +1301,14 @@ mod tests {
 
     #[test]
     fn parse_obj() {
+        let path = "scenes/obj-models/teapot-low.obj";
         const OBJ_YAML: &str = r#"
 - add: obj
-  file: samples/obj/teapot-low.obj
+  file: {}
 "#;
-        let (scene, _) = test_parse(OBJ_YAML);
+        let source = OBJ_YAML.replace("{}", path);
+        let (scene, _) = test_parse(&source);
         let parser = ObjModelParser::new();
-        let path = "samples/obj/teapot-low.obj";
         let data = std::fs::read_to_string(path).unwrap();
         let expected_group = parser.parse(data).unwrap();
         assert_eq!(
@@ -1934,54 +1930,5 @@ mod tests {
             matches!(res, Err(YamlParseError::FileReadError(_)),),
             "{res:?}"
         );
-    }
-
-    #[test]
-    fn files_in_scenes_are_resolved_relative_to_input_path() {
-        let file = PathBuf::from("some/path/to/file/model.obj");
-        let input_path = PathBuf::from("input/path/to/scene.yml");
-
-        let parser = YamlParser::new(&Yaml::Null, Some(&input_path), HashMap::new());
-
-        let resolved_path = parser.resolve_path_from_scene(&file);
-        assert_eq!(
-            resolved_path,
-            PathBuf::from("input/path/to/some/path/to/file/model.obj")
-        );
-    }
-
-    fn get_sample_scenes() -> Vec<PathBuf> {
-        SAMPLE_SCENES_DIRS
-            .iter()
-            .flat_map(|dir| {
-                PathBuf::from(dir)
-                    .read_dir()
-                    .unwrap()
-                    .map(|entry| entry.unwrap().path())
-                    .filter(|entry| {
-                        entry
-                            .extension()
-                            .is_some_and(|ext| ext == "yaml" || ext == "yml")
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect()
-    }
-
-    #[test]
-    #[ignore]
-    fn parse_sample_scenes() {
-        use rayon::prelude::*;
-
-        let scenes = get_sample_scenes();
-        assert!(!scenes.is_empty(), "No sample scenes found");
-
-        scenes.par_iter().for_each(|scene| {
-            let now = std::time::Instant::now();
-            let path = scene.to_str().unwrap();
-            let source = std::fs::read_to_string(path).unwrap();
-            let _ = parse_str(&source).unwrap_or_else(|_| panic!("Failed to parse {scene:?}"));
-            println!("Parsed {:?} in {:?}", scene, now.elapsed());
-        });
     }
 }

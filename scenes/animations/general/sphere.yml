@@ -1,0 +1,11 @@
+- add: SCENE_CAMERA
+
+- add: SCENE_LIGHT
+
+- add: sphere
+  animate:
+    - duration: 0.5
+      direction: alternate
+      timing: linear
+      transform:
+        - [translate, 0, 2, 0]

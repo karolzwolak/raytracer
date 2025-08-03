@@ -16,21 +16,24 @@ A high-performance raytracer written in Rust that renders 3D scenes defined in Y
 
 ## Sample Renders
 
-| Description          | Image                                                              |
-| -------------------- | ------------------------------------------------------------------ |
-| Cover image          | ![Cover image](samples/renders/cover.png)                          |
-| Rotating dragon      | ![Rotating dragon](samples/renders/rotating_dragon.webp)           |
-| Animated lens        | ![Animated lens](samples/renders/csg.webp)                         |
-| Animated refractions | ![Animated refractions](samples/renders/animated_refractions.webp) |
-| Refraction example   | ![Refraction chapter](samples/renders/refractions.png)             |
-| Cubes scene          | ![Cubes chapter](samples/renders/cubes.png)                        |
-| Dragon models        | ![Dragons](samples/renders/dragons.png)                            |
+| Description        | Image                                                     |
+| ------------------ | --------------------------------------------------------- |
+| Cover image        | ![Cover image](showcase-renders/cover.png)                |
+| Rotating dragon    | ![Rotating dragon](showcase-renders/rotating-dragon.webp) |
+| Animated CSG lens  | ![Animated lens](showcase-renders/csg-lens.webp)          |
+| Refraction example | ![Refraction chapter](showcase-renders/refractions.png)   |
+| Dragon models      | ![Dragons](showcase-renders/dragons.png)                  |
+| Cubes scene        | ![Cubes chapter](showcase-renders/cubes.png)              |
 
 ## Installation
 
 1. Install [Rust](https://www.rust-lang.org/tools/install).
 
 2. Clone and build the project:
+
+### Regression Testing
+
+The project includes a regression testing system that compares renders against reference images to detect visual regressions. This system runs automatically in CI on GitHub Actions. For more details, see [tests-reference-renders/README.md](tests-reference-renders/README.md).
 
 ```bash
 git clone https://github.com/karolzwolak/raytracer.git
@@ -45,13 +48,13 @@ cargo build --release
 Render a single image:
 
 ```bash
-cargo run -r -- samples/scenes/dragon.yml image
+cargo run -r -- scenes/images/general/dragon.yml image
 ```
 
 Render an animation:
 
 ```bash
-cargo run -r -- samples/animations/sphere.yml animate
+cargo run -r -- scenes/animations/general/sphere.yml animate
 ```
 
 ### General usage
@@ -265,12 +268,6 @@ Example usage:
   transform:
     - [rotate-x, FRAC_PI_4]
 ```
-
-### Notable Examples
-
-- [Rotating dragon animation](samples/animations/rotating_dragon.yml)
-- [Glass sphere scene](samples/scenes/glass_sphere.yml)
-- [Refraction demo](samples/scenes/refractions.yml)
 
 ## Configuration
 

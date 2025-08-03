@@ -18,8 +18,27 @@ jobs:
       - name: Run tests
         run: cargo test
 
-      - name: Run heavy tests
-        run: cargo test -- --ignored
+  regression_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libfontconfig-dev
+
+      - name: Install ssimulacra2_rs
+        run: cargo install ssimulacra2_rs --no-default-features
+
+      - name: Check ssimulacra2_rs
+        run: ssimulacra2_rs --help
+
+      - name: Check FFmpeg
+        run: ffmpeg -version
+
+      - name: Run regression tests
+        run: python3 regression_test.py test --hide-progress-bars
 
   lint:
     runs-on: ubuntu-latest

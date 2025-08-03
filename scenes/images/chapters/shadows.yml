@@ -1,0 +1,78 @@
+- define: gray
+  value: [0.8, 0.8, 0.8]
+- define: black
+  value: [0.2, 0.2, 0.2]
+- define: orange
+  value: [0.7, 0.3, 0.3]
+- define: blue
+  value: [0.4, 0.7, 0.9]
+
+- add: light
+  intensity: WHITE
+  at: [3, 1, 4]
+
+- camera:
+  fov: FRAC_PI_4
+
+# Background wall
+- add: sphere
+  material:
+    color: blue
+  transform:
+    - [scale, 50, 50, 0.1]
+    - [translate, 0, 0, -80]
+
+# Snowman base
+- add: sphere
+  material:
+    color: gray
+  transform:
+    - [translate, 1.5, 0, -8]
+
+# Snowman middle
+- add: sphere
+  material:
+    color: gray
+  transform:
+    - [scale-uniform, 0.7]
+    - [translate, 1.5, 1, -8]
+
+# Snowman head
+- add: sphere
+  material:
+    color: gray
+  transform:
+    - [scale-uniform, 0.4]
+    - [translate, 1.5, 1.8, -8]
+
+# Carrot nose
+- add: sphere
+  material:
+    color: orange
+  transform:
+    - [scale, 0.4, 0.1, 0.1]
+    - [translate, 1.25, 1.8, -8]
+
+# Hat brim
+- add: sphere
+  material:
+    color: black
+  transform:
+    - [scale, 0.4, 0.05, 0.4]
+    - [translate, 1.5, 2.1, -8]
+
+# Hat cylinder
+- add: sphere
+  material:
+    color: black
+  transform:
+    - [scale, 0.25, 0.55, 0.25]
+    - [translate, 1.5, 2.1, -8]
+
+# Hat top
+- add: sphere
+  material:
+    color: black
+  transform:
+    - [scale, 0.15, 0.085, 0.15]
+    - [translate, 1.5, 2.65, -8]
