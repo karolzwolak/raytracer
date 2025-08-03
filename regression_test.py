@@ -14,12 +14,12 @@ import termios
 import time
 from pathlib import Path
 
-# Configuration
-RENDERER = "./target/release/raytracer"
-SCENES_DIR = "scenes"
-GOLDEN_DIR = "tests-golden-renders"
-SHOWCASE_DIR = "showcase-renders"
-SSIM_THRESHOLD = 80.0
+# Paths and constants
+RENDERER_BINARY = "./target/release/raytracer"
+SCENES_ROOT = "scenes"
+REFERENCE_RENDERS_DIR = "tests-golden-renders"
+SHOWCASE_RENDERS_DIR = "showcase-renders"
+SSIM_THRESHOLD = 80.0  # Structural Similarity Index threshold
 BUILD_FAILED_CODE = 2
 TEST_FAILED_CODE = 1
 SCRIPT_ERROR_CODE = 3
@@ -105,8 +105,8 @@ def format_color(text, color_code):
     return f"{color_code}{text}{Color.RESET}"
 
 
-def record_result(result, summary):
-    """Record a test result in the summary dictionary"""
+def record_test_result(result, summary):
+    """Store test result and print status message"""
     if "scene" not in result:
         return
 
@@ -139,15 +139,15 @@ def record_result(result, summary):
     print(format_color(f"[{status_str}] {result['scene']}: {result['message']}", color))
 
 
-def compare_output(scene_group, golden_path, test_path, elapsed_time=None):
-    """Compare rendered output with golden reference based on scene group"""
-    if scene_group == "image":
-        return compare_images(golden_path, test_path, elapsed_time)
-    elif scene_group == "animation":
-        return compare_animations(golden_path, test_path, elapsed_time)
+def compare_renders(scene_type, reference_path, test_path, elapsed_time=None):
+    """Compare test render against reference based on scene type"""
+    if scene_type == "image":
+        return compare_image_renders(reference_path, test_path, elapsed_time)
+    elif scene_type == "animation":
+        return compare_animation_renders(reference_path, test_path, elapsed_time)
     return {
         "type": "unexpected_failure",
-        "message": f"Unknown scene group for comparison: {scene_group}",
+        "message": f"Unknown scene type for comparison: {scene_type}",
     }
 
 
@@ -158,7 +158,7 @@ def main():
     parser.add_argument("command", choices=["test", "render"], help="Subcommand to run")
     parser.add_argument(
         "--output-dir",
-        default=GOLDEN_DIR,
+        default=REFERENCE_RENDERS_DIR,
         help="Output directory for renders (default: renders)",
     )
     parser.add_argument(
@@ -212,7 +212,7 @@ def main():
         print(f"Temporary output dir: {output_dir}")
 
     # Build renderer
-    if not build_renderer(show_output):
+    if not build_renderer_binary(show_output):
         return BUILD_FAILED_CODE
 
     # Get list of scenes if provided by user
@@ -223,7 +223,7 @@ def main():
         for scene_path in args.scenes:
             # If the scene path is inside SCENES_DIR, get the relative path
             try:
-                rel_path = os.path.relpath(scene_path, SCENES_DIR)
+                rel_path = os.path.relpath(scene_path, SCENES_ROOT)
             except ValueError:
                 # Path is on different drive (Windows) or not relative
                 rel_path = scene_path
@@ -244,8 +244,8 @@ def main():
     else:
         # Find all scenes in images/ and animations/ directories
         for group in scene_groups:
-            scene_dir = os.path.join(SCENES_DIR, group)
-            scenes = find_scenes(scene_dir)
+            scene_dir = os.path.join(SCENES_ROOT, group)
+            scenes = find_scene_files(scene_dir)
             for scene_path in scenes:
                 scene_list.append((scene_path, group))
 
@@ -265,7 +265,7 @@ def main():
 
             # Run test render task
             summary["total"] += 1
-            test_result = run_render_task(
+            test_result = execute_render(
                 scene_path,
                 scene_group,
                 "test",
@@ -277,31 +277,31 @@ def main():
 
             # Handle result
             test_result["scene"] = scene_path
-            record_result(test_result, summary)
+            record_test_result(test_result, summary)
 
             # For test command, verify showcase renders exist and aren't empty
             if args.command == "test":
-                rel_scene_path = os.path.relpath(scene_path, SCENES_DIR)
+                rel_scene_path = os.path.relpath(scene_path, SCENES_ROOT)
                 if rel_scene_path in SHOWCASE_SCENES:
                     # Get expected showcase file path
                     type_config = SHOWCASE_CONFIGS.get(scene_group, {})
                     ext = type_config.get("ext", "")
-                    showcase_file = Path(SHOWCASE_DIR) / f"{os.path.basename(scene_path).replace('.yml', ext)}"
+                    showcase_file = Path(SHOWCASE_RENDERS_DIR) / f"{os.path.basename(scene_path).replace('.yml', ext)}"
                     
                     if not showcase_file.exists():
-                        record_result({
+                        record_test_result({
                             "type": "missing_reference",
                             "scene": f"[SHOWCASE] {scene_path}",
                             "message": "Showcase render missing"
                         }, summary)
                     elif showcase_file.stat().st_size == 0:
-                        record_result({
+                        record_test_result({
                             "type": "render_failure",
                             "scene": f"[SHOWCASE] {scene_path}",
                             "message": "Showcase render is empty"
                         }, summary)
                     else:
-                        record_result({
+                        record_test_result({
                             "type": "passed",
                             "scene": f"[SHOWCASE] {scene_path}",
                             "message": "Showcase render exists and is valid"
@@ -309,22 +309,22 @@ def main():
 
             # For render command, generate showcase renders
             elif args.command == "render":
-                rel_scene_path = os.path.relpath(scene_path, SCENES_DIR)
+                rel_scene_path = os.path.relpath(scene_path, SCENES_ROOT)
                 if rel_scene_path in SHOWCASE_SCENES:
                     summary["total"] += 1
-                    showcase_result = run_render_task(
+                    showcase_result = execute_render(
                         scene_path,
                         scene_group,
                         "showcase",
-                        Path(SHOWCASE_DIR),
+                        Path(SHOWCASE_RENDERS_DIR),
                         skip_comparison,
                         show_output,
                         args.hide_progress_bars,
                     )
                     showcase_result["scene"] = f"[SHOWCASE] {scene_path}"
-                    record_result(showcase_result, summary)
+                    record_test_result(showcase_result, summary)
 
-        passed = print_summary(summary, args.command)
+        passed = display_test_summary(summary, args.command)
 
         # Clean up temporary files
         if not skip_comparison:
@@ -361,8 +361,8 @@ def print_warning(message):
     print(format_color(f"Warning: {message}", Color.YELLOW))
 
 
-def build_renderer(show_output=True):
-    """Build the release binary and return success status"""
+def build_renderer_binary(show_output=True):
+    """Compile the release binary and return success status"""
     print(format_color("Building renderer...", Color.CYAN))
     try:
         cmd = ["cargo", "build", "--release"]
@@ -455,8 +455,8 @@ def run_command_with_pty(cmd, show_output=True):
     return output_text, interrupted, process.returncode
 
 
-def find_scenes(scene_dir):
-    """Find YAML scene files in a directory"""
+def find_scene_files(scene_dir):
+    """Recursively find YAML scene files in directory"""
     if not os.path.exists(scene_dir):
         print_warning(f"Scene directory not found: {scene_dir}")
         return []
@@ -469,35 +469,35 @@ def find_scenes(scene_dir):
     return scenes
 
 
-def run_render_task(
+def execute_render(
     scene_path,
-    scene_group,
-    preset,
+    scene_type,
+    render_preset,
     output_dir,
     skip_comparison,
     show_output,
     hide_progress_bars=False,
 ):
-    """Run a single render task and return result dictionary"""
+    """Execute a render job and return results"""
     # Get configuration for the preset and scene type
-    config = RENDER_PRESETS.get(preset)
+    config = RENDER_PRESETS.get(render_preset)
     if not config:
         return {
             "type": "unexpected_failure",
-            "message": f"Unknown render preset: {preset}",
+            "message": f"Unknown render preset: {render_preset}",
         }
 
-    type_config = config.get(scene_group)
+    type_config = config.get(scene_type)
     if not type_config:
         return {
             "type": "unexpected_failure",
-            "message": f"Unknown scene group: {scene_group} for preset {preset}",
+            "message": f"Unknown scene type: {scene_type} for preset {render_preset}",
         }
 
     # Compute output file path
-    scene_name = os.path.splitext(os.path.relpath(scene_path, SCENES_DIR))[0]
+    scene_name = os.path.splitext(os.path.relpath(scene_path, SCENES_ROOT))[0]
     output_rel_path = Path(output_dir) / f"{scene_name}{type_config['ext']}"
-    output_dir_path = output_rel_path.parent if preset != "showcase" else output_dir
+    output_dir_path = output_rel_path.parent if render_preset != "showcase" else output_dir
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     # Convert string dictionary to list of flags [k, v] pairs
@@ -518,15 +518,15 @@ def run_render_task(
     render_flags = type_config.get("subcommand_flags", {})
 
     # Apply showcase-specific overrides if needed
-    if preset == "showcase":
-        rel_path = os.path.relpath(scene_path, SCENES_DIR)
+    if render_preset == "showcase":
+        rel_path = os.path.relpath(scene_path, SCENES_ROOT)
         if rel_path in SHOWCASE_SCENES:
             scene_config = SHOWCASE_SCENES[rel_path] or {}
             # Apply general flags overrides
             if "general" in scene_config:
                 general_flags.update(scene_config["general"])
             # Apply type-specific flags overrides
-            type_overrides = scene_config.get(scene_group)
+            type_overrides = scene_config.get(scene_type)
             if type_overrides and "subcommand_flags" in type_overrides:
                 render_flags.update(type_overrides["subcommand_flags"])
             # Apply general type-specific overrides
@@ -549,7 +549,7 @@ def run_render_task(
     # Build render command in correct order:
     # renderer [general flags] --output-dir <output dir> <scene> subcommand [subcommand flags]
     cmd = [
-        RENDERER,
+        RENDERER_BINARY,
         *general_flags_list,
         "--output-dir",
         str(output_dir_path),
@@ -559,7 +559,7 @@ def run_render_task(
     ]
 
     print(format_color("\n" + "=" * 50, Color.MAGENTA))
-    print(format_color(f"Rendering {preset}: {scene_path}", Color.BOLD))
+    print(format_color(f"Rendering {render_preset}: {scene_path}", Color.BOLD))
     print(format_color(f"Command: {' '.join(cmd)}", Color.CYAN))
     print(format_color("=" * 50, Color.MAGENTA))
 
@@ -603,8 +603,8 @@ def run_render_task(
         )
 
         # For test preset and if we should compare, run the comparison
-        if preset == "test" and not skip_comparison:
-            golden_path = os.path.join(GOLDEN_DIR, f"{scene_name}{type_config['ext']}")
+        if render_preset == "test" and not skip_comparison:
+            golden_path = os.path.join(REFERENCE_RENDERS_DIR, f"{scene_name}{type_config['ext']}")
             if not os.path.exists(golden_path):
                 # If golden reference is missing
                 result.update(
@@ -615,8 +615,8 @@ def run_render_task(
                 )
             else:
                 # Compare the rendered file with the golden reference
-                comparison_result = compare_output(
-                    scene_group,
+                comparison_result = compare_renders(
+                    scene_type,
                     golden_path,
                     output_rel_path,
                     elapsed,
@@ -629,10 +629,10 @@ def run_render_task(
     return result
 
 
-def compare_images(golden_path, test_path, elapsed_time=None):
-    """Compare two images using ssimulacra2_rs"""
+def compare_image_renders(reference_path, test_path, elapsed_time=None):
+    """Compare two image renders using SSIM metric"""
     try:
-        cmd = ["ssimulacra2_rs", "image", golden_path, str(test_path)]
+        cmd = ["ssimulacra2_rs", "image", reference_path, str(test_path)]
         result = subprocess.run(cmd, capture_output=True, text=True)
 
         if result.returncode != 0:
@@ -671,8 +671,8 @@ def compare_images(golden_path, test_path, elapsed_time=None):
         }
 
 
-def compare_animations(golden_path, test_path, elapsed_time):
-    """Compare two animations by extracting frames"""
+def compare_animation_renders(reference_path, test_path, elapsed_time):
+    """Compare animation renders by frame-by-frame analysis"""
     try:
         # Create temporary directories
         with (
@@ -680,7 +680,7 @@ def compare_animations(golden_path, test_path, elapsed_time):
             tempfile.TemporaryDirectory() as test_dir,
         ):
             # Extract frames
-            if not extract_video_frames(golden_path, ref_dir):
+            if not extract_video_frames(reference_path, ref_dir):
                 return {
                     "type": "unexpected_failure",
                     "message": "Failed to extract reference frames",
@@ -787,8 +787,8 @@ def get_frame_score(ref_path, test_path):
         return float("inf")
 
 
-def print_summary(summary, command_type):
-    """Print test summary with details"""
+def display_test_summary(summary, command_type):
+    """Format and display test results summary"""
 
     plural_command_type = command_type + "s"
 
