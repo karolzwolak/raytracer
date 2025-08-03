@@ -550,8 +550,6 @@ def execute_render(
             if type_overrides and "general_flags" in type_overrides:
                 general_flags.update(type_overrides["general_flags"])
 
-    # Build combined flags list
-    general_flags = config.get("general", [])
     if "general" in applied_config:
         general_flags.extend(applied_config["general"])
 
