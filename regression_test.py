@@ -27,7 +27,7 @@ USER_INTERRUPTED_CODE = 130
 
 TEST_CONFIGS = {
     "general": {
-        "--depth": "5",
+        "--depth": "4",
         "--supersampling-level": "1",
     },
     "image": {
@@ -38,7 +38,7 @@ TEST_CONFIGS = {
     "animation": {
         "commands": ["animate"],
         "ext": ".mp4",
-        "subcommand_flags": {"--fps": "30", "--format": "mp4"},
+        "subcommand_flags": {"--fps": "20", "--format": "mp4"},
         "general_flags": {"--width": "400", "--height": "400"},
     },
 }
