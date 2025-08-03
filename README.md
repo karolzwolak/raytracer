@@ -16,15 +16,14 @@ A high-performance raytracer written in Rust that renders 3D scenes defined in Y
 
 ## Sample Renders
 
-| Description          | Image                                                                 |
-| -------------------- | --------------------------------------------------------------------- |
-| Cover image          | ![Cover image](renders/images/cover.png)                              |
-| Rotating dragon      | ![Rotating dragon](renders/animations/rotating_dragon.webp)           |
-| Animated lens        | ![Animated lens](renders/animations/csg.webp)                         |
-| Animated refractions | ![Animated refractions](renders/animations/animated_refractions.webp) |
-| Refraction example   | ![Refraction chapter](renders/images/refractions.png)                 |
-| Cubes scene          | ![Cubes chapter](renders/images/cubes.png)                            |
-| Dragon models        | ![Dragons](renders/images/dragons.png)                                |
+| Description        | Image                                                     |
+| ------------------ | --------------------------------------------------------- |
+| Cover image        | ![Cover image](showcase_renders/cover.png)                |
+| Rotating dragon    | ![Rotating dragon](showcase_renders/rotating_dragon.webp) |
+| Animated lens      | ![Animated lens](showcase_renders/csg.webp)               |
+| Refraction example | ![Refraction chapter](showcase_renders/refractions.png)   |
+| Dragon models      | ![Dragons](showcase_renders/dragons.png)                  |
+| Cubes scene        | ![Cubes chapter](showcase_renders/cubes.png)              |
 
 ## Installation
 
@@ -265,12 +264,6 @@ Example usage:
   transform:
     - [rotate-x, FRAC_PI_4]
 ```
-
-### Notable Examples
-
-- [Rotating dragon animation](scenes/animations/general/rotating_dragon.yml)
-- [Glass sphere scene](scenes/scenes/glass_sphere.yml)
-- [Refraction demo](scenes/scenes/refractions.yml)
 
 ## Configuration
 
