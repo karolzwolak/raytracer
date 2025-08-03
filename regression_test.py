@@ -722,7 +722,7 @@ def compare_animation_renders(reference_path, test_path, elapsed_time):
                 if math.isinf(score):
                     return {
                         "type": "unexpected_failure",
-                        "message": "Failed to compare frame {frame}",
+                        "message": f"Failed to compare frame {frame}",
                     }
 
                 if score < worst_score:
