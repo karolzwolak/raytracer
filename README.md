@@ -48,13 +48,13 @@ cargo build --release
 Render a single image:
 
 ```bash
-cargo run -r -- scenes/scenes/dragon.yml image
+cargo run -r -- scenes/images/general/dragon.yml image
 ```
 
 Render an animation:
 
 ```bash
-cargo run -r -- scenes/animations/general/sphere.yml animate -d 2
+cargo run -r -- scenes/animations/general/sphere.yml animate
 ```
 
 ### General usage
