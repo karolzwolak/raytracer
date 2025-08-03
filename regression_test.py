@@ -17,8 +17,8 @@ from pathlib import Path
 # Configuration
 RENDERER = "./target/release/raytracer"
 SCENES_DIR = "scenes"
-GOLDEN_DIR = "tests_golden_renders"
-SHOWCASE_DIR = "showcase_renders"
+GOLDEN_DIR = "tests-golden-renders"
+SHOWCASE_DIR = "showcase-renders"
 SSIM_THRESHOLD = 80.0
 BUILD_FAILED_CODE = 2
 TEST_FAILED_CODE = 1

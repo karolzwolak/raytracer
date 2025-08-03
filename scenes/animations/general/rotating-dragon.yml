@@ -34,7 +34,7 @@
     color: [0, 0.68, 0.32]
 
 - add: obj
-  file: ../../obj_models/dragon.obj
+  file: ../../obj-models/dragon.obj
   material: dragon-material
   transform:
     - [scale-uniform, 0.5]

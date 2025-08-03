@@ -1301,7 +1301,7 @@ mod tests {
 
     #[test]
     fn parse_obj() {
-        let path = "scenes/obj_models/teapot-low.obj";
+        let path = "scenes/obj-models/teapot-low.obj";
         const OBJ_YAML: &str = r#"
 - add: obj
   file: {}

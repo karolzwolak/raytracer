@@ -5,8 +5,8 @@
 *.mp4
 *.webp
 !/scenes/**
-!/tests_golden_renders/**
-!/showcase_renders/*
+!/tests-golden-renders/**
+!/showcase-renders/*
 *.svg
 perf*
 /images
