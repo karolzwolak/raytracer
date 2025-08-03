@@ -31,6 +31,10 @@ A high-performance raytracer written in Rust that renders 3D scenes defined in Y
 
 2. Clone and build the project:
 
+### Regression Testing
+
+The project includes a regression testing system that compares renders against reference images to detect visual regressions. This system runs automatically in CI on GitHub Actions. For more details, see [tests-reference-renders/README.md](tests-reference-renders/README.md).
+
 ```bash
 git clone https://github.com/karolzwolak/raytracer.git
 cd raytracer
