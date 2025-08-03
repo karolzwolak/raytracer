@@ -77,7 +77,7 @@ SHOWCASE_SCENES = {
     },
     "images/chapters/cubes.yml": None,
     "images/chapters/refractions.yml": None,
-    "animations/general/csg.yml": {
+    "animations/general/csg-lens.yml": {
         "general": {"--width": "800", "--height": "800"},
     },
     "animations/general/rotating_dragon.yml": {
@@ -285,30 +285,42 @@ def main():
                 if rel_scene_path in SHOWCASE_SCENES:
                     # Increment total test count for showcase check
                     summary["total"] += 1
-                    
+
                     # Get expected showcase file path
                     type_config = SHOWCASE_CONFIGS.get(scene_group, {})
                     ext = type_config.get("ext", "")
-                    showcase_file = Path(SHOWCASE_RENDERS_DIR) / f"{os.path.basename(scene_path).replace('.yml', ext)}"
-                    
+                    showcase_file = (
+                        Path(SHOWCASE_RENDERS_DIR)
+                        / f"{os.path.basename(scene_path).replace('.yml', ext)}"
+                    )
+
                     if not showcase_file.exists():
-                        record_test_result({
-                            "type": "missing_reference",
-                            "scene": f"[SHOWCASE] {scene_path}",
-                            "message": "Showcase render missing"
-                        }, summary)
+                        record_test_result(
+                            {
+                                "type": "missing_reference",
+                                "scene": f"[SHOWCASE] {scene_path}",
+                                "message": "Showcase render missing",
+                            },
+                            summary,
+                        )
                     elif showcase_file.stat().st_size == 0:
-                        record_test_result({
-                            "type": "render_failure",
-                            "scene": f"[SHOWCASE] {scene_path}",
-                            "message": "Showcase render is empty"
-                        }, summary)
+                        record_test_result(
+                            {
+                                "type": "render_failure",
+                                "scene": f"[SHOWCASE] {scene_path}",
+                                "message": "Showcase render is empty",
+                            },
+                            summary,
+                        )
                     else:
-                        record_test_result({
-                            "type": "passed",
-                            "scene": f"[SHOWCASE] {scene_path}",
-                            "message": "Showcase render exists and is valid"
-                        }, summary)
+                        record_test_result(
+                            {
+                                "type": "passed",
+                                "scene": f"[SHOWCASE] {scene_path}",
+                                "message": "Showcase render exists and is valid",
+                            },
+                            summary,
+                        )
 
             # For render command, generate showcase renders
             elif args.command == "render":
@@ -500,7 +512,9 @@ def execute_render(
     # Compute output file path
     scene_name = os.path.splitext(os.path.relpath(scene_path, SCENES_ROOT))[0]
     output_rel_path = Path(output_dir) / f"{scene_name}{type_config['ext']}"
-    output_dir_path = output_rel_path.parent if render_preset != "showcase" else output_dir
+    output_dir_path = (
+        output_rel_path.parent if render_preset != "showcase" else output_dir
+    )
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     # Convert string dictionary to list of flags [k, v] pairs
@@ -607,7 +621,9 @@ def execute_render(
 
         # For test preset and if we should compare, run the comparison
         if render_preset == "test" and not skip_comparison:
-            golden_path = os.path.join(REFERENCE_RENDERS_DIR, f"{scene_name}{type_config['ext']}")
+            golden_path = os.path.join(
+                REFERENCE_RENDERS_DIR, f"{scene_name}{type_config['ext']}"
+            )
             if not os.path.exists(golden_path):
                 # If golden reference is missing
                 result.update(
