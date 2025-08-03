@@ -562,9 +562,6 @@ def execute_render(
             if type_overrides and "general_flags" in type_overrides:
                 general_flags.update(type_overrides["general_flags"])
 
-    if "general" in applied_config:
-        general_flags.extend(applied_config["general"])
-
     # Convert the flag dictionaries to lists
     general_flags_list = dict_to_flags(general_flags)
     render_flags_list = dict_to_flags(render_flags)
