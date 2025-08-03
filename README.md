@@ -18,12 +18,12 @@ A high-performance raytracer written in Rust that renders 3D scenes defined in Y
 
 | Description        | Image                                                     |
 | ------------------ | --------------------------------------------------------- |
-| Cover image        | ![Cover image](showcase_renders/cover.png)                |
-| Rotating dragon    | ![Rotating dragon](showcase_renders/rotating_dragon.webp) |
-| Animated CSG lens  | ![Animated lens](showcase_renders/csg-lens.webp)          |
-| Refraction example | ![Refraction chapter](showcase_renders/refractions.png)   |
-| Dragon models      | ![Dragons](showcase_renders/dragons.png)                  |
-| Cubes scene        | ![Cubes chapter](showcase_renders/cubes.png)              |
+| Cover image        | ![Cover image](showcase-renders/cover.png)                |
+| Rotating dragon    | ![Rotating dragon](showcase-renders/rotating_dragon.webp) |
+| Animated CSG lens  | ![Animated lens](showcase-renders/csg-lens.webp)          |
+| Refraction example | ![Refraction chapter](showcase-renders/refractions.png)   |
+| Dragon models      | ![Dragons](showcase-renders/dragons.png)                  |
+| Cubes scene        | ![Cubes chapter](showcase-renders/cubes.png)              |
 
 ## Installation
 
