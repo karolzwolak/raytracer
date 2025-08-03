@@ -17,7 +17,7 @@ from pathlib import Path
 # Paths and constants
 RENDERER_BINARY = "./target/release/raytracer"
 SCENES_ROOT = "scenes"
-REFERENCE_RENDERS_DIR = "tests-golden-renders"
+REFERENCE_RENDERS_DIR = "tests-reference-renders"
 SHOWCASE_RENDERS_DIR = "showcase-renders"
 SSIM_THRESHOLD = 80.0  # Structural Similarity Index threshold
 BUILD_FAILED_CODE = 2
