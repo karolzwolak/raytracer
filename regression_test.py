@@ -283,6 +283,9 @@ def main():
             if args.command == "test":
                 rel_scene_path = os.path.relpath(scene_path, SCENES_ROOT)
                 if rel_scene_path in SHOWCASE_SCENES:
+                    # Increment total test count for showcase check
+                    summary["total"] += 1
+                    
                     # Get expected showcase file path
                     type_config = SHOWCASE_CONFIGS.get(scene_group, {})
                     ext = type_config.get("ext", "")
