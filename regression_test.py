@@ -167,6 +167,17 @@ def main():
         nargs="*",
         help="Optional list of scene files to test (must be under scenes/images or scenes/animations)",
     )
+    showcase_group = parser.add_mutually_exclusive_group()
+    showcase_group.add_argument(
+        "--skip-showcase",
+        action="store_true",
+        help="Skip processing showcase scenes",
+    )
+    showcase_group.add_argument(
+        "--only-showcase",
+        action="store_true",
+        help="Only process showcase scenes",
+    )
     output_group = parser.add_mutually_exclusive_group()
     output_group.add_argument(
         "--show-output",
@@ -264,25 +275,26 @@ def main():
             scene_group = scene_type.rstrip("s")
 
             # Run test render task
-            summary["total"] += 1
-            test_result = execute_render(
-                scene_path,
-                scene_group,
-                "test",
-                output_dir,
-                skip_comparison,
-                show_output,
-                args.hide_progress_bars,
-            )
+            if not args.only_showcase:
+                summary["total"] += 1
+                test_result = execute_render(
+                    scene_path,
+                    scene_group,
+                    "test",
+                    output_dir,
+                    skip_comparison,
+                    show_output,
+                    args.hide_progress_bars,
+                )
 
-            # Handle result
-            test_result["scene"] = scene_path
-            record_test_result(test_result, summary)
+                # Handle result
+                test_result["scene"] = scene_path
+                record_test_result(test_result, summary)
 
             # For test command, verify showcase renders exist and aren't empty
             if args.command == "test":
                 rel_scene_path = os.path.relpath(scene_path, SCENES_ROOT)
-                if rel_scene_path in SHOWCASE_SCENES:
+                if rel_scene_path in SHOWCASE_SCENES and not args.skip_showcase:
                     # Increment total test count for showcase check
                     summary["total"] += 1
 
@@ -325,7 +337,7 @@ def main():
             # For render command, generate showcase renders
             elif args.command == "render":
                 rel_scene_path = os.path.relpath(scene_path, SCENES_ROOT)
-                if rel_scene_path in SHOWCASE_SCENES:
+                if rel_scene_path in SHOWCASE_SCENES and not args.skip_showcase:
                     summary["total"] += 1
                     showcase_result = execute_render(
                         scene_path,
