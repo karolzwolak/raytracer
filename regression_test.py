@@ -19,54 +19,70 @@ RENDERER = "./target/release/raytracer"
 SCENES_DIR = "scenes"
 GOLDEN_DIR = "tests_golden_renders"
 SHOWCASE_DIR = "showcase_renders"
-SSIM_THRESHOLD = 80.0  # Adjust threshold as needed (higher = stricter)
+SSIM_THRESHOLD = 80.0
 BUILD_FAILED_CODE = 2
 TEST_FAILED_CODE = 1
 SCRIPT_ERROR_CODE = 3
 USER_INTERRUPTED_CODE = 130
 
-# Command flags
-COMMON_FLAGS = ["--depth", "5", "--supersampling-level", "1"]
-IMAGE_SPECIFIC_FLAGS = ["--format", "png"]
-IMAGE_COMMON_FLAGS = []
-ANIMATION_SPECIFIC_FLAGS = ["--fps", "30", "--format", "mp4"]
-ANIMATION_COMMON_FLAGS = ["--width", "400", "--height", "400"]
-
-
-def size_template(width, height, supersampling=2):
-    """Return a size template with given width and height"""
-    return [
-        "--width",
-        str(width),
-        "--height",
-        str(height),
-        "--supersampling-level",
-        str(supersampling),
-    ]
-
-
-# Showcase rendering configuration - higher quality defaults
-SHOWCASE_COMMON_FLAGS = size_template(1200, 1200)
-SHOWCASE_IMAGE_COMMON_FLAGS = []
-SHOWCASE_ANIMATION_COMMON_FLAGS = []
-
-SHOWCASE_IMAGE_SPECIFIC_FLAGS = ["--format", "png"]
-SHOWCASE_ANIMATION_SPECIFIC_FLAGS = ["--format", "webp", "--fps", "60"]
-
-# Define showcase scenes with their specific flags
-# Use absolute paths for scenes under SCENES_DIR, or full paths for scenes elsewhere
-SHOWCASE_SCENES = {
-    "images/general/cover.yml": {},
-    "images/general/dragons.yml": {
-        "global_flags": size_template(1200, 800),
+TEST_CONFIGS = {
+    "general": {
+        "--depth": "5",
+        "--supersampling-level": "1",
     },
-    "images/chapters/cubes.yml": {},
-    "images/chapters/refractions.yml": {},
+    "image": {
+        "commands": ["image"],
+        "ext": ".png",
+        "subcommand_flags": {"--format": "png"},
+    },
+    "animation": {
+        "commands": ["animate"],
+        "ext": ".mp4",
+        "subcommand_flags": {"--fps": "30", "--format": "mp4"},
+        "general_flags": {"--width": "400", "--height": "400"},
+    },
+}
+
+SHOWCASE_CONFIGS = {
+    "general": {
+        "--depth": "5",
+        "--supersampling-level": "2",
+        "--width": "1200",
+        "--height": "1200",
+    },
+    "image": {
+        "commands": ["image"],
+        "ext": ".png",
+        "subcommand_flags": {"--format": "png"},
+    },
+    "animation": {
+        "commands": ["animate"],
+        "ext": ".webp",
+        "subcommand_flags": {"--format": "webp", "--fps": "60"},
+    },
+}
+
+# Define render presets - combines general with type-specific flags
+RENDER_PRESETS = {
+    "test": TEST_CONFIGS,
+    "showcase": SHOWCASE_CONFIGS,
+}
+
+# Define showcase scenes - scenes that receive special treatment
+SHOWCASE_SCENES = {
+    "images/general/cover.yml": None,
+    "images/general/dragons.yml": {
+        "general": {"--width": "1200", "--height": "800"},
+        "image": {"subcommand_flags": {"--format": "png"}},
+    },
+    "images/chapters/cubes.yml": None,
+    "images/chapters/refractions.yml": None,
     "animations/general/csg.yml": {
-        "global_flags": size_template(800, 800),
+        "general": {"--width": "800", "--height": "800"},
     },
     "animations/general/rotating_dragon.yml": {
-        "global_flags": size_template(1200, 800),
+        "general": {"--width": "1200", "--height": "800"},
+        "animation": {"subcommand_flags": {"--format": "webp", "--fps": "60"}},
     },
 }
 
@@ -89,53 +105,50 @@ def format_color(text, color_code):
     return f"{color_code}{text}{Color.RESET}"
 
 
-def render_showcase(scene_path, scene_type, base_output_dir, show_output):
-    """Render a high-quality showcase version of a scene"""
-    # Create showcase directory if needed
-    base_output_dir.mkdir(parents=True, exist_ok=True)
+def record_result(result, summary):
+    """Record a test result in the summary dictionary"""
+    if "scene" not in result:
+        return
 
-    # Build showcase command
-    is_image = scene_type == "images"
-    subcommand_flags = (
-        SHOWCASE_IMAGE_COMMON_FLAGS if is_image else SHOWCASE_ANIMATION_COMMON_FLAGS
+    result_type = result.get("type", "unexpected_failure")
+
+    # Store the result in the summary
+    summary["results"].append(
+        {"type": result_type, "scene": result["scene"], "message": result["message"]}
     )
 
-    # Apply scene-specific overrides
-    rel_path = os.path.relpath(scene_path, SCENES_DIR)
-    scene_config = SHOWCASE_SCENES.get(rel_path, {})
-    global_flags = scene_config.get("global_flags", SHOWCASE_COMMON_FLAGS)
-    specific_flags = scene_config.get(
-        "specific_flags",
-        SHOWCASE_ANIMATION_SPECIFIC_FLAGS if not is_image else IMAGE_SPECIFIC_FLAGS,
-    )
+    # Print one-liner result
+    status_to_color = {
+        "passed": Color.GREEN,
+        "render_failure": Color.RED,
+        "regression": Color.RED,
+        "unexpected_failure": Color.RED,
+        "missing_reference": Color.YELLOW,
+    }
+    status_map = {
+        "passed": "PASS",
+        "render_failure": "FAIL",
+        "regression": "REGRESSION",
+        "unexpected_failure": "UNEXPECTED FAIL",
+        "missing_reference": "MISSING REF",
+    }
 
-    # Use same base commands as standard renders
-    commands = ["image"] if is_image else ["animate"]
+    status_str = status_map.get(result_type, "UNKNOWN STATUS")
+    color = status_to_color.get(result_type, Color.RED)
 
-    # Build command
-    cmd = [
-        RENDERER,
-        scene_path,
-        *global_flags,
-        *subcommand_flags,
-        "--output-dir",
-        str(base_output_dir),
-        *commands,
-        *specific_flags,
-    ]
+    print(format_color(f"[{status_str}] {result['scene']}: {result['message']}", color))
 
-    # Run render
-    print(format_color(f"Rendering showcase: {rel_path}", Color.BLUE))
-    print(format_color(f"Command: {' '.join(cmd)}", Color.CYAN))
-    output, interrupted, returncode = run_command_with_pty(cmd, show_output)
 
-    # Process result
-    if interrupted:
-        print_warning("Showcase rendering interrupted")
-    elif returncode != 0:
-        print_error("Showcase rendering failed")
-    else:
-        print(format_color("Showcase rendered successfully", Color.GREEN))
+def compare_output(scene_group, golden_path, test_path, elapsed_time=None):
+    """Compare rendered output with golden reference based on scene group"""
+    if scene_group == "image":
+        return compare_images(golden_path, test_path, elapsed_time)
+    elif scene_group == "animation":
+        return compare_animations(golden_path, test_path, elapsed_time)
+    return {
+        "type": "unexpected_failure",
+        "message": f"Unknown scene group for comparison: {scene_group}",
+    }
 
 
 def main():
@@ -165,6 +178,11 @@ def main():
         action="store_true",
         help="Capture renderer output (do not show)",
     )
+    parser.add_argument(
+        "--hide-progress-bars",
+        action="store_true",
+        help="Hide progress bars in renderer output",
+    )
     args = parser.parse_args()
 
     # Default to showing output
@@ -179,11 +197,7 @@ def main():
     # Initialize summary
     summary = {
         "total": 0,
-        "passes": [],
-        "render_failures": [],
-        "regressions": [],
-        "unexpected_failures": [],
-        "missing_references": [],
+        "results": [],
     }
 
     # Set up output directory
@@ -201,30 +215,10 @@ def main():
     if not build_renderer(show_output):
         return BUILD_FAILED_CODE
 
-    # Predefine configs for image and animation scenes
-    configs = [
-        (
-            "images",
-            {
-                "global_flags": IMAGE_COMMON_FLAGS,
-                "specific_flags": IMAGE_SPECIFIC_FLAGS,
-                "commands": ["image"],
-                "ext": ".png",
-            },
-        ),
-        (
-            "animations",
-            {
-                "global_flags": ANIMATION_COMMON_FLAGS,
-                "specific_flags": ANIMATION_SPECIFIC_FLAGS,
-                "commands": ["animate"],
-                "ext": ".mp4",
-            },
-        ),
-    ]
-
     # Get list of scenes if provided by user
     scene_list = []
+    scene_groups = ["images", "animations"]
+
     if args.scenes:
         for scene_path in args.scenes:
             # If the scene path is inside SCENES_DIR, get the relative path
@@ -238,7 +232,7 @@ def main():
             parts = rel_path.split(os.sep)
             if len(parts) > 0:
                 scene_type = parts[0]
-                if scene_type not in ["images", "animations"]:
+                if scene_type not in scene_groups:
                     print_warning(
                         f"Skipping unrecognized scene type: {scene_path} (not in 'images' or 'animations' directory)"
                     )
@@ -248,65 +242,61 @@ def main():
                 continue
             scene_list.append((scene_path, scene_type))
     else:
-        # Use the old method: find all scenes
-        for scene_type, config in configs:
-            scene_dir = os.path.join(SCENES_DIR, scene_type)
+        # Find all scenes in images/ and animations/ directories
+        for group in scene_groups:
+            scene_dir = os.path.join(SCENES_DIR, group)
             scenes = find_scenes(scene_dir)
             for scene_path in scenes:
-                scene_list.append((scene_path, scene_type))
+                scene_list.append((scene_path, group))
 
     # Process scenes
     try:
         for scene_path, scene_type in scene_list:
-            # Find the corresponding config for this scene_type
-            config = None
-            for c in configs:
-                if c[0] == scene_type:
-                    config = c[1]
-                    break
-            if config is None:
+            # Skip non-image/animation scenes
+            if scene_type not in ["images", "animations"]:
                 print_warning(f"Skipping unknown scene type: {scene_type}")
                 summary["unexpected_failures"].append(
                     f"Unsupported scene type: {scene_type} - {scene_path}"
                 )
                 continue
 
-            summary["total"] += 1
-            try:
-                result = run_test(
-                    scene_path,
-                    scene_type,
-                    config,
-                    output_dir,
-                    skip_comparison,
-                    show_output,
-                )
-                full_message = f"{result['scene']}: {result['message']}"
-                if result["type"] == "passed":
-                    summary["passes"].append(full_message)
-                    # After successful render (only for 'render' command), also render showcase version if configured
-                    if args.command == "render":
-                        rel_scene_path = os.path.relpath(scene_path, SCENES_DIR)
-                        if rel_scene_path in SHOWCASE_SCENES:
-                            render_showcase(
-                                scene_path, scene_type, Path(SHOWCASE_DIR), show_output
-                            )
-                elif result["type"] == "render_failure":
-                    summary["render_failures"].append(full_message)
-                elif result["type"] == "regression":
-                    summary["regressions"].append(full_message)
-                elif result["type"] == "unexpected_failure":
-                    summary["unexpected_failures"].append(full_message)
-                elif result["type"] == "missing_reference":
-                    summary["missing_references"].append(full_message)
-            except Exception as e:
-                # Catch any unexpected errors and log them
-                summary["unexpected_failures"].append(
-                    f"Internal script error - {str(e)}"
-                )
-                print_exception(e)
+            # Normalize scene_type to singular
+            scene_group = scene_type.rstrip("s")
 
-        passed = print_summary(summary)
+            # Run test render task
+            summary["total"] += 1
+            test_result = run_render_task(
+                scene_path,
+                scene_group,
+                "test",
+                output_dir,
+                skip_comparison,
+                show_output,
+                args.hide_progress_bars,
+            )
+
+            # Handle result
+            test_result["scene"] = scene_path
+            record_result(test_result, summary)
+
+            # Conditionally run showcase render
+            if args.command == "render":
+                rel_scene_path = os.path.relpath(scene_path, SCENES_DIR)
+                if rel_scene_path in SHOWCASE_SCENES:
+                    summary["total"] += 1
+                    showcase_result = run_render_task(
+                        scene_path,
+                        scene_group,
+                        "showcase",
+                        Path(SHOWCASE_DIR),
+                        skip_comparison,
+                        show_output,
+                        args.hide_progress_bars,
+                    )
+                    showcase_result["scene"] = f"[SHOWCASE] {scene_path}"
+                    record_result(showcase_result, summary)
+
+        passed = print_summary(summary, args.command)
 
         # Clean up temporary files
         if not skip_comparison:
@@ -451,29 +441,99 @@ def find_scenes(scene_dir):
     return scenes
 
 
-def render_test(
-    cmd,
-    scene_name,
+def run_render_task(
     scene_path,
-    scene_type,
-    config,
+    scene_group,
+    preset,
+    output_dir,
     skip_comparison,
-    output_rel_path,
     show_output,
+    hide_progress_bars=False,
 ):
+    """Run a single render task and return result dictionary"""
+    # Get configuration for the preset and scene type
+    config = RENDER_PRESETS.get(preset)
+    if not config:
+        return {
+            "type": "unexpected_failure",
+            "message": f"Unknown render preset: {preset}",
+        }
+
+    type_config = config.get(scene_group)
+    if not type_config:
+        return {
+            "type": "unexpected_failure",
+            "message": f"Unknown scene group: {scene_group} for preset {preset}",
+        }
+
+    # Compute output file path
+    scene_name = os.path.splitext(os.path.relpath(scene_path, SCENES_DIR))[0]
+    output_rel_path = Path(output_dir) / f"{scene_name}{type_config['ext']}"
+    output_dir_path = output_rel_path.parent
+    output_dir_path.mkdir(parents=True, exist_ok=True)
+
+    # Convert string dictionary to list of flags [k, v] pairs
+    def dict_to_flags(flag_dict):
+        flags = []
+        for k, v in flag_dict.items():
+            flags.append(k)
+            flags.append(v)
+        return flags
+
+    # Handle configuration using dictionaries to avoid duplicated flags
+    applied_config = dict(type_config)  # Copy base config
+
+    # Get and convert all flags from config
+    general_flags = {}
+    general_flags.update(config.get("general", {}))
+    general_flags.update(type_config.get("general_flags", {}))
+    render_flags = type_config.get("subcommand_flags", {})
+
+    # Apply showcase-specific overrides if needed
+    if preset == "showcase":
+        rel_path = os.path.relpath(scene_path, SCENES_DIR)
+        if rel_path in SHOWCASE_SCENES:
+            scene_config = SHOWCASE_SCENES[rel_path] or {}
+            # Apply general flags overrides
+            if "general" in scene_config:
+                general_flags.update(scene_config["general"])
+            # Apply type-specific flags overrides
+            type_overrides = scene_config.get(scene_group)
+            if type_overrides and "subcommand_flags" in type_overrides:
+                render_flags.update(type_overrides["subcommand_flags"])
+            # Apply general type-specific overrides
+            if type_overrides and "general_flags" in type_overrides:
+                general_flags.update(type_overrides["general_flags"])
+
+    # Build combined flags list
+    general_flags = config.get("general", [])
+    if "general" in applied_config:
+        general_flags.extend(applied_config["general"])
+
+    # Convert the flag dictionaries to lists
+    general_flags_list = dict_to_flags(general_flags)
+    render_flags_list = dict_to_flags(render_flags)
+
+    # Add hide progress bar flag if requested
+    if hide_progress_bars:
+        general_flags_list.append("--hide-progress-bar")
+
+    # Build render command in correct order:
+    # renderer [general flags] --output-dir <output dir> <scene> subcommand [subcommand flags]
+    cmd = [
+        RENDERER,
+        *general_flags_list,
+        "--output-dir",
+        str(output_dir_path),
+        scene_path,
+        *applied_config["commands"],
+        *render_flags_list,
+    ]
+
     print(format_color("\n" + "=" * 50, Color.MAGENTA))
-    print(format_color(f"Testing: {scene_path}", Color.BOLD))
+    print(format_color(f"Rendering {preset}: {scene_path}", Color.BOLD))
     print(format_color(f"Command: {' '.join(cmd)}", Color.CYAN))
     print(format_color("=" * 50, Color.MAGENTA))
-
-    golden_path = None
-    if not skip_comparison:
-        golden_path = os.path.join(GOLDEN_DIR, f"{scene_name}{config['ext']}")
-        if not os.path.exists(golden_path):
-            return {
-                "type": "missing_reference",
-                "message": "Missing golden reference",
-            }
 
     start_time = time.time()
 
@@ -481,106 +541,67 @@ def render_test(
 
     elapsed = time.time() - start_time
 
-    # Extract last 10 lines from bytes buffer
-    lines = output.splitlines()
-    last_10 = lines[-10:] if len(lines) > 10 else lines
-    last_10_str = "\n".join(last_10)
+    # On successful render & comparison required, compare against golden reference
+    result = {
+        "scene": scene_path,
+        "elapsed": elapsed,
+    }
 
     if interrupted:
-        return {
-            "type": "render_failure",
-            "message": "Renderer was interrupted by user",
-        }
-    if returncode != 0:
-        failure_msg = f"Renderer failed. Last 10 lines of output:\n{last_10_str}"
-        return {
-            "type": "render_failure",
-            "message": failure_msg,
-        }
-
-    # If rendering only, we're done
-    if skip_comparison:
-        return {
-            "type": "passed",
-            "message": f"Rendered in {elapsed:.2f}s",
-        }
-    # Compare based on scene type
-    if scene_type == "images":
-        return compare_images(golden_path, output_rel_path, scene_name)
-
-    return compare_animations(golden_path, output_rel_path, scene_name, elapsed)
-
-
-def run_test(scene_path, scene_type, config, output_dir, skip_comparison, show_output):
-    """Run a single test and return result dictionary"""
-    # Compute output file path
-    scene_name = os.path.splitext(os.path.relpath(scene_path, SCENES_DIR))[0]
-    output_rel_path = Path(output_dir) / f"{scene_name}{config['ext']}"
-    output_dir_path = output_rel_path.parent
-    output_dir_path.mkdir(parents=True, exist_ok=True)
-
-    # Build render command with correct argument order:
-    #   raytracer [global_flags] [output_dir] <scene_path> [subcommand_global_flags] <subcommand> [subcommand_flags]
-    cmd = [
-        RENDERER,
-        *COMMON_FLAGS,
-        "--output-dir",
-        str(output_dir_path),
-        scene_path,
-        *config["global_flags"],
-        *config["commands"],
-        *config["specific_flags"],
-    ]
-
-    try:
-        result = render_test(
-            cmd,
-            scene_name,
-            scene_path,
-            scene_type,
-            config,
-            skip_comparison,
-            output_rel_path,
-            show_output,
+        result.update(
+            {
+                "type": "render_failure",
+                "message": "Renderer interrupted by user",
+            }
         )
-        result["scene"] = scene_path
+    elif returncode != 0:
+        # Extract last 10 lines from bytes buffer
+        lines = output.splitlines()
+        last_10 = lines[-10:] if len(lines) > 10 else lines
+        last_10_str = "\n".join(last_10)
+        failure_msg = f"Renderer failed. Last 10 lines of output:\n{last_10_str}"
+        result.update(
+            {
+                "type": "render_failure",
+                "message": failure_msg,
+            }
+        )
+    else:
+        result.update(
+            {
+                "type": "passed",
+                "message": f"Rendered in {elapsed:.2f}s",
+            }
+        )
 
-    except Exception as e:
-        # Catch errors during rendering or comparison
-        failure_msg = f"Unhandled exception for {str(e)}"
-        print_exception(e)
-        result = {"type": "render_failure", "message": failure_msg, "scene": scene_path}
-
-    # Print a one-liner for the test result
-    status_to_color = {
-        "passed": Color.GREEN,
-        "render_failure": Color.RED,
-        "regression": Color.RED,
-        "unexpected_failure": Color.RED,
-        "missing_reference": Color.YELLOW,
-    }
-    status_map = {
-        "passed": "PASS",
-        "render_failure": "FAIL",
-        "regression": "REGRESSION",
-        "unexpected_failure": "UNEXPECTED FAIL",
-        "missing_reference": "MISSING REF",
-    }
-    if result is not None:
-        status_str = status_map[result["type"]]
-        color = status_to_color[result["type"]]
-        message = result["message"]
-        if show_output and result["type"] == "render_failure":
-            # if the renderer failed, and the output was shown, don't reprint the errors now
-            message = "Renderer failed"
-        print(format_color(f"[{status_str}] {scene_name}: {message}", color))
+        # For test preset and if we should compare, run the comparison
+        if preset == "test" and not skip_comparison:
+            golden_path = os.path.join(GOLDEN_DIR, f"{scene_name}{type_config['ext']}")
+            if not os.path.exists(golden_path):
+                # If golden reference is missing
+                result.update(
+                    {
+                        "type": "missing_reference",
+                        "message": "Missing golden reference",
+                    }
+                )
+            else:
+                # Compare the rendered file with the golden reference
+                comparison_result = compare_output(
+                    scene_group,
+                    golden_path,
+                    output_rel_path,
+                    elapsed,
+                )
+                comparison_result["scene"] = scene_name
+                # Update the result with comparison result
+                result.update(comparison_result)
 
     print(format_color("-" * 50, Color.MAGENTA))
-    # Reset interrupted flag after handling
     return result
 
 
-def compare_images(golden_path, test_path, scene_name):
+def compare_images(golden_path, test_path, elapsed_time=None):
     """Compare two images using ssimulacra2_rs"""
     try:
         cmd = ["ssimulacra2_rs", "image", golden_path, str(test_path)]
@@ -590,7 +611,6 @@ def compare_images(golden_path, test_path, scene_name):
             return {
                 "type": "regression",
                 "message": f"Comparison failed (exit code {result.returncode})",
-                "scene": scene_name,
             }
 
         # Parse SSIM score from output
@@ -601,32 +621,29 @@ def compare_images(golden_path, test_path, scene_name):
             return {
                 "type": "regression",
                 "message": "Failed to parse SSIM score",
-                "scene": scene_name,
             }
 
         # Evaluate against threshold
+        base_msg = f" in {elapsed_time:.2f}s" if elapsed_time is not None else ""
         if score >= SSIM_THRESHOLD:
             return {
                 "type": "passed",
-                "message": f"Image pass with SSIM: {score}",
-                "scene": scene_name,
+                "message": f"Image pass{base_msg} with SSIM: {score}",
             }
         else:
             return {
                 "type": "regression",
                 "message": f"Difference exceeds threshold (SSIM={score:.1f} < {SSIM_THRESHOLD})",
-                "scene": scene_name,
             }
 
     except FileNotFoundError:
         return {
             "type": "regression",
             "message": "Comparison tool missing",
-            "scene": scene_name,
         }
 
 
-def compare_animations(golden_path, test_path, scene_name, elapsed_time):
+def compare_animations(golden_path, test_path, elapsed_time):
     """Compare two animations by extracting frames"""
     try:
         # Create temporary directories
@@ -639,14 +656,12 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                 return {
                     "type": "unexpected_failure",
                     "message": "Failed to extract reference frames",
-                    "scene": scene_name,
                 }
 
             if not extract_video_frames(test_path, test_dir):
                 return {
                     "type": "unexpected_failure",
                     "message": "Failed to extract test frames",
-                    "scene": scene_name,
                 }
 
             # Get frame lists
@@ -661,7 +676,6 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                         f" Frame count mismatch: "
                         f"ref={len(ref_frames)} vs test={len(test_frames)}"
                     ),
-                    "scene": scene_name,
                 }
 
             # Find frame with highest difference
@@ -678,7 +692,6 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                     return {
                         "type": "unexpected_failure",
                         "message": "Failed to compare frame {frame}",
-                        "scene": scene_name,
                     }
 
                 if score < worst_score:
@@ -693,7 +706,6 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                         f"Animation passed in {elapsed_time:.2f}s. "
                         f"Worst frame: {worst_frame} ({worst_score})"
                     ),
-                    "scene": scene_name,
                 }
             else:
                 return {
@@ -702,14 +714,12 @@ def compare_animations(golden_path, test_path, scene_name, elapsed_time):
                         f"Difference in frame {worst_frame} exceeds threshold "
                         f"(SSIM={worst_score:.1f} < {SSIM_THRESHOLD})"
                     ),
-                    "scene": scene_name,
                 }
 
     except Exception as e:
         return {
             "type": "regression",
             "message": f"Animation comparison error: {str(e)}",
-            "scene": scene_name,
         }
 
 
@@ -749,67 +759,88 @@ def get_frame_score(ref_path, test_path):
         return float("inf")
 
 
-def print_summary(summary):
+def print_summary(summary, command_type):
     """Print test summary with details"""
+
+    plural_command_type = command_type + "s"
+
     print("\n" + format_color("=" * 50, Color.MAGENTA))
     print(format_color(f"{'Test Summary':^50}", Color.MAGENTA + Color.BOLD))
     print(format_color("=" * 50, Color.MAGENTA))
 
     total = summary["total"]
-    passed = len(summary["passes"])
-    render_failures = len(summary["render_failures"])
-    unexpected_failures = len(summary["unexpected_failures"])
-    regressions = len(summary["regressions"])
-    missing_references = len(summary["missing_references"])
+    # Define result type configuration once
+    result_types = {
+        "passed": {
+            "color": Color.GREEN,
+            "label": "Passed",
+            "plural": "tests",
+            "header": "Passes:",
+        },
+        "render_failure": {
+            "color": Color.RED,
+            "label": "Render fails",
+            "plural": "fails",
+            "header": "Render Failures:",
+        },
+        "regression": {
+            "color": Color.RED,
+            "label": "Regressions",
+            "plural": "regressions",
+            "header": "Regressions:",
+        },
+        "unexpected_failure": {
+            "color": Color.RED,
+            "label": "Unexpected fails",
+            "plural": "fails",
+            "header": "Unexpected failures:",
+        },
+        "missing_reference": {
+            "color": Color.YELLOW,
+            "label": "Missing refs",
+            "plural": "refs",
+            "header": "Missing References:",
+        },
+    }
 
+    # Filter and count all result types in one pass
+    results_by_type = {
+        typ: [r for r in summary["results"] if r["type"] == typ] for typ in result_types
+    }
+    counts_by_type = {typ: len(results) for typ, results in results_by_type.items()}
+
+    # Print counts
     print(f"Total tests:      {format_color(str(total), Color.CYAN)}")
-    print(f"Passed tests:     {format_color(str(passed), Color.GREEN)}")
-    print(f"Render fails:     {format_color(str(render_failures), Color.RED)}")
-    print(f"Regressions:      {format_color(str(regressions), Color.RED)}")
-    print(f"Unexpected fails: {format_color(str(unexpected_failures), Color.RED)}")
-    print(f"Missing refs:     {format_color(str(missing_references), Color.YELLOW)}")
+    for typ, config in result_types.items():
+        print(
+            f"{config['label'] + ':':<17} {format_color(str(counts_by_type[typ]), config['color'])}"
+        )
 
-    # Print passes if any
-    if passed > 0:
-        print("\n" + format_color("Passes:", Color.GREEN + Color.BOLD))
-        for _pass in summary["passes"]:
-            print(f"  • {_pass}")
-    else:
-        print(format_color("No tests passed.", Color.YELLOW + Color.BOLD))
-
-    # Print render failures if any
-    if render_failures > 0:
-        print("\n" + format_color("Render Failures:", Color.RED + Color.BOLD))
-        for failure in summary["render_failures"]:
-            print(f"  • {failure}")
-
-    # Print regressions if any
-    if regressions > 0:
-        print("\n" + format_color("Regressions:", Color.RED + Color.BOLD))
-        for regression in summary["regressions"]:
-            print(f"  • {regression}")
-
-    # Print missing references if any
-    if unexpected_failures > 0:
-        print("\n" + format_color("Unexpected failures:", Color.RED + Color.BOLD))
-        for fail in summary["unexpected_failures"]:
-            print(f"  • {fail}")
-
-    # Print missing references if any
-    if missing_references > 0:
-        print("\n" + format_color("Missing References:", Color.YELLOW + Color.BOLD))
-        for ref in summary["missing_references"]:
-            print(f"  • {ref}")
+    # Print detailed breakdowns
+    for typ, config in result_types.items():
+        results = results_by_type[typ]
+        if results:
+            print("\n" + format_color(config["header"], config["color"] + Color.BOLD))
+            for r in results:
+                print(f"  • {r['scene']}: {r['message']}")
+        elif typ == "passed":
+            print(
+                format_color(
+                    f"No {plural_command_type} passed.", Color.YELLOW + Color.BOLD
+                )
+            )
 
     print(format_color("=" * 50, Color.MAGENTA))
 
     # Final status
-    all_passed = passed == total
+    all_passed = counts_by_type["passed"] == total
+
+    upper_case_command = plural_command_type.upper()
     if all_passed:
-        final_msg = "ALL TESTS PASSED"
+        final_msg = f"ALL {upper_case_command} PASSED"
         color = Color.GREEN
     else:
-        final_msg = "TESTS FAILED"
+        final_msg = f"{upper_case_command} FAILED"
         color = Color.RED
 
     print(format_color(f"\n{final_msg}", color + Color.BOLD))
