@@ -80,7 +80,7 @@ SHOWCASE_SCENES = {
     "animations/general/csg-lens.yml": {
         "general": {"--width": "800", "--height": "800"},
     },
-    "animations/general/rotating_dragon.yml": {
+    "animations/general/rotating-dragon.yml": {
         "general": {"--width": "1200", "--height": "800"},
         "animation": {"subcommand_flags": {"--format": "webp", "--fps": "60"}},
     },
