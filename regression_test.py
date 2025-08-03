@@ -469,7 +469,7 @@ def run_render_task(
     # Compute output file path
     scene_name = os.path.splitext(os.path.relpath(scene_path, SCENES_DIR))[0]
     output_rel_path = Path(output_dir) / f"{scene_name}{type_config['ext']}"
-    output_dir_path = output_rel_path.parent
+    output_dir_path = output_rel_path.parent if preset != "showcase" else output_dir
     output_dir_path.mkdir(parents=True, exist_ok=True)
 
     # Convert string dictionary to list of flags [k, v] pairs
