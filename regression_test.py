@@ -60,6 +60,12 @@ def main():
         default=GOLDEN_DIR,
         help="Output directory for renders (default: renders)",
     )
+    parser.add_argument(
+        "scenes",
+        metavar="SCENE_FILE",
+        nargs="*",
+        help="Optional list of scene files to test (must be under scenes/images or scenes/animations)",
+    )
     output_group = parser.add_mutually_exclusive_group()
     output_group.add_argument(
         "--show-output",
@@ -107,60 +113,99 @@ def main():
     if not build_renderer(show_output):
         return BUILD_FAILED_CODE
 
-    # Process scenes
-    try:
-        # Split processing for images and animations
-        for scene_type, config in [
-            (
-                "images",
-                {
-                    "global_flags": IMAGE_COMMON_FLAGS,
-                    "specific_flags": IMAGE_SPECIFIC_FLAGS,
-                    "commands": ["image"],
-                    "ext": ".png",
-                },
-            ),
-            (
-                "animations",
-                {
-                    "global_flags": ANIMATION_COMMON_FLAGS,
-                    "specific_flags": ANIMATION_SPECIFIC_FLAGS,
-                    "commands": ["animate"],
-                    "ext": ".mp4",
-                },
-            ),
-        ]:
+    # Predefine configs for image and animation scenes
+    configs = [
+        (
+            "images",
+            {
+                "global_flags": IMAGE_COMMON_FLAGS,
+                "specific_flags": IMAGE_SPECIFIC_FLAGS,
+                "commands": ["image"],
+                "ext": ".png",
+            },
+        ),
+        (
+            "animations",
+            {
+                "global_flags": ANIMATION_COMMON_FLAGS,
+                "specific_flags": ANIMATION_SPECIFIC_FLAGS,
+                "commands": ["animate"],
+                "ext": ".mp4",
+            },
+        ),
+    ]
+
+    # Get list of scenes if provided by user
+    scene_list = []
+    if args.scenes:
+        for scene_path in args.scenes:
+            # If the scene path is inside SCENES_DIR, get the relative path
+            try:
+                rel_path = os.path.relpath(scene_path, SCENES_DIR)
+            except ValueError:
+                # Path is on different drive (Windows) or not relative
+                rel_path = scene_path
+            
+            # Extract the top-level directory (images or animations)
+            parts = rel_path.split(os.sep)
+            if len(parts) > 0:
+                scene_type = parts[0]
+                if scene_type not in ["images", "animations"]:
+                    print_warning(f"Skipping unrecognized scene type: {scene_path} (not in 'images' or 'animations' directory)")
+                    continue
+            else:
+                print_warning(f"Skipping invalid scene: {scene_path}")
+                continue
+            scene_list.append((scene_path, scene_type))
+    else:
+        # Use the old method: find all scenes
+        for scene_type, config in configs:
             scene_dir = os.path.join(SCENES_DIR, scene_type)
             scenes = find_scenes(scene_dir)
-
             for scene_path in scenes:
-                summary["total"] += 1
-                try:
-                    result = run_test(
-                        scene_path,
-                        scene_type,
-                        config,
-                        output_dir,
-                        skip_comparison,
-                        show_output,
-                    )
-                    full_message = f"{result['scene']}: {result['message']}"
-                    if result["type"] == "passed":
-                        summary["passes"].append(full_message)
-                    elif result["type"] == "render_failure":
-                        summary["render_failures"].append(full_message)
-                    elif result["type"] == "regression":
-                        summary["regressions"].append(full_message)
-                    elif result["type"] == "unexpected_failure":
-                        summary["unexpected_failures"].append(full_message)
-                    elif result["type"] == "missing_reference":
-                        summary["missing_references"].append(full_message)
-                except Exception as e:
-                    # Catch any unexpected errors and log them
-                    summary["unexpected_failures"].append(
-                        f"Internal script error - {str(e)}"
-                    )
-                    print_exception(e)
+                scene_list.append((scene_path, scene_type))
+
+    # Process scenes
+    try:
+        for scene_path, scene_type in scene_list:
+            # Find the corresponding config for this scene_type
+            config = None
+            for c in configs:
+                if c[0] == scene_type:
+                    config = c[1]
+                    break
+            if config is None:
+                print_warning(f"Skipping unknown scene type: {scene_type}")
+                summary["unexpected_failures"].append(f"Unsupported scene type: {scene_type} - {scene_path}")
+                continue
+
+            summary["total"] += 1
+            try:
+                result = run_test(
+                    scene_path,
+                    scene_type,
+                    config,
+                    output_dir,
+                    skip_comparison,
+                    show_output,
+                )
+                full_message = f"{result['scene']}: {result['message']}"
+                if result["type"] == "passed":
+                    summary["passes"].append(full_message)
+                elif result["type"] == "render_failure":
+                    summary["render_failures"].append(full_message)
+                elif result["type"] == "regression":
+                    summary["regressions"].append(full_message)
+                elif result["type"] == "unexpected_failure":
+                    summary["unexpected_failures"].append(full_message)
+                elif result["type"] == "missing_reference":
+                    summary["missing_references"].append(full_message)
+            except Exception as e:
+                # Catch any unexpected errors and log them
+                summary["unexpected_failures"].append(
+                    f"Internal script error - {str(e)}"
+                )
+                print_exception(e)
 
         passed = print_summary(summary)
 
