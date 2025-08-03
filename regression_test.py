@@ -279,8 +279,36 @@ def main():
             test_result["scene"] = scene_path
             record_result(test_result, summary)
 
-            # Conditionally run showcase render
-            if args.command == "render":
+            # For test command, verify showcase renders exist and aren't empty
+            if args.command == "test":
+                rel_scene_path = os.path.relpath(scene_path, SCENES_DIR)
+                if rel_scene_path in SHOWCASE_SCENES:
+                    # Get expected showcase file path
+                    type_config = SHOWCASE_CONFIGS.get(scene_group, {})
+                    ext = type_config.get("ext", "")
+                    showcase_file = Path(SHOWCASE_DIR) / f"{os.path.basename(scene_path).replace('.yml', ext)}"
+                    
+                    if not showcase_file.exists():
+                        record_result({
+                            "type": "missing_reference",
+                            "scene": f"[SHOWCASE] {scene_path}",
+                            "message": "Showcase render missing"
+                        }, summary)
+                    elif showcase_file.stat().st_size == 0:
+                        record_result({
+                            "type": "render_failure",
+                            "scene": f"[SHOWCASE] {scene_path}",
+                            "message": "Showcase render is empty"
+                        }, summary)
+                    else:
+                        record_result({
+                            "type": "passed",
+                            "scene": f"[SHOWCASE] {scene_path}",
+                            "message": "Showcase render exists and is valid"
+                        }, summary)
+
+            # For render command, generate showcase renders
+            elif args.command == "render":
                 rel_scene_path = os.path.relpath(scene_path, SCENES_DIR)
                 if rel_scene_path in SHOWCASE_SCENES:
                     summary["total"] += 1
