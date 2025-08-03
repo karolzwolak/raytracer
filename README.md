@@ -88,6 +88,8 @@ Options:
           Maximum number of times a ray can bounce (change direction). Direction change occurs when a ray hits a reflective or refractive surface. Overrides the one in the scene file
   -s, --supersampling-level <SUPERSAMPLING_LEVEL>
           Controls how many rays are shot per pixel. In other words, the quality of the anti-aliasing (supersampling). Overrides the one in the scene file
+      --hide-progress-bar
+          Hides progress bar while rendering
 ```
 
 ### Rendering images

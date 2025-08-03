@@ -58,14 +58,14 @@ impl AnimationRenderer {
         1. / self.framerate as f64
     }
 
-    fn render_frame(&self, time: f64, bar: indicatif::ProgressBar) -> Image {
+    fn render_frame(&self, time: f64, bar: Option<indicatif::ProgressBar>) -> Image {
         let mut renderer = self.renderer.clone();
         *renderer.scene_mut() = self.renderer.scene().animate(time);
 
         renderer.render_animation_frame(bar)
     }
 
-    fn render_animation<F>(&self, mut encode_fun: F)
+    fn render_animation_with_progress_bar<F>(&self, mut encode_fun: F)
     where
         F: FnMut(Image),
     {
@@ -100,10 +100,25 @@ impl AnimationRenderer {
             .for_each(|i| {
                 let time = i as f64 * frame_duration;
                 let bar = multi_bar.add(frame_bar.clone());
-                let image = self.render_frame(time, bar.clone());
+                let image = self.render_frame(time, Some(bar.clone()));
                 bar.reset();
                 encode_fun(image);
             });
+    }
+
+    fn render_animation<F>(&self, mut encode_fun: F)
+    where
+        F: FnMut(Image),
+    {
+        if self.renderer.use_progress_bar() {
+            return self.render_animation_with_progress_bar(encode_fun);
+        }
+
+        let frame_duration = self.frame_duration();
+        (0..self.frame_count()).for_each(|i| {
+            let time = i as f64 * frame_duration;
+            encode_fun(self.render_frame(time, None));
+        });
     }
 
     fn render_gif(&self, encoder: &mut gif::Encoder<&mut File>) {

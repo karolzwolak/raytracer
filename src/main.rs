@@ -133,6 +133,10 @@ Overrides the one in the scene file. If not specified anywhere, defaults to {}",
     /// Overrides the one in the scene file.
     #[clap(short, long)]
     supersampling_level: Option<usize>,
+
+    /// Hides progress bar while rendering.
+    #[clap(long, default_value = "false")]
+    hide_progress_bar: bool,
 }
 
 impl Cli {
@@ -193,6 +197,7 @@ struct AnimationConfig {
 struct RenderConfig {
     supersampling_level: usize,
     max_reflective_depth: usize,
+    use_progress_bar: bool,
 }
 
 enum ConfigKind {
@@ -275,6 +280,7 @@ impl Config {
                         .unwrap_or(Renderer::MAX_RECURSIVE_DEPTH),
                 ),
             )
+            .use_progress_bar(!cli.hide_progress_bar)
             .build()
             .map_err(|e| format!("Failed to build render config: {e}"))?;
 
@@ -297,6 +303,7 @@ impl Config {
             .supersampling_level(self.render_config.supersampling_level)
             .integrator(integator)
             .camera(self.camera)
+            .use_progress_bar(self.render_config.use_progress_bar)
             .build()
             .map_err(|e| format!("Failed to build renderer: {e}"))?;
 

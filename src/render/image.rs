@@ -2,7 +2,7 @@ use std::{fmt::Display, fs::File, io::Write};
 
 use clap::ValueEnum;
 use indicatif::ParallelProgressIterator;
-use rayon::prelude::*;
+use rayon::{iter::Either, prelude::*};
 
 use crate::math::color::Color;
 
@@ -63,21 +63,22 @@ impl Image {
         &mut self.pixels
     }
 
-    pub fn set_each_pixel<F>(&mut self, fun: F, progressbar: indicatif::ProgressBar)
+    pub fn set_each_pixel<F>(&mut self, fun: F, progressbar: Option<indicatif::ProgressBar>)
     where
         F: Fn(usize, usize) -> Color + std::marker::Sync,
     {
         let width = self.width;
 
-        self.pixels
-            .par_iter_mut()
-            .enumerate()
-            .progress_with(progressbar)
-            .for_each(|(id, pixel_color)| {
-                let x = id % width;
-                let y = id / width;
-                *pixel_color = fun(x, y);
-            })
+        let iter = match progressbar {
+            Some(pb) => Either::Left(self.pixels.par_iter_mut().enumerate().progress_with(pb)),
+            None => Either::Right(self.pixels.par_iter_mut().enumerate()),
+        };
+
+        iter.for_each(|(id, pixel_color)| {
+            let x = id % width;
+            let y = id / width;
+            *pixel_color = fun(x, y);
+        });
     }
 
     pub fn as_u8_rgb(&self) -> Vec<u8> {

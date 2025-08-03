@@ -22,6 +22,8 @@ pub struct Renderer {
         build = "Renderer::gen_supersampling_offsets(self.supersampling_offsets.unwrap_or(Renderer::DEFAULT_SUPERSAMPLING_LEVEL))"
     ))]
     supersampling_offsets: Vec<f64>,
+    #[builder(default = "false")]
+    use_progress_bar: bool,
 }
 
 impl RendererBuilder {
@@ -63,7 +65,7 @@ impl Renderer {
         color / offsets.len().pow(2) as f64
     }
 
-    pub fn render_animation_frame(&mut self, progressbar: indicatif::ProgressBar) -> Image {
+    pub fn render_animation_frame(&mut self, progressbar: Option<indicatif::ProgressBar>) -> Image {
         let mut image = self.camera.image();
 
         image.set_each_pixel(|x: usize, y: usize| self.color_at_pixel(x, y), progressbar);
@@ -79,12 +81,17 @@ impl Renderer {
 
         let now = std::time::Instant::now();
 
-        let style = indicatif::ProgressStyle::with_template(
+        let pb = if self.use_progress_bar {
+            let style = indicatif::ProgressStyle::with_template(
             "{spinner:.green} [{elapsed_precise}] {wide_bar:.cyan/blue} pixels shaded: {human_pos}/{human_len} {percent}% ({eta})",
         )
         .unwrap();
-        let pb = indicatif::ProgressBar::new(image.width() as u64 * image.height() as u64);
-        let pb = pb.with_style(style);
+            let pb = indicatif::ProgressBar::new(image.width() as u64 * image.height() as u64);
+
+            Some(pb.with_style(style))
+        } else {
+            None
+        };
         image.set_each_pixel(|x: usize, y: usize| self.color_at_pixel(x, y), pb);
         println!("render time: {:?}", now.elapsed());
         image
@@ -104,6 +111,10 @@ impl Renderer {
 
     pub fn scene_mut(&mut self) -> &mut Scene {
         self.integrator.scene_mut()
+    }
+
+    pub fn use_progress_bar(&self) -> bool {
+        self.use_progress_bar
     }
 }
 
