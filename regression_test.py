@@ -18,6 +18,7 @@ from pathlib import Path
 RENDERER = "./target/release/raytracer"
 SCENES_DIR = "scenes"
 GOLDEN_DIR = "tests_golden_renders"
+SHOWCASE_DIR = "showcase_renders"
 SSIM_THRESHOLD = 80.0  # Adjust threshold as needed (higher = stricter)
 BUILD_FAILED_CODE = 2
 TEST_FAILED_CODE = 1
@@ -30,6 +31,44 @@ IMAGE_SPECIFIC_FLAGS = ["--format", "png"]
 IMAGE_COMMON_FLAGS = []
 ANIMATION_SPECIFIC_FLAGS = ["--fps", "30", "--format", "mp4"]
 ANIMATION_COMMON_FLAGS = ["--width", "400", "--height", "400"]
+
+
+def size_template(width, height, supersampling=2):
+    """Return a size template with given width and height"""
+    return [
+        "--width",
+        str(width),
+        "--height",
+        str(height),
+        "--supersampling-level",
+        str(supersampling),
+    ]
+
+
+# Showcase rendering configuration - higher quality defaults
+SHOWCASE_COMMON_FLAGS = size_template(1200, 1200)
+SHOWCASE_IMAGE_COMMON_FLAGS = []
+SHOWCASE_ANIMATION_COMMON_FLAGS = []
+
+SHOWCASE_IMAGE_SPECIFIC_FLAGS = ["--format", "png"]
+SHOWCASE_ANIMATION_SPECIFIC_FLAGS = ["--format", "webp", "--fps", "60"]
+
+# Define showcase scenes with their specific flags
+# Use absolute paths for scenes under SCENES_DIR, or full paths for scenes elsewhere
+SHOWCASE_SCENES = {
+    "images/general/cover.yml": {},
+    "images/general/dragons.yml": {
+        "global_flags": size_template(1200, 800),
+    },
+    "images/chapters/cubes.yml": {},
+    "images/chapters/refractions.yml": {},
+    "animations/general/csg.yml": {
+        "global_flags": size_template(800, 800),
+    },
+    "animations/general/rotating_dragon.yml": {
+        "global_flags": size_template(1200, 800),
+    },
+}
 
 
 # Colors for output
@@ -48,6 +87,55 @@ class Color:
 
 def format_color(text, color_code):
     return f"{color_code}{text}{Color.RESET}"
+
+
+def render_showcase(scene_path, scene_type, base_output_dir, show_output):
+    """Render a high-quality showcase version of a scene"""
+    # Create showcase directory if needed
+    base_output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build showcase command
+    is_image = scene_type == "images"
+    subcommand_flags = (
+        SHOWCASE_IMAGE_COMMON_FLAGS if is_image else SHOWCASE_ANIMATION_COMMON_FLAGS
+    )
+
+    # Apply scene-specific overrides
+    rel_path = os.path.relpath(scene_path, SCENES_DIR)
+    scene_config = SHOWCASE_SCENES.get(rel_path, {})
+    global_flags = scene_config.get("global_flags", SHOWCASE_COMMON_FLAGS)
+    specific_flags = scene_config.get(
+        "specific_flags",
+        SHOWCASE_ANIMATION_SPECIFIC_FLAGS if not is_image else IMAGE_SPECIFIC_FLAGS,
+    )
+
+    # Use same base commands as standard renders
+    commands = ["image"] if is_image else ["animate"]
+
+    # Build command
+    cmd = [
+        RENDERER,
+        scene_path,
+        *global_flags,
+        *subcommand_flags,
+        "--output-dir",
+        str(base_output_dir),
+        *commands,
+        *specific_flags,
+    ]
+
+    # Run render
+    print(format_color(f"Rendering showcase: {rel_path}", Color.BLUE))
+    print(format_color(f"Command: {' '.join(cmd)}", Color.CYAN))
+    output, interrupted, returncode = run_command_with_pty(cmd, show_output)
+
+    # Process result
+    if interrupted:
+        print_warning("Showcase rendering interrupted")
+    elif returncode != 0:
+        print_error("Showcase rendering failed")
+    else:
+        print(format_color("Showcase rendered successfully", Color.GREEN))
 
 
 def main():
@@ -145,13 +233,15 @@ def main():
             except ValueError:
                 # Path is on different drive (Windows) or not relative
                 rel_path = scene_path
-            
+
             # Extract the top-level directory (images or animations)
             parts = rel_path.split(os.sep)
             if len(parts) > 0:
                 scene_type = parts[0]
                 if scene_type not in ["images", "animations"]:
-                    print_warning(f"Skipping unrecognized scene type: {scene_path} (not in 'images' or 'animations' directory)")
+                    print_warning(
+                        f"Skipping unrecognized scene type: {scene_path} (not in 'images' or 'animations' directory)"
+                    )
                     continue
             else:
                 print_warning(f"Skipping invalid scene: {scene_path}")
@@ -176,7 +266,9 @@ def main():
                     break
             if config is None:
                 print_warning(f"Skipping unknown scene type: {scene_type}")
-                summary["unexpected_failures"].append(f"Unsupported scene type: {scene_type} - {scene_path}")
+                summary["unexpected_failures"].append(
+                    f"Unsupported scene type: {scene_type} - {scene_path}"
+                )
                 continue
 
             summary["total"] += 1
@@ -192,6 +284,13 @@ def main():
                 full_message = f"{result['scene']}: {result['message']}"
                 if result["type"] == "passed":
                     summary["passes"].append(full_message)
+                    # After successful render (only for 'render' command), also render showcase version if configured
+                    if args.command == "render":
+                        rel_scene_path = os.path.relpath(scene_path, SCENES_DIR)
+                        if rel_scene_path in SHOWCASE_SCENES:
+                            render_showcase(
+                                scene_path, scene_type, Path(SHOWCASE_DIR), show_output
+                            )
                 elif result["type"] == "render_failure":
                     summary["render_failures"].append(full_message)
                 elif result["type"] == "regression":
