@@ -177,7 +177,7 @@ impl<'a> Intersection<'a> {
         self.intersected_object
     }
 
-    pub fn computations(&self, ray: &Ray) -> IntersecComputations {
+    pub fn computations(&self, ray: &Ray) -> IntersecComputations<'_> {
         IntersecComputations::from_intersection(self, ray)
     }
 
@@ -465,19 +465,19 @@ impl<'a> IntersectionCollection<'a> {
         !self.vec.is_empty()
     }
 
-    pub fn hit(&self) -> Option<&Intersection> {
+    pub fn hit(&self) -> Option<&Intersection<'_>> {
         self.hit.as_ref()
     }
 
-    fn computations(&self, intersection: &'a Intersection) -> IntersecComputations {
+    fn computations(&self, intersection: &'a Intersection) -> IntersecComputations<'_> {
         IntersecComputations::from_intersections(intersection, self)
     }
 
-    pub fn hit_computations(&self) -> Option<IntersecComputations> {
+    pub fn hit_computations(&self) -> Option<IntersecComputations<'_>> {
         self.hit().map(|inter| self.computations(inter))
     }
 
-    pub fn computations_at_id(&self, id: usize) -> Option<IntersecComputations> {
+    pub fn computations_at_id(&self, id: usize) -> Option<IntersecComputations<'_>> {
         self.vec.get(id).map(|inter| self.computations(inter))
     }
 

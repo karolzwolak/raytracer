@@ -5,8 +5,9 @@ use crate::{
     scene::object::bounding_box::Bounded,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum AnimationTiming {
+    #[default]
     Ease,
     EaseIn,
     EaseOut,
@@ -42,14 +43,9 @@ impl FromStr for AnimationTiming {
     }
 }
 
-impl Default for AnimationTiming {
-    fn default() -> Self {
-        Self::Ease
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum AnimationDirection {
+    #[default]
     Normal,
     Reverse,
     Alternate,
@@ -76,14 +72,14 @@ impl AnimationDirection {
             Self::Normal => time,
             Self::Reverse => 1. - time,
             Self::Alternate => {
-                if curr_count % 2 == 0 {
+                if curr_count.is_multiple_of(2) {
                     time
                 } else {
                     1. - time
                 }
             }
             Self::AlternateReverse => {
-                if curr_count % 2 == 0 {
+                if curr_count.is_multiple_of(2) {
                     1. - time
                 } else {
                     time
@@ -93,14 +89,9 @@ impl AnimationDirection {
     }
 }
 
-impl Default for AnimationDirection {
-    fn default() -> Self {
-        Self::Normal
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub enum AnimationRepeat {
+    #[default]
     Infinite,
     Repeat(u32),
 }
@@ -111,12 +102,6 @@ impl AnimationRepeat {
             Self::Infinite => true,
             Self::Repeat(count) => curr_count < *count,
         }
-    }
-}
-
-impl Default for AnimationRepeat {
-    fn default() -> Self {
-        Self::Infinite
     }
 }
 

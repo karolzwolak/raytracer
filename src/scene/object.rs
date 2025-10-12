@@ -201,7 +201,7 @@ impl Object {
         }
     }
 
-    pub fn intersect_to_collection(&self, scene_ray: &Ray) -> IntersectionCollection {
+    pub fn intersect_to_collection(&self, scene_ray: &Ray) -> IntersectionCollection<'_> {
         let mut collector = IntersectionCollector::new(Some(self), false);
         self.intersect(scene_ray, &mut collector);
         IntersectionCollection::from_collector(scene_ray.clone(), collector)

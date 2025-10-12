@@ -52,7 +52,7 @@ impl Integrator {
         self.scene.light_sources()
     }
 
-    fn intersect(&self, ray: Ray) -> IntersectionCollection {
+    fn intersect(&self, ray: Ray) -> IntersectionCollection<'_> {
         IntersectionCollection::from_group(ray, self.objects())
     }
 
@@ -253,7 +253,7 @@ impl Integrator {
     }
 
     #[cfg(test)]
-    fn intersect_testing(&self, ray: Ray) -> IntersectionCollection {
+    fn intersect_testing(&self, ray: Ray) -> IntersectionCollection<'_> {
         let mut collector = IntersectionCollector::new_keep_redundant();
         self.objects().intersect(&ray, &mut collector);
         IntersectionCollection::from_collector(ray, collector)
